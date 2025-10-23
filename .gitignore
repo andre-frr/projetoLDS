@@ -3,6 +3,9 @@ node_modules/
 npm-debug.log
 .next/
 
+# IDE
+.idea/
+
 # PostgreSQL volumes
 db/*.sql
 
