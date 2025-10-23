@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="AutoImportSettings">
+    <option name="autoReloadType" value="SELECTIVE" />
+  </component>
+  <component name="ChangeListManager">
+    <list default="true" id="122a2bda-d4b0-4eb9-a5cd-2f43c264fa74" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/app/.env.local" beforeDir="false" afterPath="$PROJECT_DIR$/.env.local" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/Dockerfile" beforeDir="false" afterPath="$PROJECT_DIR$/Dockerfile" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/lib/db.js" beforeDir="false" afterPath="$PROJECT_DIR$/lib/db.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/package.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/pages/api/cursos/[id].js" beforeDir="false" afterPath="$PROJECT_DIR$/pages/api/cursos/[id].js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/pages/api/cursos/index.js" beforeDir="false" afterPath="$PROJECT_DIR$/pages/api/cursos/index.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/pages/api/departamentos/[id].js" beforeDir="false" afterPath="$PROJECT_DIR$/pages/api/departamentos/[id].js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/pages/api/departamentos/index.js" beforeDir="false" afterPath="$PROJECT_DIR$/pages/api/departamentos/index.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/pages/api/docente/[id].js" beforeDir="false" afterPath="$PROJECT_DIR$/pages/api/docente/[id].js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/pages/api/docente/index.js" beforeDir="false" afterPath="$PROJECT_DIR$/pages/api/docente/index.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/pages/api/docente_grau/[id].js" beforeDir="false" afterPath="$PROJECT_DIR$/pages/api/docente_grau/[id].js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/pages/api/docente_grau/index.js" beforeDir="false" afterPath="$PROJECT_DIR$/pages/api/docente_grau/index.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/pages/api/graus/[id].js" beforeDir="false" afterPath="$PROJECT_DIR$/pages/api/graus/[id].js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/pages/api/graus/index.js" beforeDir="false" afterPath="$PROJECT_DIR$/pages/api/graus/index.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/pages/api/historico_cv_docente/[id].js" beforeDir="false" afterPath="$PROJECT_DIR$/pages/api/historico_cv_docente/[id].js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/pages/api/historico_cv_docente/index.js" beforeDir="false" afterPath="$PROJECT_DIR$/pages/api/historico_cv_docente/index.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/pages/api/uc/[id].js" beforeDir="false" afterPath="$PROJECT_DIR$/pages/api/uc/[id].js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/pages/api/uc/index.js" beforeDir="false" afterPath="$PROJECT_DIR$/pages/api/uc/index.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/pages/api/uc_horas_contacto/[id_uc]_[tipo].js" beforeDir="false" afterPath="$PROJECT_DIR$/pages/api/uc_horas_contacto/[id_uc]_[tipo].js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/pages/api/uc_horas_contacto/index.js" beforeDir="false" afterPath="$PROJECT_DIR$/pages/api/uc_horas_contacto/index.js" afterDir="false" />
+    </list>
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="ProjectColorInfo">{
+  &quot;customColor&quot;: &quot;&quot;,
+  &quot;associatedIndex&quot;: 5
+}</component>
+  <component name="ProjectId" id="34SjGiVUWsZZ5j4A07SZWTAG20z" />
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;main&quot;,
+    &quot;ignore.virus.scanning.warn.message&quot;: &quot;true&quot;,
+    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
+    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
+    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
+    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
+    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
+    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
+  }
+}</component>
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="122a2bda-d4b0-4eb9-a5cd-2f43c264fa74" name="Changes" comment="" />
+      <created>1761213779563</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1761213779563</updated>
+      <workItem from="1761213780898" duration="523000" />
+      <workItem from="1761214316521" duration="34000" />
+      <workItem from="1761214351984" duration="23000" />
+      <workItem from="1761214387184" duration="1020000" />
+    </task>
+    <servers />
+  </component>
+  <component name="TypeScriptGeneratedFilesManager">
+    <option name="version" value="3" />
+  </component>
+</project>
