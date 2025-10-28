@@ -1,0 +1,40 @@
+services:
+  db:
+    image: postgres:16
+    container_name: postgresql
+    restart: always
+    env_file:
+      - ./.env
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - db_data:/var/lib/postgresql/data
+
+  graphql:
+    build:
+      context: ./graphql
+      dockerfile: Dockerfile
+    container_name: graphql
+    ports:
+      - "4000:4000"
+    env_file:
+      - ./.env
+    depends_on:
+      - db
+
+  nextjs:
+    build:
+      context: ./pages
+      dockerfile: Dockerfile
+    container_name: nextjs
+    ports:
+      - "3000:3000"
+    env_file:
+      - ./.env
+    depends_on:
+      - graphql
+      - db
+
+volumes:
+  db_data:
