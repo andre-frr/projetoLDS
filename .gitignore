@@ -1,13 +1,22 @@
-# Node.js
-node_modules/
-npm-debug.log
-.next/
+# Dependencies
+/node_modules
+/.pnp
+.pnp.js
 
-# IDE
-.idea/
+# Testing
+/coverage
 
-# PostgreSQL volumes
-db/*.sql
+# Production
+/build
 
-# Docker
-*.env
+# Misc
+.DS_Store
+*.pem
+
+# Environment Variables
+.env
+.env*.local
+.env.development.local
+.env.test.local
+.env.production.local
+
