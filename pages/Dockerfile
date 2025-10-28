@@ -2,10 +2,10 @@
 FROM node:20-alpine AS builder
 WORKDIR /app
 
-COPY package*.json ./
+COPY pages/package*.json ./
 RUN npm install
 
-COPY . .
+COPY pages/. .
 
 RUN npm run build
 
