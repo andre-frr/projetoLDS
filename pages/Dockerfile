@@ -7,7 +7,6 @@ RUN npm install
 
 COPY lib ./lib
 COPY pages/api ./pages/api
-COPY pages/next.config.mjs .
 
 RUN npm run build
 
