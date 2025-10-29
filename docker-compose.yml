@@ -2,7 +2,6 @@ services:
   db:
     image: postgres:16
     container_name: postgresql
-    restart: always
     env_file:
       - ./.env
     ports:
