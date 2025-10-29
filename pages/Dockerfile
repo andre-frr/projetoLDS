@@ -5,8 +5,9 @@ WORKDIR /app
 COPY pages/package*.json ./
 RUN npm install
 
-COPY pages/. .
-COPY lib ../lib
+COPY lib ./lib
+COPY pages/api ./pages/api
+COPY pages/next.config.mjs .
 
 RUN npm run build
 
