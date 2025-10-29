@@ -1,6 +1,6 @@
 import express from "express";
 import { ApolloServer } from "@apollo/server";
-import { expressMiddleware } from "@as-integrations/express";
+import { expressMiddleware } from "@apollo/server/express4";
 import dotenv from "dotenv";
 import { typeDefs } from "./schema.js";
 import { resolvers } from "./resolvers.js";
