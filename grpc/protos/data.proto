@@ -1,0 +1,16 @@
+syntax = "proto3";
+
+package data;
+
+service Data {
+  rpc GetData (DataRequest) returns (DataResponse);
+}
+
+message DataRequest {
+  string id = 1;
+}
+
+message DataResponse {
+  string data = 1;
+}
+

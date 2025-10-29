@@ -35,5 +35,27 @@ services:
       - graphql
       - db
 
+  service-a:
+    build:
+      context: ./service-a
+      dockerfile: Dockerfile
+    container_name: service-a
+    ports:
+      - "50051:50051"
+    env_file:
+      - ./.env
+    depends_on:
+      - db
+
+  service-b:
+    build:
+      context: ./grpc/service-b
+      dockerfile: Dockerfile
+    container_name: service-b
+    env_file:
+      - ./.env
+    depends_on:
+      - service-a
+
 volumes:
   db_data:
