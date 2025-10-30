@@ -1,19 +1,19 @@
-import { gql } from "graphql-tag";
+import {gql} from "graphql-tag";
 
 export const typeDefs = gql`
-  type Departamento {
-    id_dep: ID!
-    nome: String!
-    sigla: String!
-    ativo: Boolean
-  }
+    type Departamento {
+        id_dep: ID!
+        nome: String!
+        sigla: String!
+        ativo: Boolean
+    }
 
-  type Query {
-    departamentos: [Departamento]
-    departamento(id_dep: ID!): Departamento
-  }
+    type Query {
+        departamentos: [Departamento]
+        departamento(id_dep: ID!): Departamento
+    }
 
-  type Mutation {
-    adicionarDepartamento(nome: String!, sigla: String!): Departamento
-  }
+    type Mutation {
+        adicionarDepartamento(nome: String!, sigla: String!): Departamento
+    }
 `;
