@@ -3,7 +3,7 @@ const protoLoader = require('@grpc/proto-loader');
 const {Pool} = require('pg');
 
 const pool = new Pool({
-    connectionString: "postgres://user:password@db:5432/database",
+    connectionString: process.env.DATABASE_URL,
 });
 
 const PROTO_PATH = './protos/data.proto';
@@ -19,10 +19,24 @@ const packageDefinition = protoLoader.loadSync(
     });
 const data_proto = grpc.loadPackageDefinition(packageDefinition).data;
 
-function getData(call, callback) {
-    // For now, just return a dummy response
-    // In the future, this will query the database
-    callback(null, {data: "Data for " + call.request.id});
+async function getData(call, callback) {
+    const {id} = call.request;
+    try {
+        const {rows} = await pool.query('SELECT * FROM departamento WHERE id_dep = $1', [id]);
+        if (rows.length === 0) {
+            return callback({
+                code: grpc.status.NOT_FOUND,
+                details: "Not found"
+            });
+        }
+        callback(null, {data: JSON.stringify(rows[0])});
+    } catch (e) {
+        console.error(e);
+        callback({
+            code: grpc.status.INTERNAL,
+            details: "Internal server error"
+        });
+    }
 }
 
 function main() {
