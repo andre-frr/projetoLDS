@@ -15,7 +15,7 @@ const packageDefinition = protoLoader.loadSync(
 const data_proto = grpc.loadPackageDefinition(packageDefinition).data;
 
 function main() {
-    const client = new data_proto.Data('localhost:50051',
+    const client = new data_proto.Data('service-a:50051',
         grpc.credentials.createInsecure());
     client.getData({id: '1'}, function (err, response) {
         if (err) {
