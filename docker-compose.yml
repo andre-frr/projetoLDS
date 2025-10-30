@@ -37,7 +37,7 @@ services:
 
   service-a:
     build:
-      context: ./service-a
+      context: ./grpc/service-a
       dockerfile: Dockerfile
     container_name: service-a
     ports:
