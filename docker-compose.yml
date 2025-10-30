@@ -37,8 +37,8 @@ services:
 
   service-a:
     build:
-      context: ./grpc/service-a
-      dockerfile: Dockerfile
+      context: ./grpc
+      dockerfile: service-a/Dockerfile
     container_name: service-a
     ports:
       - "50051:50051"
@@ -49,8 +49,8 @@ services:
 
   service-b:
     build:
-      context: ./grpc/service-b
-      dockerfile: Dockerfile
+      context: ./grpc
+      dockerfile: service-b/Dockerfile
     container_name: service-b
     env_file:
       - ./.env

@@ -2,12 +2,12 @@ FROM node:18
 
 WORKDIR /usr/src/app
 
-COPY package*.json ./
+COPY service-a/package*.json ./
 
 RUN npm install
 
-COPY ../protos ./protos
-COPY . .
+COPY protos ./protos
+COPY service-a/. .
 
 EXPOSE 50051
 
