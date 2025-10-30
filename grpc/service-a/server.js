@@ -6,7 +6,7 @@ const pool = new Pool({
     connectionString: "postgres://user:password@db:5432/database",
 });
 
-const PROTO_PATH = '../protos/data.proto';
+const PROTO_PATH = './protos/data.proto';
 
 const packageDefinition = protoLoader.loadSync(
     PROTO_PATH,

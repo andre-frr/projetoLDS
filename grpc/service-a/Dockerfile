@@ -6,6 +6,7 @@ COPY package*.json ./
 
 RUN npm install
 
+COPY ../protos ./protos
 COPY . .
 
 EXPOSE 50051
