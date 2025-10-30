@@ -28,11 +28,13 @@ function getData(call, callback) {
 function main() {
     const server = new grpc.Server();
     server.addService(data_proto.Data.service, {getData: getData});
-    server.bindAsync('0.0.0.0:50051', grpc.ServerCredentials.createInsecure(), () => {
-        server.start();
-        console.log('Server running at http://0.0.0.0:50051');
+    server.bindAsync('0.0.0.0:50051', grpc.ServerCredentials.createInsecure(), (err, port) => {
+        if (err) {
+            console.error(`Server error: ${err.message}`);
+            return;
+        }
+        console.log(`Server running at http://0.0.0.0:${port}`);
     });
 }
 
 main();
-
