@@ -52,6 +52,8 @@ services:
       context: ./grpc
       dockerfile: service-b/Dockerfile
     container_name: service-b
+    ports:
+      - "3001:3001"
     env_file:
       - ./.env
     depends_on:
