@@ -61,7 +61,9 @@ async function getData(call, callback) {
                     params.push(ids[key]);
                     return `${key} = $${index + 1}`;
                 });
-                query = `SELECT * FROM ${tableName} WHERE ${whereClauses.join(' AND ')}`;
+                query = `SELECT *
+                         FROM ${tableName}
+                         WHERE ${whereClauses.join(' AND ')}`;
             } catch (e) {
                 return callback({
                     code: grpc.status.INVALID_ARGUMENT,
@@ -69,11 +71,14 @@ async function getData(call, callback) {
                 });
             }
         } else {
-            query = `SELECT * FROM ${tableName} WHERE ${pk} = $1`;
+            query = `SELECT *
+                     FROM ${tableName}
+                     WHERE ${pk} = $1`;
             params.push(id);
         }
     } else {
-        query = `SELECT * FROM ${tableName}`;
+        query = `SELECT *
+                 FROM ${tableName}`;
     }
 
     try {

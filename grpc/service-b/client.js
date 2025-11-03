@@ -19,7 +19,7 @@ function main(tableName, id, callback) {
     const client = new data_proto.Data('service-a:50051',
         grpc.credentials.createInsecure());
 
-    const request = { tableName };
+    const request = {tableName};
     if (id) {
         request.id = id;
     }
@@ -39,7 +39,7 @@ const app = express();
 const port = 3001;
 
 app.get('/', (req, res) => {
-    const { table, id } = req.query;
+    const {table, id} = req.query;
     if (!table) {
         return res.status(400).send("Query parameter 'table' is required.");
     }
