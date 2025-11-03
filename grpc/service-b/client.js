@@ -15,10 +15,16 @@ const packageDefinition = protoLoader.loadSync(
     });
 const data_proto = grpc.loadPackageDefinition(packageDefinition).data;
 
-function main(callback) {
+function main(tableName, id, callback) {
     const client = new data_proto.Data('service-a:50051',
         grpc.credentials.createInsecure());
-    client.getData({id: '1'}, function (err, response) {
+
+    const request = { tableName };
+    if (id) {
+        request.id = id;
+    }
+
+    client.getData(request, function (err, response) {
         if (err) {
             console.error(err);
             callback(err, null);
@@ -33,7 +39,11 @@ const app = express();
 const port = 3001;
 
 app.get('/', (req, res) => {
-    main((err, data) => {
+    const { table, id } = req.query;
+    if (!table) {
+        return res.status(400).send("Query parameter 'table' is required.");
+    }
+    main(table, id, (err, data) => {
         if (err) {
             return res.status(500).send(err);
         }

@@ -7,7 +7,8 @@ service Data {
 }
 
 message DataRequest {
-  string id = 1;
+  string tableName = 1;
+  optional string id = 2;
 }
 
 message DataResponse {
