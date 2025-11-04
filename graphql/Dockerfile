@@ -1,7 +1,6 @@
 # Stage 1: dependencies
 FROM node:20-alpine AS deps
 WORKDIR /app
-RUN npm install -g npm@latest
 COPY package*.json ./
 RUN npm install --omit=dev
 
