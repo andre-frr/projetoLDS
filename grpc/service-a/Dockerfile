@@ -1,5 +1,7 @@
 FROM node:18
 
+RUN npm install -g npm@latest
+
 WORKDIR /usr/src/app
 
 COPY service-a/package*.json ./
