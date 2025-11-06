@@ -3,29 +3,26 @@ import pool from '../../../lib/db.js';
 export default async function handler(req, res) {
     const {id} = req.query;
     if (req.method === 'GET') {
-        const result = await pool.query('SELECT * FROM uc WHERE id_uc=$1', [id]);
-        if (!result.rows.length) return res.status(404).json({error: 'Not found'});
-        return res.status(200).json(result.rows[0]);
-    } else if (req.method === 'PUT') {
-        const {nome, id_curso, id_area, ano_curso, sem_curso, ects, ativo} = req.body;
-        const result = await pool.query(
-            `UPDATE uc
-             SET nome=$1,
-                 id_curso=$2,
-                 id_area=$3,
-                 ano_curso=$4,
-                 sem_curso=$5,
-                 ects=$6,
-                 ativo=$7
-             WHERE id_uc = $8 RETURNING *`,
-            [nome, id_curso, id_area, ano_curso, sem_curso, ects, ativo, id]
-        );
-        return res.status(200).json(result.rows[0]);
-    } else if (req.method === 'DELETE') {
-        await pool.query('DELETE FROM uc WHERE id_uc=$1', [id]);
-        return res.status(204).end();
+        try {
+            const ucResult = await pool.query('SELECT * FROM uc WHERE id_uc=$1', [id]);
+            if (ucResult.rowCount === 0) {
+                return res.status(404).json({message: 'UC inexistente.'});
+            }
+
+            const horasResult = await pool.query('SELECT tipo, horas FROM uc_horas_contacto WHERE id_uc=$1', [id]);
+
+            const ucDetails = {
+                ...ucResult.rows[0],
+                horas_contacto: horasResult.rows
+            };
+
+            return res.status(200).json(ucDetails);
+        } catch (error) {
+            console.error(error);
+            return res.status(500).json({message: 'Internal Server Error'});
+        }
     } else {
-        res.setHeader('Allow', ['GET', 'PUT', 'DELETE']);
+        res.setHeader('Allow', ['GET']);
         return res.status(405).end(`Method ${req.method} Not Allowed`);
     }
 }

@@ -11,7 +11,7 @@ export default async function handler(req, res) {
                     [id]
                 );
                 if (rows.length === 0) {
-                    return res.status(404).json({error: 'Area_cientifica not found'});
+                    return res.status(404).json({message: 'Área científica inexistente.'});
                 }
                 res.status(200).json(rows[0]);
             } catch (err) {
@@ -22,13 +22,29 @@ export default async function handler(req, res) {
         case 'PUT':
             try {
                 const {nome, sigla, id_dep, ativo} = req.body;
+
+                const areaExists = await pool.query('SELECT * FROM area_cientifica WHERE id_area = $1', [id]);
+                if (areaExists.rowCount === 0) {
+                    return res.status(404).json({message: 'Área científica inexistente.'});
+                }
+
+                if (id_dep) {
+                    const depExists = await pool.query('SELECT 1 FROM departamento WHERE id_dep = $1', [id_dep]);
+                    if (depExists.rowCount === 0) {
+                        return res.status(400).json({message: 'Departamento inexistente.'});
+                    }
+                }
+
+                const current = areaExists.rows[0];
+                const newNome = nome ?? current.nome;
+                const newSigla = sigla ?? current.sigla;
+                const newIdDep = id_dep ?? current.id_dep;
+                const newAtivo = ativo ?? current.ativo;
+
                 const {rows} = await pool.query(
                     'UPDATE area_cientifica SET nome=$1, sigla=$2, id_dep=$3, ativo=$4 WHERE id_area=$5 RETURNING *',
-                    [nome, sigla, id_dep, ativo ?? true, id]
+                    [newNome, newSigla, newIdDep, newAtivo, id]
                 );
-                if (rows.length === 0) {
-                    return res.status(404).json({error: 'Area_cientifica not found'});
-                }
                 res.status(200).json(rows[0]);
             } catch (err) {
                 res.status(500).json({error: err.message});
@@ -42,7 +58,7 @@ export default async function handler(req, res) {
                     [id]
                 );
                 if (rowCount === 0) {
-                    return res.status(404).json({error: 'Area_cientifica not found'});
+                    return res.status(404).json({message: 'Área científica inexistente.'});
                 }
                 res.status(204).end();
             } catch (err) {
@@ -51,6 +67,7 @@ export default async function handler(req, res) {
             break;
 
         default:
+            res.setHeader('Allow', ['GET', 'PUT', 'DELETE']);
             res.status(405).json({error: 'Method not allowed'});
     }
 }
