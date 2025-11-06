@@ -1,17 +1,17 @@
 import express from 'express';
-import { ApolloServer } from '@apollo/server';
-import { expressMiddleware } from '@as-integrations/express5';
+import {ApolloServer} from '@apollo/server';
+import {expressMiddleware} from '@as-integrations/express5';
 import dotenv from 'dotenv';
 import cors from 'cors';
 import bodyParser from 'body-parser';
-import { typeDefs } from './schema.js';
-import { resolvers } from './resolvers.js';
+import {typeDefs} from './schema.js';
+import {resolvers} from './resolvers.js';
 
 dotenv.config();
 
 const app = express();
 
-const server = new ApolloServer({ typeDefs, resolvers });
+const server = new ApolloServer({typeDefs, resolvers});
 await server.start();
 
 app.use(

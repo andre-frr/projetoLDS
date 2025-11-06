@@ -2,12 +2,17 @@
   "name": "nextjs-api",
   "version": "1.0.0",
   "scripts": {
-    "dev": "next dev",
+    "dev": "node server.js",
     "build": "next build",
     "start": "next start"
   },
   "dependencies": {
+    "argon2": "^0.44.0",
+    "cors": "^2.8.5",
     "dotenv": "^17.2.3",
+    "express": "^5.1.0",
+    "https": "^1.0.0",
+    "jsonwebtoken": "^9.0.2",
     "next": "^16.0.1",
     "pg": "^8.16.3",
     "react": "^19.2.0",
