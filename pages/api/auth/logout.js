@@ -1,6 +1,6 @@
 import pool from '../../../lib/db';
 import {verifyToken} from '../../../lib/auth';
-import corsMiddleware from '../../middleware/cors';
+import corsMiddleware from '../../../lib/cors';
 import {auditLog} from '../../../lib/audit';
 
 export default async function handler(req, res) {

@@ -2,7 +2,7 @@ import jwt from 'jsonwebtoken';
 import argon2 from 'argon2';
 import pool from '../../../lib/db';
 import {randomUUID} from 'crypto';
-import corsMiddleware from '../../middleware/cors';
+import corsMiddleware from '../../../lib/cors';
 import {auditLog} from '../../../lib/audit';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
