@@ -1,4 +1,4 @@
-import pool from '../../../lib/db';
+import pool from '@/lib/db';
 
 const API_KEY_HEADER = 'x-api-key';
 

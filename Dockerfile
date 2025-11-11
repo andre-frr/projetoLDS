@@ -16,11 +16,6 @@ COPY lib ./lib
 COPY certs ./certs
 COPY --from=builder /app/.next ./.next
 COPY --from=builder /app/pages/public ./public
-RUN npm install @babel/cli @babel/preset-env
-RUN npm run build:lib
-
-EXPOSE 3000
-CMD ["node", "dist/server.js"]
 
 EXPOSE 3000
 CMD ["node", "server.js"]

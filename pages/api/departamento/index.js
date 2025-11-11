@@ -1,6 +1,6 @@
-import pool from '../../../lib/db.js';
+import pool from '@/lib/db.js';
 
-import {requireRole} from '../../../lib/middleware.js';
+import {requireRole} from '@/lib/middleware.js';
 
 const postHandler = async (req, res) => {
     const {nome, sigla} = req.body;
