@@ -3,9 +3,9 @@ FROM node:20-alpine AS builder
 WORKDIR /app
 COPY pages/package.json pages/package-lock.json* ./
 RUN npm install
+COPY pages/jsconfig.json ./jsconfig.json
+COPY pages/next.config.js ./next.config.js
 COPY pages/api ./pages/api
-COPY pages/jsconfig.json ./
-COPY pages/next.config.js ./
 COPY lib ./lib
 
 RUN npm run build
