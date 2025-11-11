@@ -46,7 +46,7 @@ Para executar este projeto, necessita de ter o seguinte software instalado:
 3. **Aceda aos Serviços:**
    Após os contentores estarem a funcionar, os serviços estarão disponíveis nos seguintes endereços:
 
-    - **API REST (Next.js)**: [http://localhost:3000/api](http://localhost:3000/api)
+    - **API REST (Next.js)**: [https://localhost:3000/api](https://localhost:3000/api)
     - **GraphQL Playground**: [http://localhost:4000/graphql](http://localhost:4000/graphql)
 
 ## Detalhes dos Serviços

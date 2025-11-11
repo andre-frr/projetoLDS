@@ -1,7 +1,7 @@
-import pool from '../../../lib/db';
-import {verifyToken} from '../../../lib/auth';
-import corsMiddleware from '../../../lib/cors';
-import {auditLog} from '../../../lib/audit';
+import pool from '@/lib/db.js';
+import {verifyToken} from '@/lib/auth.js';
+import corsMiddleware from '@/lib/cors.js';
+import {auditLog} from '@/lib/audit.js';
 
 export default async function handler(req, res) {
     await new Promise((resolve, reject) => {

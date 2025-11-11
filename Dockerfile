@@ -5,6 +5,7 @@ COPY pages/package.json pages/package-lock.json* ./
 RUN npm install
 COPY pages/api ./pages/api
 COPY pages/jsconfig.json ./
+COPY pages/next.config.js ./
 COPY lib ./lib
 
 RUN npm run build

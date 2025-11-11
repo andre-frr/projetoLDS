@@ -1,9 +1,9 @@
 import jwt from 'jsonwebtoken';
 import argon2 from 'argon2';
-import pool from '@/lib/db';
+import pool from '@/lib/db.js';
 import {randomUUID} from 'crypto';
-import corsMiddleware from '@/lib/cors';
-import {auditLog} from '@/lib/audit';
+import corsMiddleware from '@/lib/cors.js';
+import {auditLog} from '@/lib/audit.js';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
 const REFRESH_TOKEN_SECRET = process.env.REFRESH_TOKEN_SECRET || 'your-refresh-secret-key';
