@@ -1,10 +1,10 @@
 # Stage 1: Build the Next.js app
 FROM node:20-alpine AS builder
 WORKDIR /app
-COPY pages/package.json pages/package-lock.json* ./
+COPY pages/ ./pages
+WORKDIR /app/pages
 RUN npm install
-COPY pages/ ./
-COPY lib ./lib
+COPY ../lib ./lib
 
 RUN npm run build
 
@@ -16,8 +16,8 @@ RUN npm install --omit=dev
 COPY server.js .
 COPY lib ./lib
 COPY certs ./certs
-COPY --from=builder /app/.next ./.next
-COPY --from=builder /app/public ./public
+COPY --from=builder /app/pages/.next ./.next
+COPY --from=builder /app/pages/public ./public
 COPY pages/ ./pages
 
 EXPOSE 3000
