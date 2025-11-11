@@ -12,7 +12,7 @@ services:
 
   graphql:
     build:
-      context: .
+      context: ./graphql
       dockerfile: Dockerfile
     container_name: graphql
     ports:
