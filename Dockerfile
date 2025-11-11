@@ -5,6 +5,8 @@ COPY pages/package.json pages/package-lock.json* ./
 RUN npm install
 COPY pages/jsconfig.json ./jsconfig.json
 COPY pages/next.config.js ./next.config.js
+# Create pages directory and copy api into it
+RUN mkdir -p pages
 COPY pages/api ./pages/api
 COPY lib ./lib
 
@@ -20,7 +22,9 @@ COPY lib ./lib
 COPY certs ./certs
 COPY pages/jsconfig.json ./pages/jsconfig.json
 COPY pages/next.config.js ./pages/next.config.js
-COPY pages/api ./pages/api
+# Create pages directory and copy api into it
+RUN mkdir -p pages/pages
+COPY pages/api ./pages/pages/api
 COPY --from=builder /build/.next ./pages/.next
 
 EXPOSE 3000
