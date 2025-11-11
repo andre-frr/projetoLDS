@@ -6,11 +6,6 @@ WORKDIR /app
 COPY pages/ ./pages/
 WORKDIR /app/pages
 RUN npm install
-
-# Copy the shared lib directory
-COPY ../lib ./lib
-
-# Build the Next.js application
 RUN npm run build
 
 # Stage 2: Create the final production image
