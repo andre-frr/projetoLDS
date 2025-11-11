@@ -13,10 +13,8 @@ RUN npm run build
 # Stage 2: Create the final production image
 FROM node:20-alpine
 WORKDIR /app
-COPY pages/package.json ./pages/
-WORKDIR /app/pages
+COPY pages/package.json ./package.json
 RUN npm install --omit=dev
-WORKDIR /app
 COPY server.js .
 COPY lib ./lib
 COPY certs ./certs
@@ -24,7 +22,6 @@ COPY pages/jsconfig.json ./pages/jsconfig.json
 COPY pages/next.config.js ./pages/next.config.js
 COPY pages/api ./pages/api
 COPY --from=builder /build/.next ./pages/.next
-COPY --from=builder /build/node_modules ./pages/node_modules
 
 EXPOSE 3000
 CMD ["node", "server.js"]
