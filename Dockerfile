@@ -1,9 +1,8 @@
-# Stage 1: Build the Next.js app from the 'pages' directory
+# Stage 1: Build the Next.js app
 FROM node:20-alpine AS builder
 WORKDIR /app
-COPY pages/package*.json ./
+COPY pages/ ./
 RUN npm install
-COPY pages ./pages
 RUN npm run build
 
 # Stage 2: Create the final production image
@@ -15,7 +14,7 @@ COPY server.js .
 COPY lib ./lib
 COPY certs ./certs
 COPY --from=builder /app/.next ./.next
-COPY --from=builder /app/pages/public ./public
+COPY --from=builder /app/public ./public
 
 EXPOSE 3000
 CMD ["node", "server.js"]
