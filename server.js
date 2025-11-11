@@ -1,11 +1,11 @@
-const {createServer} = require('https');
-const {parse} = require('url');
+const { createServer } = require('https');
+const { parse } = require('url');
 const next = require('next');
 const fs = require('fs');
 const path = require('path');
 
 const dev = process.env.NODE_ENV !== 'production';
-const app = next({dev, dir: './pages'});
+const app = next({ dev, dir: './pages' });
 const handle = app.getRequestHandler();
 
 const httpsOptions = {
@@ -22,4 +22,3 @@ app.prepare().then(() => {
         console.log('> Ready on https://localhost:3000');
     });
 });
-
