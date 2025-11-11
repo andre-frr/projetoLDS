@@ -5,7 +5,6 @@ COPY pages/package.json pages/package-lock.json* ./
 RUN npm install
 COPY pages/ ./
 COPY lib ./lib
-COPY certs ./certs
 
 RUN npm run build
 
@@ -14,11 +13,12 @@ FROM node:20-alpine
 WORKDIR /app
 COPY pages/package.json .
 RUN npm install --omit=dev
-COPY --from=builder /app/.next ./.next
-COPY --from=builder /app/public ./public
 COPY server.js .
 COPY lib ./lib
 COPY certs ./certs
+COPY --from=builder /app/.next ./.next
+COPY --from=builder /app/public ./public
+COPY pages/ ./pages
 
 EXPOSE 3000
 CMD ["node", "server.js"]

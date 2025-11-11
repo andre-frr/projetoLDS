@@ -12,7 +12,7 @@ services:
 
   graphql:
     build:
-      context: ./graphql
+      context: .
       dockerfile: Dockerfile
     container_name: graphql
     ports:
@@ -24,8 +24,8 @@ services:
 
   nextjs:
     build:
-      context: ./pages
-      dockerfile: ../Dockerfile
+      context: .
+      dockerfile: Dockerfile
     container_name: nextjs
     ports:
       - "3000:3000"
