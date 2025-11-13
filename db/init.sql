@@ -184,14 +184,6 @@ CREATE TABLE IF NOT EXISTS refresh_tokens
 CREATE INDEX IF NOT EXISTS idx_sessions_user_id ON sessions (user_id);
 CREATE INDEX IF NOT EXISTS idx_refresh_tokens_session_id ON refresh_tokens (session_id);
 
--- Seeds de utilizadores
-INSERT INTO users (email, password_hash, role)
-VALUES ('admin@localhost', '$2b$10$examplehash', 'Administrador'),
-       ('coordenador@localhost', '$2b$10$examplehash', 'Coordenador'),
-       ('docente@localhost', '$2b$10$examplehash', 'Docente'),
-       ('convidado@localhost', '$2b$10$examplehash', 'Convidado')
-ON CONFLICT (email) DO NOTHING;
-
 -- Adicionar coluna para API Key
 CREATE TABLE IF NOT EXISTS api_keys
 (
@@ -201,6 +193,3 @@ CREATE TABLE IF NOT EXISTS api_keys
     is_active   BOOLEAN     DEFAULT TRUE,
     created_at  TIMESTAMPTZ DEFAULT NOW()
 );
-
-INSERT INTO api_keys (api_key, description)
-VALUES ('public_api_key_example', 'Chave de API para acesso público');
