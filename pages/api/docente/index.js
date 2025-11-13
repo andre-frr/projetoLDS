@@ -31,7 +31,7 @@ export default async function handler(req, res) {
 
             const areaExists = await pool.query('SELECT 1 FROM area_cientifica WHERE id_area = $1', [id_area]);
             if (areaExists.rowCount === 0) {
-                return res.status(400).json({message: 'Área científica inexistente.'});
+                return res.status(404).json({message: 'Área científica inexistente.'});
             }
 
             const result = await pool.query(

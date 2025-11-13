@@ -16,6 +16,11 @@ export default async function handler(req, res) {
         }
 
         try {
+            const siglaExists = await pool.query('SELECT 1 FROM curso WHERE sigla = $1', [sigla]);
+            if (siglaExists.rowCount > 0) {
+                return res.status(409).json({message: 'Sigla duplicada.'});
+            }
+
             const result = await pool.query(
                 'INSERT INTO curso (nome, sigla, tipo, ativo) VALUES ($1, $2, $3, TRUE) RETURNING *',
                 [nome, sigla, tipo]

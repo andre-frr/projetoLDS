@@ -15,7 +15,7 @@ export default async function handler(req, res) {
                 }
                 res.status(200).json(rows[0]);
             } catch (err) {
-                res.status(500).json({error: err.message});
+                res.status(500).json({message: err.message});
             }
             break;
 
@@ -31,7 +31,14 @@ export default async function handler(req, res) {
                 if (id_dep) {
                     const depExists = await pool.query('SELECT 1 FROM departamento WHERE id_dep = $1', [id_dep]);
                     if (depExists.rowCount === 0) {
-                        return res.status(400).json({message: 'Departamento inexistente.'});
+                        return res.status(404).json({message: 'Departamento inexistente.'});
+                    }
+                }
+
+                if (sigla && sigla !== areaExists.rows[0].sigla) {
+                    const siglaExists = await pool.query('SELECT 1 FROM area_cientifica WHERE sigla = $1 AND id_area != $2', [sigla, id]);
+                    if (siglaExists.rowCount > 0) {
+                        return res.status(409).json({message: 'Sigla duplicada.'});
                     }
                 }
 
@@ -47,7 +54,7 @@ export default async function handler(req, res) {
                 );
                 res.status(200).json(rows[0]);
             } catch (err) {
-                res.status(500).json({error: err.message});
+                res.status(500).json({message: err.message});
             }
             break;
 
@@ -62,12 +69,12 @@ export default async function handler(req, res) {
                 }
                 res.status(204).end();
             } catch (err) {
-                res.status(500).json({error: err.message});
+                res.status(500).json({message: err.message});
             }
             break;
 
         default:
             res.setHeader('Allow', ['GET', 'PUT', 'DELETE']);
-            res.status(405).json({error: 'Method not allowed'});
+            res.status(405).json({message: 'Method not allowed'});
     }
 }

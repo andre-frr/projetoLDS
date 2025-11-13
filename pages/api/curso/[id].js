@@ -23,6 +23,13 @@ export default async function handler(req, res) {
                 return res.status(404).json({message: 'Curso inexistente.'});
             }
 
+            if (sigla && sigla !== cursoExists.rows[0].sigla) {
+                const siglaExists = await pool.query('SELECT 1 FROM curso WHERE sigla = $1 AND id_curso != $2', [sigla, id]);
+                if (siglaExists.rowCount > 0) {
+                    return res.status(409).json({message: 'Sigla duplicada.'});
+                }
+            }
+
             const current = cursoExists.rows[0];
             const newNome = nome ?? current.nome;
             const newSigla = sigla ?? current.sigla;
