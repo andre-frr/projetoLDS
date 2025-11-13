@@ -16,8 +16,25 @@ export default async function handler(req, res) {
             console.error(error);
             return res.status(500).json({message: 'Internal Server Error'});
         }
+    } else if (req.method === 'POST') {
+        try {
+            const { nome, ano_curso, ects } = req.body;
+
+            const result = await pool.query(
+                'INSERT INTO uc (nome, ano_curso, ects) VALUES ($1, $2, $3) RETURNING *',
+                [nome, ano_curso, ects]
+            );
+
+            return res.status(201).json({
+                message: 'UC criada com sucesso',
+                uc: result.rows[0]
+            });
+        } catch (error) {
+            console.error(error);
+            return res.status(500).json({message: 'Internal Server Error'});
+        }
     } else {
-        res.setHeader('Allow', ['GET']);
+        res.setHeader('Allow', ['GET', 'POST']);
         return res.status(405).end(`Method ${req.method} Not Allowed`);
     }
 }
