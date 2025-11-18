@@ -1,10 +1,12 @@
-import 'package:flutter_dotenv/flutter_dotenv.dart';
-
 class ApiConstants {
-  static String get baseUrl =>
-      dotenv.env['API_BASE_URL'] ?? 'https://localhost:3000/api';
-  static String get graphqlUrl =>
-      dotenv.env['GRAPHQL_URL'] ?? 'https://localhost:3000/graphql';
+  static const String baseUrl = String.fromEnvironment(
+    'API_BASE_URL',
+    defaultValue: 'http://localhost:3000/api',
+  );
+  static const String graphqlUrl = String.fromEnvironment(
+    'GRAPHQL_URL',
+    defaultValue: 'http://localhost:4000/graphql',
+  );
 
   // API Endpoints
   static const String login = '/auth/login';
