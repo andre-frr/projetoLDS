@@ -1,11 +1,11 @@
-import 'dart:io';
-
 import 'package:dio/dio.dart';
-import 'package:dio/io.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:jwt_decoder/jwt_decoder.dart';
 import 'package:logger/logger.dart';
 
 import '../utils/constants.dart';
+// Conditional import for platform-specific HTTP client configuration
+import 'http_client_stub.dart' if (dart.library.io) 'http_client_io.dart';
 import 'storage_service.dart';
 
 class DioService {
@@ -33,20 +33,20 @@ class DioService {
       ),
     );
 
-    // Allow self-signed certificates for development (localhost)
-    (_dio.httpClientAdapter as IOHttpClientAdapter).createHttpClient = () {
-      final client = HttpClient();
-      client.badCertificateCallback =
-          (X509Certificate cert, String host, int port) => true;
-      return client;
-    };
+    // Configure platform-specific HTTP client
+    try {
+      configureDioForPlatform(_dio);
+      _logger.i('HTTP client configured for platform');
+    } catch (e) {
+      _logger.w('Could not configure HTTP client adapter: $e');
+    }
 
     // Add interceptors
     _dio.interceptors.add(
       InterceptorsWrapper(onRequest: _onRequest, onError: _onError),
     );
 
-    _logger.i('DioService initialized');
+    _logger.i('DioService initialized for ${kIsWeb ? "Web" : "Mobile"}');
   }
 
   Future<void> _onRequest(

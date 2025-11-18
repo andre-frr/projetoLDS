@@ -12,10 +12,14 @@ import 'utils/constants.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-
-  // Initialize services
-  DioService().initialize();
-  await GraphQLService().initialize();
+  // Initialize services with error handling
+  try {
+    DioService().initialize();
+    await GraphQLService().initialize();
+  } catch (e) {
+    print('Error initializing services: $e');
+    // Continue anyway - services will be retried on first use
+  }
 
   runApp(const MyApp());
 }
