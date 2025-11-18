@@ -7,7 +7,11 @@ node_modules
 coverage
 
 # Production
-build
+# Ignore Flutter build except web output
+mobile/build/*
+!mobile/build/web/
+!mobile/build/web/**
+
 .next
 out
 *.tsbuildinfo
