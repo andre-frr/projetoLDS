@@ -1,13 +1,13 @@
-import pool from '@/lib/db.js';
+import GrpcClient from '@/lib/grpc-client.js';
 
 export default async function handler(req, res) {
     if (req.method === 'GET') {
         try {
-            const result = await pool.query('SELECT id_curso, nome, sigla, tipo, ativo FROM curso');
-            return res.status(200).json(result.rows);
+            const result = await GrpcClient.getAll('curso');
+            return res.status(200).json(result);
         } catch (error) {
-            console.error(error);
-            return res.status(500).json({message: 'Internal Server Error'});
+            const statusCode = error.statusCode || 500;
+            return res.status(statusCode).json({message: error.message || 'Internal Server Error'});
         }
     } else if (req.method === 'POST') {
         const {nome, sigla, tipo} = req.body;
@@ -16,19 +16,21 @@ export default async function handler(req, res) {
         }
 
         try {
-            const siglaExists = await pool.query('SELECT 1 FROM curso WHERE sigla = $1', [sigla]);
-            if (siglaExists.rowCount > 0) {
+            const existing = await GrpcClient.getAll('curso', {filters: {sigla}});
+            if (existing.length > 0) {
                 return res.status(409).json({message: 'Sigla duplicada.'});
             }
 
-            const result = await pool.query(
-                'INSERT INTO curso (nome, sigla, tipo, ativo) VALUES ($1, $2, $3, TRUE) RETURNING *',
-                [nome, sigla, tipo]
-            );
-            return res.status(201).json(result.rows[0]);
+            const result = await GrpcClient.create('curso', {
+                nome,
+                sigla,
+                tipo,
+                ativo: true
+            });
+            return res.status(201).json(result);
         } catch (error) {
-            console.error(error);
-            return res.status(500).json({message: 'Internal Server Error'});
+            const statusCode = error.statusCode || 500;
+            return res.status(statusCode).json({message: error.message || 'Internal Server Error'});
         }
     } else {
         res.setHeader('Allow', ['GET', 'POST']);

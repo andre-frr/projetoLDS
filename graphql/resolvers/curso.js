@@ -1,46 +1,22 @@
-import pkg from "pg";
-
-const {Pool} = pkg;
-
-const pool = new Pool({
-    connectionString: process.env.DATABASE_URL,
-});
+import {getWithRelations, getAll, executeCustomQuery} from '../grpc-helper.js';
 
 export const cursoResolvers = {
     Query: {
-        cursos: async () => {
-            const res = await pool.query("SELECT * FROM curso");
-            return res.rows;
+        // Complex query: Curso with all UCs nested
+        cursoWithUCs: async (_, {id_curso}) => {
+            return await getWithRelations('curso', id_curso, ['ucs']);
         },
-        curso: async (_, {id_curso}) => {
-            const res = await pool.query("SELECT * FROM curso WHERE id_curso = $1", [id_curso]);
-            return res.rows[0];
-        },
-    },
-    Mutation: {
-        adicionarCurso: async (_, {nome, sigla, tipo}) => {
-            const res = await pool.query(
-                "INSERT INTO curso (nome, sigla, tipo) VALUES ($1, $2, $3) RETURNING *",
-                [nome, sigla, tipo]
-            );
-            return res.rows[0];
-        },
-        atualizarCurso: async (_, {id_curso, nome, sigla, tipo, ativo}) => {
-            const res = await pool.query(
-                "UPDATE curso SET nome = $1, sigla = $2, tipo = $3, ativo = $4 WHERE id_curso = $5 RETURNING *",
-                [nome, sigla, tipo, ativo, id_curso]
-            );
-            return res.rows[0];
-        },
-        removerCurso: async (_, {id_curso}) => {
-            const res = await pool.query("DELETE FROM curso WHERE id_curso = $1 RETURNING *", [id_curso]);
-            return res.rows[0];
+        // Complex query: All cursos with area info and UC count
+        cursosWithAreaAndUCs: async (_, {ativo}) => {
+            return await executeCustomQuery('cursosWithAreaAndUCs', {ativo});
         },
     },
     Curso: {
         ucs: async (curso) => {
-            const res = await pool.query("SELECT * FROM uc WHERE id_curso = $1", [curso.id_curso]);
-            return res.rows;
+            if (curso.ucs) {
+                return curso.ucs;
+            }
+            return await getAll('uc', {id_curso: curso.id_curso});
         }
     }
 };

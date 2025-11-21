@@ -1,18 +1,20 @@
-import pool from '@/lib/db.js';
+import GrpcClient from '@/lib/grpc-client.js';
 
 export default async function handler(req, res) {
     const {id_uc, tipo} = req.query;
 
+    // Composite key: {id_uc, tipo}
+    const compositeKey = {id_uc: parseInt(id_uc), tipo};
+
     if (req.method === 'GET') {
         try {
-            const result = await pool.query('SELECT * FROM uc_horas_contacto WHERE id_uc=$1 AND tipo=$2;', [id_uc, tipo]);
-            if (!result.rows.length) {
-                return res.status(404).json({message: 'Horas de contacto inexistentes.'});
-            }
-            return res.status(200).json(result.rows[0]);
+            const result = await GrpcClient.getById('uc_horas_contacto', compositeKey);
+            return res.status(200).json(result);
         } catch (error) {
-            console.error(error);
-            return res.status(500).json({message: 'Internal Server Error'});
+            const statusCode = error.statusCode || 500;
+            return res.status(statusCode).json({
+                message: statusCode === 404 ? 'Horas de contacto inexistentes.' : error.message
+            });
         }
     } else if (req.method === 'PUT') {
         const {horas} = req.body;
@@ -22,30 +24,23 @@ export default async function handler(req, res) {
         }
 
         try {
-            const result = await pool.query(
-                'UPDATE uc_horas_contacto SET horas=$1 WHERE id_uc=$2 AND tipo=$3 RETURNING *;',
-                [horas, id_uc, tipo]
-            );
-
-            if (!result.rows.length) {
-                return res.status(404).json({message: 'Horas de contacto inexistentes.'});
-            }
-
-            return res.status(200).json(result.rows[0]);
+            const result = await GrpcClient.update('uc_horas_contacto', compositeKey, {horas});
+            return res.status(200).json(result);
         } catch (error) {
-            console.error(error);
-            return res.status(500).json({message: 'Internal Server Error'});
+            const statusCode = error.statusCode || 500;
+            return res.status(statusCode).json({
+                message: statusCode === 404 ? 'Horas de contacto inexistentes.' : error.message
+            });
         }
     } else if (req.method === 'DELETE') {
         try {
-            const result = await pool.query('DELETE FROM uc_horas_contacto WHERE id_uc=$1 AND tipo=$2 RETURNING *;', [id_uc, tipo]);
-            if (!result.rows.length) {
-                return res.status(404).json({message: 'Horas de contacto inexistentes.'});
-            }
+            await GrpcClient.delete('uc_horas_contacto', compositeKey);
             return res.status(204).end();
         } catch (error) {
-            console.error(error);
-            return res.status(500).json({message: 'Internal Server Error'});
+            const statusCode = error.statusCode || 500;
+            return res.status(statusCode).json({
+                message: statusCode === 404 ? 'Horas de contacto inexistentes.' : error.message
+            });
         }
     } else {
         res.setHeader('Allow', ['GET', 'PUT', 'DELETE']);

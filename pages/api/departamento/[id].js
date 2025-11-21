@@ -1,65 +1,74 @@
-import pool from '@/lib/db.js';
+import GrpcClient from '@/lib/grpc-client.js';
 
 export default async function handler(req, res) {
     const {id} = req.query;
 
     if (req.method === 'GET') {
         try {
-            const result = await pool.query('SELECT * FROM departamento WHERE id_dep=$1', [id]);
-            if (result.rowCount === 0) {
-                return res.status(404).json({message: 'Departamento inexistente.'});
-            }
-            return res.status(200).json(result.rows[0]);
+            const result = await GrpcClient.getById('departamento', id);
+            return res.status(200).json(result);
         } catch (error) {
             console.error(error);
-            return res.status(500).json({message: 'Internal Server Error'});
+            const statusCode = error.statusCode || 500;
+            return res.status(statusCode).json({
+                message: statusCode === 404 ? 'Departamento inexistente.' : 'Internal Server Error'
+            });
         }
     } else if (req.method === 'PUT') {
         const {nome, sigla, ativo} = req.body;
 
         try {
-            const depExists = await pool.query('SELECT * FROM departamento WHERE id_dep = $1', [id]);
-            if (depExists.rowCount === 0) {
-                return res.status(404).json({message: 'Departamento inexistente.'});
-            }
+            // Get current data
+            const current = await GrpcClient.getById('departamento', id);
 
-            if (sigla && sigla !== depExists.rows[0].sigla) {
-                const siglaExists = await pool.query('SELECT 1 FROM departamento WHERE sigla = $1 AND id_dep != $2', [sigla, id]);
-                if (siglaExists.rowCount > 0) {
+            // Check sigla uniqueness if changed
+            if (sigla && sigla !== current.sigla) {
+                const existing = await GrpcClient.getAll('departamento', {
+                    filters: {sigla}
+                });
+                const duplicate = existing.find(dep => dep.id_dep !== parseInt(id));
+                if (duplicate) {
                     return res.status(409).json({message: 'Sigla duplicada.'});
                 }
             }
 
-            const current = depExists.rows[0];
-            const newNome = nome ?? current.nome;
-            const newSigla = sigla ?? current.sigla;
-            const newAtivo = ativo ?? current.ativo;
+            // Prepare update data
+            const updateData = {
+                nome: nome ?? current.nome,
+                sigla: sigla ?? current.sigla,
+                ativo: ativo ?? current.ativo
+            };
 
-            const result = await pool.query(
-                'UPDATE departamento SET nome=$1, sigla=$2, ativo=$3 WHERE id_dep=$4 RETURNING *',
-                [newNome, newSigla, newAtivo, id]
-            );
-            return res.status(200).json(result.rows[0]);
+            const result = await GrpcClient.update('departamento', id, updateData);
+            return res.status(200).json(result);
         } catch (error) {
             console.error(error);
-            return res.status(500).json({message: 'Internal Server Error'});
+            const statusCode = error.statusCode || 500;
+            return res.status(statusCode).json({
+                message: statusCode === 404 ? 'Departamento inexistente.' : 'Internal Server Error'
+            });
         }
     } else if (req.method === 'DELETE') {
         try {
-            const areas = await pool.query('SELECT 1 FROM area_cientifica WHERE id_dep = $1', [id]);
-            if (areas.rowCount > 0) {
-                await pool.query('UPDATE departamento SET ativo=false WHERE id_dep=$1', [id]);
+            // Check if department has areas
+            const areas = await GrpcClient.getAll('area_cientifica', {
+                filters: {id_dep: parseInt(id)}
+            });
+
+            if (areas.length > 0) {
+                // Mark as inactive instead of deleting
+                await GrpcClient.update('departamento', id, {ativo: false});
                 return res.status(200).json({message: 'Departamento marcado como inativo.'});
             } else {
-                const result = await pool.query('DELETE FROM departamento WHERE id_dep=$1', [id]);
-                if (result.rowCount === 0) {
-                    return res.status(404).json({message: 'Departamento inexistente.'});
-                }
+                await GrpcClient.delete('departamento', id);
                 return res.status(204).end();
             }
         } catch (error) {
             console.error(error);
-            return res.status(500).json({message: 'Internal Server Error'});
+            const statusCode = error.statusCode || 500;
+            return res.status(statusCode).json({
+                message: statusCode === 404 ? 'Departamento inexistente.' : 'Internal Server Error'
+            });
         }
     } else {
         res.setHeader('Allow', ['GET', 'PUT', 'DELETE']);

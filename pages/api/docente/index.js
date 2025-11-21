@@ -1,21 +1,17 @@
-import pool from '@/lib/db.js';
+import GrpcClient from '@/lib/grpc-client.js';
 
 export default async function handler(req, res) {
     if (req.method === 'GET') {
         const {incluirInativos} = req.query;
-        let query = 'SELECT * FROM docente';
-        const params = [];
-
-        if (incluirInativos !== 'true') {
-            query += ' WHERE ativo = true';
-        }
+        const filters = incluirInativos !== 'true' ? {ativo: true} : undefined;
 
         try {
-            const result = await pool.query(query, params);
-            return res.status(200).json(result.rows);
+            const result = await GrpcClient.getAll('docente', {filters});
+            return res.status(200).json(result);
         } catch (error) {
             console.error(error);
-            return res.status(500).json({message: 'Internal Server Error'});
+            const statusCode = error.statusCode || 500;
+            return res.status(statusCode).json({message: error.message || 'Internal Server Error'});
         }
     } else if (req.method === 'POST') {
         const {nome, email, id_area, convidado} = req.body;
@@ -24,25 +20,36 @@ export default async function handler(req, res) {
         }
 
         try {
-            const emailExists = await pool.query('SELECT 1 FROM docente WHERE email = $1', [email]);
-            if (emailExists.rowCount > 0) {
+            // Check email uniqueness
+            const emailExists = await GrpcClient.getAll('docente', {
+                filters: {email}
+            });
+            if (emailExists.length > 0) {
                 return res.status(409).json({message: 'Email duplicado.'});
             }
 
-            const areaExists = await pool.query('SELECT 1 FROM area_cientifica WHERE id_area = $1', [id_area]);
-            if (areaExists.rowCount === 0) {
-                return res.status(404).json({message: 'Área científica inexistente.'});
+            // Validate area exists
+            try {
+                await GrpcClient.getById('area_cientifica', id_area);
+            } catch (error) {
+                if (error.statusCode === 404) {
+                    return res.status(404).json({message: 'Área científica inexistente.'});
+                }
+                throw error;
             }
 
-            const result = await pool.query(
-                `INSERT INTO docente (nome, email, id_area, ativo, convidado)
-                 VALUES ($1, $2, $3, true, $4) RETURNING *`,
-                [nome, email, id_area, convidado ?? false]
-            );
-            return res.status(201).json(result.rows[0]);
+            const result = await GrpcClient.create('docente', {
+                nome,
+                email,
+                id_area,
+                ativo: true,
+                convidado: convidado ?? false
+            });
+            return res.status(201).json(result);
         } catch (error) {
             console.error(error);
-            return res.status(500).json({message: 'Internal Server Error'});
+            const statusCode = error.statusCode || 500;
+            return res.status(statusCode).json({message: error.message || 'Internal Server Error'});
         }
     } else {
         res.setHeader('Allow', ['GET', 'POST']);

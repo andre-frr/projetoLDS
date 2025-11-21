@@ -11,8 +11,11 @@ class AuthProvider with ChangeNotifier {
   String? _errorMessage;
 
   UserModel? get user => _user;
+
   bool get isLoading => _isLoading;
+
   String? get errorMessage => _errorMessage;
+
   bool get isAuthenticated => _user != null;
 
   // Initialize - check if user is already logged in

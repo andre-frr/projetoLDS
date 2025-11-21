@@ -16,39 +16,41 @@ e gRPC, e inclui um sistema completo de autenticação JWT.
 - ✅ **GraphQL Gateway** para agregação de dados
 - ✅ **Comunicação gRPC** entre microserviços
 
-## Estrutura do Projeto
+## 📂 Estrutura do Projeto
 
-O projeto está dividido nos seguintes serviços de backend:
+### Serviços Backend
 
-- **`pages/`**: Serviço backend Next.js que expõe a API REST principal
-  - `api/auth/`: Endpoints de autenticação (login, register, logout, refresh)
-  - `api/departamento/`: Gestão de departamentos
-  - `api/area_cientifica/`: Gestão de áreas científicas
-  - `api/curso/`: Gestão de cursos
-  - `api/uc/`: Gestão de unidades curriculares
-  - `api/docente/`: Gestão de docentes
-  - `api/graus/`: Gestão de graus académicos
-  - `api/docente_grau/`: Gestão de graus de docentes
-  - `api/historico_cv_docente/`: Gestão de histórico de CVs
-  - `api/uc_horas_contacto/`: Gestão de horas de contacto
+- **`pages/api/`**: API REST (Next.js) - Operações CRUD simples via gRPC
+  - `auth/`: Autenticação (login, register, logout, refresh)
+  - `departamento/`: Gestão de departamentos
+  - `area_cientifica/`: Gestão de áreas científicas
+  - `curso/`: Gestão de cursos
+  - `uc/`: Gestão de unidades curriculares
+  - `docente/`: Gestão de docentes
+  - `graus/`: Gestão de graus académicos
+  - `docente_grau/`: Gestão de graus de docentes
+  - `historico_cv_docente/`: Gestão de histórico de CVs
+  - `uc_horas_contacto/`: Gestão de horas de contacto
 
-- **`lib/`**: Biblioteca partilhada com utilitários
-  - `auth.js`: Funções de autenticação e verificação de tokens
-  - `db.js`: Configuração da pool de conexões PostgreSQL
-  - `middleware.js`: Middleware de autenticação e autorização
+- **`graphql/`**: Serviço GraphQL - Queries complexas e aninhadas
+  - `grpc-helper.js`: Cliente gRPC para GraphQL
+  - `resolvers/`: Resolvers para queries complexas
+  - `types/`: Definições de tipos GraphQL (sem mutations CRUD)
+
+- **`grpc/service-a/`**: Microserviço gRPC - Única fonte de acesso a dados
+  - `server.js`: Implementação completa de CRUD + queries complexas
+  - `protos/data.proto`: Definições Protocol Buffers
+
+- **`lib/`**: Bibliotecas partilhadas
+  - `grpc-client.js`: Cliente gRPC para Next.js
+  - `auth.js`: Autenticação e verificação de tokens
+  - `middleware.js`: Middleware de autenticação
   - `cors.js`: Configuração CORS
   - `audit.js`: Sistema de auditoria
 
-- **`graphql/`**: Serviço GraphQL que atua como gateway
-  - `schema.js`: Definição do schema GraphQL
-  - `resolvers.js`: Resolvers principais
-  - `types/`: Definições de tipos GraphQL
-  - `resolvers/`: Resolvers específicos por entidade
+- **`mobile/`**: Aplicação Flutter Web (cliente)
 
-- **`grpc/`**: Serviços gRPC para comunicação interna
-  - `service-a/`: Serviço gRPC de exemplo
-  - `service-b/`: Cliente gRPC de exemplo
-  - `protos/`: Definições Protocol Buffers
+### Documentação
 
 - **`db/`**: Scripts de base de dados
   - `init.sql`: Schema completo e dados iniciais
@@ -86,35 +88,126 @@ Isto criará `localhost+1.pem` e `localhost+1-key.pem` na pasta `certs/`.
 
 ## Como Executar
 
-1. **Clone o repositório para a sua máquina local:**
+### Pré-requisitos
+
+- Docker e Docker Compose instalados
+- **Certificados SSL** (obrigatório - veja secção acima)
+
+### Passos de Instalação
+
+1. **Clone o repositório:**
    ```bash
    git clone <URL_DO_REPOSITORIO>
    cd projetoLDS
    ```
 
-2. **Configure os certificados SSL** (veja secção acima)
-
-3. **Configure as variáveis de ambiente (opcional):**
+2. **Configure os certificados SSL:**
    
-   Crie um ficheiro `.env` na raiz do projeto:
+   Siga as instruções na secção "Configuração de Certificados SSL" acima para gerar os certificados com mkcert.
+
+3. **Gere secrets seguros para autenticação JWT:**
+   
+   Execute os seguintes comandos para gerar secrets aleatórios e seguros:
+   
+   ```bash
+   # Gerar JWT_SECRET
+   node -e "console.log(require('crypto').randomBytes(64).toString('hex'))"
+   
+   # Gerar REFRESH_TOKEN_SECRET (executar novamente para obter um valor diferente)
+   node -e "console.log(require('crypto').randomBytes(64).toString('hex'))"
+   ```
+   
+   **Copie os valores gerados** - vão ser necessários no próximo passo.
+
+4. **Configure as variáveis de ambiente:**
+   
+   Crie um ficheiro `.env` na raiz do projeto com as seguintes variáveis:
    ```env
-   JWT_SECRET=your-secret-key
-   REFRESH_TOKEN_SECRET=your-refresh-secret-key
-   DATABASE_URL=postgresql://user:password@postgres:5432/gestao_academica
+   # JWT Authentication (cole os secrets gerados no passo anterior)
+   JWT_SECRET=<cole-o-primeiro-secret-gerado>
+   REFRESH_TOKEN_SECRET=<cole-o-segundo-secret-gerado>
+   
+   # PostgreSQL
+   POSTGRES_USER=<seu-usuario>
+   POSTGRES_PASSWORD=<sua-senha-forte>
+   POSTGRES_DB=projetoLDS
+   
+   # Database URL for services
+   DATABASE_URL=postgresql://<seu-usuario>:<sua-senha>@db:5432/projetoLDS
+   
+   # gRPC Service Address
+   GRPC_SERVICE_ADDRESS=service-a:50051
    ```
+   
+   **⚠️ IMPORTANTE**: 
+   - Os secrets JWT são usados pelo servidor para assinar e verificar tokens de todos os utilizadores
+   - Use secrets **diferentes** para desenvolvimento e produção
+   - Se alterar estes valores depois, todas as sessões de utilizadores serão invalidadas
+   - Nunca commit o ficheiro `.env` no repositório!
+   - O ficheiro `.env` já está incluído no `.gitignore`
 
-4. **Construa e inicie os contentores Docker:**
+5. **Construa e inicie todos os serviços:**
    ```bash
-   docker compose up --build -d
+   docker-compose up --build -d
    ```
 
-5. **Para uma limpeza completa antes de iniciar:**
+6. **Verifique o estado dos serviços:**
    ```bash
-   docker compose down --volumes && docker system prune -a --volumes
-   docker compose up --build -d
+   docker-compose ps
    ```
 
-6. **Aceda à API em:** `https://localhost:3000`
+7. **Aguarde alguns segundos para os serviços iniciarem** e aceda:
+   - **REST API**: `https://localhost:3000/api`
+   - **GraphQL Playground**: `http://localhost:4000/graphql`
+
+### Comandos Úteis
+
+```bash
+# Ver logs de todos os serviços
+docker-compose logs -f
+
+# Ver logs de um serviço específico
+docker-compose logs -f nextjs
+docker-compose logs -f graphql
+docker-compose logs -f service-a
+docker-compose logs -f db
+
+# Parar os serviços
+docker-compose down
+
+# Parar e remover volumes (limpeza completa)
+docker-compose down --volumes
+
+# Reiniciar um serviço específico
+docker-compose restart nextjs
+
+# Reconstruir após mudanças no código
+docker-compose up --build -d
+```
+
+### Limpeza Completa
+
+Se precisar de limpar completamente e recomeçar:
+
+```bash
+# Parar tudo e remover volumes
+docker-compose down --volumes
+
+# Remover imagens Docker antigas
+docker system prune -a --volumes -f
+
+# Reconstruir e iniciar
+docker-compose up --build -d
+```
+
+### Portas dos Serviços
+
+| Serviço            | Porta | URL                                |
+|--------------------|-------|------------------------------------|
+| **Next.js Gateway**| 3000  | https://localhost:3000             |
+| **GraphQL**        | 4000  | http://localhost:4000/graphql      |
+| **gRPC Service**   | 50051 | localhost:50051 (interno)          |
+| **PostgreSQL**     | 5432  | localhost:5432                     |
 
 ## Endpoints da API
 
@@ -276,12 +369,78 @@ Todas as referências a outras entidades são validadas:
 
 ## Detalhes dos Serviços
 
-| Serviço            | Tecnologia          | Porta | Descrição                                              |
+| Serviço            | Tecnologia          | Porta | Responsabilidade                                       |
 |--------------------|---------------------|-------|--------------------------------------------------------|
-| **API REST**       | Next.js 16          | 3000  | API REST principal com JWT auth                        |
-| **API GraphQL**    | Node.js, Apollo     | 4000  | Gateway que agrega dados dos microserviços             |
-| **gRPC Service A** | Node.js, gRPC       | 50051 | Serviço interno para operações específicas             |
-| **Base de Dados**  | PostgreSQL 15       | 5432  | Armazena todos os dados relacionais da aplicação       |
+| **Next.js Gateway**| Next.js 16          | 3000  | REST API (CRUD) + Proxy GraphQL, via gRPC             |
+| **GraphQL Service**| Node.js, Apollo     | 4000  | Queries complexas aninhadas, via gRPC                  |
+| **gRPC Service**   | Node.js, gRPC       | 50051 | Fonte única de dados, todas operações de BD            |
+| **PostgreSQL**     | PostgreSQL 15       | 5432  | Base de dados relacional                               |
+
+### Fluxo de Comunicação
+
+```
+Cliente → Next.js (REST/GraphQL) → gRPC Service → PostgreSQL
+```
+
+- **Cliente**: Faz pedidos HTTP/HTTPS
+- **Next.js**: Recebe pedidos, valida, comunica via gRPC
+- **GraphQL**: Resolve queries complexas, comunica via gRPC
+- **gRPC**: Executa operações na base de dados
+- **PostgreSQL**: Armazena dados
+
+## Troubleshooting
+
+### Verificar estado dos serviços
+
+```bash
+# Com Docker
+docker-compose ps
+
+# Verificar logs
+docker-compose logs -f service-a  # gRPC
+docker-compose logs -f graphql    # GraphQL
+docker-compose logs -f nextjs     # Next.js
+docker-compose logs -f db         # PostgreSQL
+```
+
+### Problemas Comuns
+
+#### 1. gRPC Service não conecta
+```bash
+# Verificar se o serviço está a correr
+nc -zv localhost 50051
+
+# Verificar logs
+docker logs service-a
+```
+
+#### 2. GraphQL não encontra proto files
+- Verificar se `grpc/protos/data.proto` existe
+- Verificar path em `graphql/grpc-helper.js`
+- Rebuild Docker images: `docker-compose up --build`
+
+#### 3. REST API retorna 500
+- Verificar se gRPC service está ativo
+- Verificar variável `GRPC_SERVICE_ADDRESS` no `.env`
+- Verificar logs: `docker logs nextjs`
+
+#### 4. Base de dados não inicializa
+```bash
+# Limpar volumes e reconstruir
+docker-compose down --volumes
+docker-compose up --build -d
+```
+
+#### 5. Porta já em uso
+```bash
+# Verificar processos na porta
+netstat -ano | findstr :3000
+netstat -ano | findstr :4000
+netstat -ano | findstr :50051
+
+# Matar processo (Windows)
+taskkill /PID <PID> /F
+```
 
 ## Tecnologias Utilizadas
 
@@ -304,6 +463,8 @@ Todas as referências a outras entidades são validadas:
 ## Testes
 
 ### Testar Autenticação com Postman/cURL
+
+**Nota:** Os exemplos abaixo usam credenciais de teste. Substitua pelos seus próprios valores.
 
 **1. Registar um novo utilizador:**
 ```bash
@@ -344,58 +505,17 @@ curl -k -X POST https://localhost:3000/api/departamento \
   -d '{"nome":"Engenharia","sigla":"ENG","ativo":true}'
 ```
 
-## Comandos Úteis
+## Acesso à Base de Dados
+
+Para aceder diretamente à base de dados PostgreSQL:
 
 ```bash
-# Iniciar todos os serviços em background
-docker compose up --build -d
+# Via Docker
+docker-compose exec db psql -U admin -d gestao_academica
 
-# Parar e limpar completamente (volumes + imagens)
-docker compose down --volumes && docker system prune -a --volumes
-
-# Ver logs do serviço Next.js
-docker compose logs -f nextjs
-
-# Ver logs de todos os serviços
-docker compose logs -f
-
-# Reiniciar um serviço específico
-docker compose restart nextjs
-
-# Parar todos os serviços (manter volumes)
-docker compose down
-
-# Executar comando na base de dados
-docker compose exec postgres psql -U user -d gestao_academica
-
-# Ver status dos contentores
-docker compose ps
+# Via cliente local (se tiver psql instalado)
+psql -h localhost -p 5432 -U admin -d gestao_academica
 ```
-
-## Troubleshooting
-
-### Problema: Porta já em uso
-```bash
-# Verificar processos usando a porta 3000
-netstat -ano | findstr :3000
-
-# Parar o processo ou alterar a porta no docker-compose.yml
-```
-
-### Problema: Erro de conexão à base de dados
-```bash
-# Verificar se o PostgreSQL está a correr
-docker compose ps
-
-# Ver logs do PostgreSQL
-docker compose logs postgres
-
-# Reiniciar o serviço
-docker compose restart postgres
-```
-
-### Problema: Certificados SSL
-Os certificados em `certs/` são para desenvolvimento local. Para produção, use certificados válidos.
 
 ## Estrutura da Base de Dados
 
@@ -416,9 +536,35 @@ A base de dados inclui as seguintes tabelas principais:
 
 Veja `db/init.sql` para o schema completo.
 
+## Testar GraphQL
+
+Aceda ao GraphQL Playground em `http://localhost:4000/graphql` e teste queries:
+
+```graphql
+# Exemplo: Obter todos os departamentos com estatísticas
+query {
+  departamentosWithStats {
+    id_dep
+    nome
+    sigla
+    num_areas
+    num_docentes
+    num_cursos
+  }
+}
+```
+
 ## Frontend
 
-O frontend para esta aplicação será desenvolvido separadamente utilizando o **Flutter Framework**.
+A aplicação inclui um frontend desenvolvido em **Flutter Web** na pasta `mobile/`.
+
+Para desenvolver o frontend:
+```bash
+cd mobile
+flutter pub get
+flutter run -d chrome
+```
+
 
 ## Sobre o Projeto
 
@@ -426,25 +572,41 @@ Este é um **projeto académico** desenvolvido no âmbito da disciplina de Labor
 
 ### Objetivos do Projeto
 
-- Implementar uma arquitetura de microserviços completa
-- Desenvolver APIs REST, GraphQL e gRPC
-- Implementar sistema de autenticação e autorização robusto
-- Aplicar boas práticas de desenvolvimento de software
-- Utilizar containerização com Docker
-- Implementar validações e tratamento de erros padronizado
+- ✅ Implementar arquitetura de microserviços com separação clara de responsabilidades
+- ✅ Desenvolver APIs REST (18 endpoints), GraphQL (8 queries) e gRPC (7 operações)
+- ✅ Implementar sistema de autenticação e autorização robusto com JWT
+- ✅ Aplicar boas práticas de desenvolvimento (clean code, SOLID, DRY)
+- ✅ Utilizar containerização com Docker e orquestração com Docker Compose
+- ✅ Implementar validações completas e tratamento de erros padronizado
+- ✅ Criar fonte única de verdade para dados com gRPC microservice
 
 ### Tecnologias Exploradas
 
 Este projeto serve como demonstração prática de:
-- **Backend moderno** com Next.js 16 e Node.js
-- **Bases de dados relacionais** com PostgreSQL
+- **Arquitetura de Microserviços** com comunicação gRPC
+- **API REST** com Next.js 16 e Node.js (100% via gRPC)
+- **GraphQL** com Apollo Server para queries complexas
+- **gRPC** como camada de acesso a dados
+- **Base de dados relacional** PostgreSQL 15
 - **Segurança** com JWT, Argon2 e RBAC
-- **Microserviços** com comunicação GraphQL e gRPC
-- **DevOps** com Docker e Docker Compose
-- **Documentação** técnica completa
+- **DevOps** com Docker, Docker Compose e multi-stage builds
+- **Protocol Buffers** para definições de tipos
+- **Documentação técnica** completa e estruturada
+
+### Arquitetura Final
+
+```
+Flutter Web ←→ Next.js Gateway ←→ gRPC Microservice ←→ PostgreSQL
+                (REST + GraphQL)
+```
+
+- **Separação de Responsabilidades**: REST para CRUD, GraphQL para queries complexas
+- **Fonte Única de Dados**: Todas as operações de BD via gRPC
+- **Escalabilidade**: Serviços independentes que podem escalar individualmente
+- **Type Safety**: Definições proto garantem consistência entre serviços
 
 ---
 
 **Projeto Académico** | Laboratório de Desenvolvimento de Software  
-**Última atualização:** 13 de Novembro de 2025
-
+**Arquitetura:** Microserviços com gRPC, REST e GraphQL  
+**Última atualização:** 21 de Novembro de 2025

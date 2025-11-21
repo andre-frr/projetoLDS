@@ -1,17 +1,15 @@
-import pool from '@/lib/db.js';
+import GrpcClient from '@/lib/grpc-client.js';
 
 export default async function handler(req, res) {
     switch (req.method) {
         case 'GET':
             try {
-                const {rows} = await pool.query(`
-                    SELECT ac.id_area, ac.nome, ac.sigla, d.nome as nome_departamento
-                    FROM area_cientifica ac
-                             JOIN departamento d ON ac.id_dep = d.id_dep
-                `);
+                // Use custom query for joined data
+                const rows = await GrpcClient.executeCustomQuery('areasWithDepartamento');
                 res.status(200).json(rows);
             } catch (err) {
-                res.status(500).json({error: err.message});
+                const statusCode = err.statusCode || 500;
+                res.status(statusCode).json({error: err.message});
             }
             break;
 
@@ -22,18 +20,26 @@ export default async function handler(req, res) {
                     return res.status(400).json({message: 'Dados mal formatados.'});
                 }
 
-                const depExists = await pool.query('SELECT 1 FROM departamento WHERE id_dep = $1', [id_dep]);
-                if (depExists.rowCount === 0) {
-                    return res.status(400).json({message: 'Departamento inexistente.'});
+                // Validate department exists
+                try {
+                    await GrpcClient.getById('departamento', id_dep);
+                } catch (error) {
+                    if (error.statusCode === 404) {
+                        return res.status(400).json({message: 'Departamento inexistente.'});
+                    }
+                    throw error;
                 }
 
-                const {rows} = await pool.query(
-                    'INSERT INTO area_cientifica (nome, sigla, id_dep, ativo) VALUES ($1, $2, $3, TRUE) RETURNING *',
-                    [nome, sigla, id_dep]
-                );
-                res.status(201).json(rows[0]);
+                const result = await GrpcClient.create('area_cientifica', {
+                    nome,
+                    sigla,
+                    id_dep,
+                    ativo: true
+                });
+                res.status(201).json(result);
             } catch (err) {
-                res.status(500).json({error: err.message});
+                const statusCode = err.statusCode || 500;
+                res.status(statusCode).json({error: err.message});
             }
             break;
 

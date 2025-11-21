@@ -15,16 +15,16 @@ export const cursoTypeDefs = gql`
         tipo: CursoTipo!
         ativo: Boolean
         ucs: [Uc]
+        # Additional fields from joined queries
+        area_nome: String
+        num_ucs: Int
     }
 
     type Query {
-        cursos: [Curso]
-        curso(id_curso: ID!): Curso
-    }
+        # Complex nested query: Curso with all UCs
+        cursoWithUCs(id_curso: ID!): Curso
 
-    type Mutation {
-        adicionarCurso(nome: String!, sigla: String!, tipo: CursoTipo!): Curso
-        atualizarCurso(id_curso: ID!, nome: String, sigla: String, tipo: CursoTipo, ativo: Boolean): Curso
-        removerCurso(id_curso: ID!): Curso
+        # Complex joined query: All cursos with area info and UC count
+        cursosWithAreaAndUCs(ativo: Boolean): [Curso]
     }
 `;

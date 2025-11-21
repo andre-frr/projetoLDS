@@ -1,80 +1,70 @@
-import pool from '@/lib/db.js';
+import GrpcClient from '@/lib/grpc-client.js';
 
 export default async function handler(req, res) {
     const {id} = req.query;
 
-    switch (req.method) {
-        case 'GET':
-            try {
-                const {rows} = await pool.query(
-                    'SELECT * FROM area_cientifica WHERE id_area = $1',
-                    [id]
-                );
-                if (rows.length === 0) {
-                    return res.status(404).json({message: 'Área científica inexistente.'});
-                }
-                res.status(200).json(rows[0]);
-            } catch (err) {
-                res.status(500).json({message: err.message});
-            }
-            break;
+    if (req.method === 'GET') {
+        try {
+            const result = await GrpcClient.getById('area_cientifica', id);
+            return res.status(200).json(result);
+        } catch (error) {
+            const statusCode = error.statusCode || 500;
+            return res.status(statusCode).json({
+                message: statusCode === 404 ? 'Área científica inexistente.' : error.message
+            });
+        }
+    } else if (req.method === 'PUT') {
+        const {nome, sigla, id_dep, ativo} = req.body;
 
-        case 'PUT':
-            try {
-                const {nome, sigla, id_dep, ativo} = req.body;
+        try {
+            const current = await GrpcClient.getById('area_cientifica', id);
 
-                const areaExists = await pool.query('SELECT * FROM area_cientifica WHERE id_area = $1', [id]);
-                if (areaExists.rowCount === 0) {
-                    return res.status(404).json({message: 'Área científica inexistente.'});
-                }
-
-                if (id_dep) {
-                    const depExists = await pool.query('SELECT 1 FROM departamento WHERE id_dep = $1', [id_dep]);
-                    if (depExists.rowCount === 0) {
+            if (id_dep && id_dep !== current.id_dep) {
+                try {
+                    await GrpcClient.getById('departamento', id_dep);
+                } catch (error) {
+                    if (error.statusCode === 404) {
                         return res.status(404).json({message: 'Departamento inexistente.'});
                     }
+                    throw error;
                 }
-
-                if (sigla && sigla !== areaExists.rows[0].sigla) {
-                    const siglaExists = await pool.query('SELECT 1 FROM area_cientifica WHERE sigla = $1 AND id_area != $2', [sigla, id]);
-                    if (siglaExists.rowCount > 0) {
-                        return res.status(409).json({message: 'Sigla duplicada.'});
-                    }
-                }
-
-                const current = areaExists.rows[0];
-                const newNome = nome ?? current.nome;
-                const newSigla = sigla ?? current.sigla;
-                const newIdDep = id_dep ?? current.id_dep;
-                const newAtivo = ativo ?? current.ativo;
-
-                const {rows} = await pool.query(
-                    'UPDATE area_cientifica SET nome=$1, sigla=$2, id_dep=$3, ativo=$4 WHERE id_area=$5 RETURNING *',
-                    [newNome, newSigla, newIdDep, newAtivo, id]
-                );
-                res.status(200).json(rows[0]);
-            } catch (err) {
-                res.status(500).json({message: err.message});
             }
-            break;
 
-        case 'DELETE':
-            try {
-                const {rowCount} = await pool.query(
-                    'DELETE FROM area_cientifica WHERE id_area=$1',
-                    [id]
-                );
-                if (rowCount === 0) {
-                    return res.status(404).json({message: 'Área científica inexistente.'});
+            if (sigla && sigla !== current.sigla) {
+                const existing = await GrpcClient.getAll('area_cientifica', {filters: {sigla}});
+                const duplicate = existing.find(area => area.id_area !== parseInt(id));
+                if (duplicate) {
+                    return res.status(409).json({message: 'Sigla duplicada.'});
                 }
-                res.status(204).end();
-            } catch (err) {
-                res.status(500).json({message: err.message});
             }
-            break;
 
-        default:
-            res.setHeader('Allow', ['GET', 'PUT', 'DELETE']);
-            res.status(405).json({message: 'Method not allowed'});
+            const updateData = {
+                nome: nome ?? current.nome,
+                sigla: sigla ?? current.sigla,
+                id_dep: id_dep ?? current.id_dep,
+                ativo: ativo ?? current.ativo
+            };
+
+            const result = await GrpcClient.update('area_cientifica', id, updateData);
+            return res.status(200).json(result);
+        } catch (error) {
+            const statusCode = error.statusCode || 500;
+            return res.status(statusCode).json({
+                message: statusCode === 404 ? 'Área científica inexistente.' : error.message
+            });
+        }
+    } else if (req.method === 'DELETE') {
+        try {
+            await GrpcClient.delete('area_cientifica', id);
+            return res.status(204).end();
+        } catch (error) {
+            const statusCode = error.statusCode || 500;
+            return res.status(statusCode).json({
+                message: statusCode === 404 ? 'Área científica inexistente.' : error.message
+            });
+        }
+    } else {
+        res.setHeader('Allow', ['GET', 'PUT', 'DELETE']);
+        return res.status(405).end(`Method ${req.method} Not Allowed`);
     }
 }

@@ -5,20 +5,17 @@ export const areaCientificaTypeDefs = gql`
         id_area: ID!
         nome: String!
         sigla: String!
-        departamento: Departamento!
+        id_dep: Int!
+        departamento: Departamento
         ativo: Boolean
         docentes: [Docente]
         ucs: [Uc]
+        # Additional fields from joined queries
+        nome_departamento: String
     }
 
     type Query {
-        areasCientificas: [AreaCientifica]
-        areaCientifica(id_area: ID!): AreaCientifica
-    }
-
-    type Mutation {
-        adicionarAreaCientifica(nome: String!, sigla: String!, id_dep: Int!): AreaCientifica
-        atualizarAreaCientifica(id_area: ID!, nome: String, sigla: String, id_dep: Int, ativo: Boolean): AreaCientifica
-        removerAreaCientifica(id_area: ID!): AreaCientifica
+        # Complex nested query: Area with department and related entities
+        areaWithDetails(id_area: ID!): AreaCientifica
     }
 `;

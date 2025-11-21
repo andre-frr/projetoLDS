@@ -1,5 +1,4 @@
-import pool from '@/lib/db.js';
-
+import GrpcClient from '@/lib/grpc-client.js';
 import {requireRole} from '@/lib/middleware.js';
 
 const postHandler = async (req, res) => {
@@ -9,30 +8,38 @@ const postHandler = async (req, res) => {
     }
 
     try {
-        const siglaExists = await pool.query('SELECT 1 FROM departamento WHERE sigla = $1', [sigla]);
-        if (siglaExists.rowCount > 0) {
+        // Check if sigla already exists
+        const existing = await GrpcClient.getAll('departamento', {
+            filters: {sigla}
+        });
+
+        if (existing.length > 0) {
             return res.status(409).json({message: 'Sigla duplicada.'});
         }
 
-        const result = await pool.query(
-            'INSERT INTO departamento (nome, sigla, ativo) VALUES($1, $2, TRUE) RETURNING *',
-            [nome, sigla]
-        );
-        return res.status(201).json(result.rows[0]);
+        const result = await GrpcClient.create('departamento', {
+            nome,
+            sigla,
+            ativo: true
+        });
+
+        return res.status(201).json(result);
     } catch (error) {
         console.error(error);
-        return res.status(500).json({message: 'Internal Server Error'});
+        const statusCode = error.statusCode || 500;
+        return res.status(statusCode).json({message: error.message || 'Internal Server Error'});
     }
 };
 
 export default async function handler(req, res) {
     if (req.method === 'GET') {
         try {
-            const result = await pool.query('SELECT id_dep, nome, sigla, ativo FROM departamento');
-            return res.status(200).json(result.rows);
+            const result = await GrpcClient.getAll('departamento');
+            return res.status(200).json(result);
         } catch (error) {
             console.error(error);
-            return res.status(500).json({message: 'Internal Server Error'});
+            const statusCode = error.statusCode || 500;
+            return res.status(statusCode).json({message: error.message || 'Internal Server Error'});
         }
     } else if (req.method === 'POST') {
         return requireRole('Administrador')(postHandler)(req, res);

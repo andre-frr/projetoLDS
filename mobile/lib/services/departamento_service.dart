@@ -6,7 +6,9 @@ import 'dio_service.dart';
 
 class DepartamentoService {
   static final DepartamentoService _instance = DepartamentoService._internal();
+
   factory DepartamentoService() => _instance;
+
   DepartamentoService._internal();
 
   final _dio = DioService().dio;

@@ -3,15 +3,63 @@ syntax = "proto3";
 package data;
 
 service Data {
-  rpc GetData (DataRequest) returns (DataResponse);
+  // Read operations
+  rpc GetAll (GetAllRequest) returns (DataResponse);
+  rpc GetById (GetByIdRequest) returns (DataResponse);
+
+  // Write operations
+  rpc Create (CreateRequest) returns (DataResponse);
+  rpc Update (UpdateRequest) returns (DataResponse);
+  rpc Delete (DeleteRequest) returns (DataResponse);
+
+  // Complex queries
+  rpc GetWithRelations (GetWithRelationsRequest) returns (DataResponse);
+  rpc ExecuteCustomQuery (CustomQueryRequest) returns (DataResponse);
 }
 
-message DataRequest {
+message GetAllRequest {
   string tableName = 1;
-  optional string id = 2;
+  optional string filters = 2; // JSON string for WHERE conditions
+  optional string orderBy = 3;
+  optional int32 limit = 4;
+  optional int32 offset = 5;
+}
+
+message GetByIdRequest {
+  string tableName = 1;
+  string id = 2; // JSON string for composite keys
+}
+
+message CreateRequest {
+  string tableName = 1;
+  string data = 2; // JSON string of fields to insert
+}
+
+message UpdateRequest {
+  string tableName = 1;
+  string id = 2; // JSON string for composite keys
+  string data = 3; // JSON string of fields to update
+}
+
+message DeleteRequest {
+  string tableName = 1;
+  string id = 2; // JSON string for composite keys
+}
+
+message GetWithRelationsRequest {
+  string tableName = 1;
+  string id = 2;
+  repeated string relations = 3; // e.g., ["areasCientificas", "docentes"]
+}
+
+message CustomQueryRequest {
+  string queryName = 1; // Predefined query identifier
+  string params = 2; // JSON string of parameters
 }
 
 message DataResponse {
   string data = 1;
+  optional string error = 2;
+  optional int32 statusCode = 3;
 }
 

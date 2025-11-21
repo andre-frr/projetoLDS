@@ -9,6 +9,7 @@ COPY pages/next.config.js ./next.config.js
 RUN mkdir -p pages
 COPY pages/api ./pages/api
 COPY lib ./lib
+COPY grpc/protos ./grpc/protos
 
 RUN npm run build
 
@@ -19,6 +20,7 @@ COPY pages/package.json ./package.json
 RUN npm install --omit=dev
 COPY server.js .
 COPY lib ./lib
+COPY grpc/protos ./grpc/protos
 COPY certs ./certs
 COPY pages/jsconfig.json ./pages/jsconfig.json
 COPY pages/next.config.js ./pages/next.config.js

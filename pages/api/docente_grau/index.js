@@ -1,13 +1,13 @@
-import pool from '@/lib/db.js';
+import GrpcClient from '@/lib/grpc-client.js';
 
 export default async function handler(req, res) {
     if (req.method === 'GET') {
         try {
-            const result = await pool.query('SELECT * FROM docente_grau;');
-            return res.status(200).json(result.rows);
+            const result = await GrpcClient.getAll('docente_grau');
+            return res.status(200).json(result);
         } catch (error) {
-            console.error(error);
-            return res.status(500).json({message: 'Internal Server Error'});
+            const statusCode = error.statusCode || 500;
+            return res.status(statusCode).json({message: error.message || 'Internal Server Error'});
         }
     } else if (req.method === 'POST') {
         const {id_doc, id_grau, grau_nome, data, link_certif} = req.body;
@@ -17,26 +17,37 @@ export default async function handler(req, res) {
         }
 
         try {
-            const docenteExists = await pool.query('SELECT 1 FROM docente WHERE id_doc = $1', [id_doc]);
-            if (docenteExists.rowCount === 0) {
-                return res.status(404).json({message: 'Docente inexistente.'});
+            try {
+                await GrpcClient.getById('docente', id_doc);
+            } catch (error) {
+                if (error.statusCode === 404) {
+                    return res.status(404).json({message: 'Docente inexistente.'});
+                }
+                throw error;
             }
 
             if (id_grau) {
-                const grauExists = await pool.query('SELECT 1 FROM grau WHERE id_grau = $1', [id_grau]);
-                if (grauExists.rowCount === 0) {
-                    return res.status(404).json({message: 'Grau inexistente.'});
+                try {
+                    await GrpcClient.getById('grau', id_grau);
+                } catch (error) {
+                    if (error.statusCode === 404) {
+                        return res.status(404).json({message: 'Grau inexistente.'});
+                    }
+                    throw error;
                 }
             }
 
-            const result = await pool.query(
-                'INSERT INTO docente_grau (id_doc,id_grau,grau_nome,data,link_certif) VALUES($1,$2,$3,$4,$5) RETURNING *;',
-                [id_doc, id_grau, grau_nome, data, link_certif]
-            );
-            return res.status(201).json(result.rows[0]);
+            const result = await GrpcClient.create('docente_grau', {
+                id_doc,
+                id_grau,
+                grau_nome,
+                data,
+                link_certif
+            });
+            return res.status(201).json(result);
         } catch (error) {
-            console.error(error);
-            return res.status(500).json({message: 'Internal Server Error'});
+            const statusCode = error.statusCode || 500;
+            return res.status(statusCode).json({message: error.message || 'Internal Server Error'});
         }
     } else {
         res.setHeader('Allow', ['GET', 'POST']);

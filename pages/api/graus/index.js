@@ -1,13 +1,13 @@
-import pool from '@/lib/db.js';
+import GrpcClient from '@/lib/grpc-client.js';
 
 export default async function handler(req, res) {
     if (req.method === 'GET') {
         try {
-            const result = await pool.query('SELECT * FROM grau;');
-            return res.status(200).json(result.rows);
+            const result = await GrpcClient.getAll('grau');
+            return res.status(200).json(result);
         } catch (error) {
-            console.error(error);
-            return res.status(500).json({message: 'Internal Server Error'});
+            const statusCode = error.statusCode || 500;
+            return res.status(statusCode).json({message: error.message || 'Internal Server Error'});
         }
     } else if (req.method === 'POST') {
         const {nome} = req.body;
@@ -16,14 +16,11 @@ export default async function handler(req, res) {
         }
 
         try {
-            const result = await pool.query(
-                'INSERT INTO grau (nome) VALUES($1) RETURNING *;',
-                [nome]
-            );
-            return res.status(201).json(result.rows[0]);
+            const result = await GrpcClient.create('grau', {nome});
+            return res.status(201).json(result);
         } catch (error) {
-            console.error(error);
-            return res.status(500).json({message: 'Internal Server Error'});
+            const statusCode = error.statusCode || 500;
+            return res.status(statusCode).json({message: error.message || 'Internal Server Error'});
         }
     } else {
         res.setHeader('Allow', ['GET', 'POST']);

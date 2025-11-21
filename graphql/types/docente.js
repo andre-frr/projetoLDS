@@ -4,22 +4,24 @@ export const docenteTypeDefs = gql`
     type Docente {
         id_doc: ID!
         nome: String!
-        areaCientifica: AreaCientifica!
+        areaCientifica: AreaCientifica
         email: String!
         ativo: Boolean
         convidado: Boolean
         graus: [DocenteGrau]
         historicoCV: [HistoricoCVDocente]
+        # Additional fields from joined queries
+        area_nome: String
+        area_sigla: String
+        departamento_nome: String
+        departamento_sigla: String
     }
 
     type Query {
-        docentes: [Docente]
-        docente(id_doc: ID!): Docente
-    }
+        # Complex nested query: Docente with all relationships (area, graus, CV)
+        docenteWithFullDetails(id_doc: ID!): Docente
 
-    type Mutation {
-        adicionarDocente(nome: String!, id_area: Int!, email: String!, convidado: Boolean): Docente
-        atualizarDocente(id_doc: ID!, nome: String, id_area: Int, email: String, ativo: Boolean, convidado: Boolean): Docente
-        removerDocente(id_doc: ID!): Docente
+        # Complex joined query: All docentes with area and department information
+        docentesWithFullDetails(ativo: Boolean): [Docente]
     }
 `;

@@ -1,46 +1,24 @@
-import pkg from "pg";
-
-const {Pool} = pkg;
-
-const pool = new Pool({
-    connectionString: process.env.DATABASE_URL,
-});
+import {getWithRelations, getAll, executeCustomQuery} from '../grpc-helper.js';
 
 export const departamentoResolvers = {
     Query: {
-        departamentos: async () => {
-            const res = await pool.query("SELECT * FROM departamento");
-            return res.rows;
+        // Complex query: Department with nested areas and docentes
+        departamentoWithDetails: async (_, {id_dep}) => {
+            return await getWithRelations('departamento', id_dep, ['areasCientificas']);
         },
-        departamento: async (_, {id_dep}) => {
-            const res = await pool.query("SELECT * FROM departamento WHERE id_dep = $1", [id_dep]);
-            return res.rows[0];
-        },
-    },
-    Mutation: {
-        adicionarDepartamento: async (_, {nome, sigla}) => {
-            const res = await pool.query(
-                "INSERT INTO departamento (nome, sigla) VALUES ($1, $2) RETURNING *",
-                [nome, sigla]
-            );
-            return res.rows[0];
-        },
-        atualizarDepartamento: async (_, {id_dep, nome, sigla, ativo}) => {
-            const res = await pool.query(
-                "UPDATE departamento SET nome = $1, sigla = $2, ativo = $3 WHERE id_dep = $4 RETURNING *",
-                [nome, sigla, ativo, id_dep]
-            );
-            return res.rows[0];
-        },
-        removerDepartamento: async (_, {id_dep}) => {
-            const res = await pool.query("DELETE FROM departamento WHERE id_dep = $1 RETURNING *", [id_dep]);
-            return res.rows[0];
+        // Complex query: All departments with statistics
+        departamentosWithStats: async () => {
+            return await executeCustomQuery('departamentosWithStats');
         },
     },
     Departamento: {
         areasCientificas: async (departamento) => {
-            const res = await pool.query("SELECT * FROM area_cientifica WHERE id_dep = $1", [departamento.id_dep]);
-            return res.rows;
+            // If already loaded from nested query, return it
+            if (departamento.areasCientificas) {
+                return departamento.areasCientificas;
+            }
+            // Otherwise fetch via gRPC
+            return await getAll('area_cientifica', {id_dep: departamento.id_dep});
         }
     }
 };

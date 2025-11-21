@@ -1,89 +1,80 @@
-import pool from '@/lib/db.js';
+import GrpcClient from '@/lib/grpc-client.js';
 
 export default async function handler(req, res) {
     const {id} = req.query;
 
     if (req.method === 'GET') {
         try {
-            const ucResult = await pool.query('SELECT * FROM uc WHERE id_uc=$1', [id]);
-            if (ucResult.rowCount === 0) {
-                return res.status(404).json({message: 'UC inexistente.'});
-            }
+            const uc = await GrpcClient.getById('uc', id);
+            const horasContacto = await GrpcClient.getAll('uc_horas_contacto', {
+                filters: {id_uc: parseInt(id)}
+            });
 
-            const horasResult = await pool.query('SELECT tipo, horas FROM uc_horas_contacto WHERE id_uc=$1', [id]);
-
-            const ucDetails = {
-                ...ucResult.rows[0],
-                horas_contacto: horasResult.rows
-            };
-
-            return res.status(200).json(ucDetails);
+            return res.status(200).json({
+                ...uc,
+                horas_contacto: horasContacto
+            });
         } catch (error) {
-            console.error(error);
-            return res.status(500).json({message: 'Internal Server Error'});
+            const statusCode = error.statusCode || 500;
+            return res.status(statusCode).json({
+                message: statusCode === 404 ? 'UC inexistente.' : error.message
+            });
         }
     } else if (req.method === 'PUT') {
+        const {nome, id_curso, id_area, ano_curso, sem_curso, ects, ativo} = req.body;
+
         try {
-            const {nome, id_curso, id_area, ano_curso, sem_curso, ects, ativo} = req.body;
+            const current = await GrpcClient.getById('uc', id);
 
-            const ucExists = await pool.query('SELECT * FROM uc WHERE id_uc = $1', [id]);
-            if (ucExists.rowCount === 0) {
-                return res.status(404).json({message: 'UC inexistente.'});
-            }
-
-            // Validate foreign keys if provided
-            if (id_curso) {
-                const cursoExists = await pool.query('SELECT 1 FROM curso WHERE id_curso = $1', [id_curso]);
-                if (cursoExists.rowCount === 0) {
-                    return res.status(404).json({message: 'Curso inexistente.'});
+            if (id_curso && id_curso !== current.id_curso) {
+                try {
+                    await GrpcClient.getById('curso', id_curso);
+                } catch (error) {
+                    if (error.statusCode === 404) {
+                        return res.status(404).json({message: 'Curso inexistente.'});
+                    }
+                    throw error;
                 }
             }
 
-            if (id_area) {
-                const areaExists = await pool.query('SELECT 1 FROM area_cientifica WHERE id_area = $1', [id_area]);
-                if (areaExists.rowCount === 0) {
-                    return res.status(404).json({message: 'Área científica inexistente.'});
+            if (id_area && id_area !== current.id_area) {
+                try {
+                    await GrpcClient.getById('area_cientifica', id_area);
+                } catch (error) {
+                    if (error.statusCode === 404) {
+                        return res.status(404).json({message: 'Área científica inexistente.'});
+                    }
+                    throw error;
                 }
             }
 
-            const current = ucExists.rows[0];
-            const newNome = nome ?? current.nome;
-            const newIdCurso = id_curso ?? current.id_curso;
-            const newIdArea = id_area ?? current.id_area;
-            const newAnoCurso = ano_curso ?? current.ano_curso;
-            const newSemCurso = sem_curso ?? current.sem_curso;
-            const newEcts = ects ?? current.ects;
-            const newAtivo = ativo ?? current.ativo;
+            const updateData = {
+                nome: nome ?? current.nome,
+                id_curso: id_curso ?? current.id_curso,
+                id_area: id_area ?? current.id_area,
+                ano_curso: ano_curso ?? current.ano_curso,
+                sem_curso: sem_curso ?? current.sem_curso,
+                ects: ects ?? current.ects,
+                ativo: ativo ?? current.ativo
+            };
 
-            const result = await pool.query(
-                `UPDATE uc
-                 SET nome=$1,
-                     id_curso=$2,
-                     id_area=$3,
-                     ano_curso=$4,
-                     sem_curso=$5,
-                     ects=$6,
-                     ativo=$7
-                 WHERE id_uc = $8 RETURNING *`,
-                [newNome, newIdCurso, newIdArea, newAnoCurso, newSemCurso, newEcts, newAtivo, id]
-            );
-
-            return res.status(200).json(result.rows[0]);
+            const result = await GrpcClient.update('uc', id, updateData);
+            return res.status(200).json(result);
         } catch (error) {
-            console.error(error);
-            return res.status(500).json({message: 'Internal Server Error'});
+            const statusCode = error.statusCode || 500;
+            return res.status(statusCode).json({
+                message: statusCode === 404 ? 'UC inexistente.' : error.message
+            });
         }
     } else if (req.method === 'DELETE') {
         try {
-            // First check if UC has contact hours (they'll be cascade deleted)
-            const result = await pool.query('DELETE FROM uc WHERE id_uc=$1', [id]);
-            if (result.rowCount === 0) {
-                return res.status(404).json({message: 'UC inexistente.'});
-            }
+            await GrpcClient.delete('uc', id);
             return res.status(204).end();
         } catch (error) {
-            console.error(error);
-            return res.status(500).json({message: 'Internal Server Error'});
+            const statusCode = error.statusCode || 500;
+            return res.status(statusCode).json({
+                message: statusCode === 404 ? 'UC inexistente.' : error.message
+            });
         }
     } else {
         res.setHeader('Allow', ['GET', 'PUT', 'DELETE']);

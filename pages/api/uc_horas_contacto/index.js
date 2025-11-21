@@ -1,13 +1,13 @@
-import pool from '@/lib/db.js';
+import GrpcClient from '@/lib/grpc-client.js';
 
 export default async function handler(req, res) {
     if (req.method === 'GET') {
         try {
-            const result = await pool.query('SELECT * FROM uc_horas_contacto;');
-            return res.status(200).json(result.rows);
+            const result = await GrpcClient.getAll('uc_horas_contacto');
+            return res.status(200).json(result);
         } catch (error) {
-            console.error(error);
-            return res.status(500).json({message: 'Internal Server Error'});
+            const statusCode = error.statusCode || 500;
+            return res.status(statusCode).json({message: error.message || 'Internal Server Error'});
         }
     } else if (req.method === 'POST') {
         const {id_uc, tipo, horas} = req.body;
@@ -17,24 +17,33 @@ export default async function handler(req, res) {
         }
 
         try {
-            const ucExists = await pool.query('SELECT 1 FROM uc WHERE id_uc = $1', [id_uc]);
-            if (ucExists.rowCount === 0) {
-                return res.status(404).json({message: 'UC inexistente.'});
+            // Validate UC exists
+            try {
+                await GrpcClient.getById('uc', id_uc);
+            } catch (error) {
+                if (error.statusCode === 404) {
+                    return res.status(404).json({message: 'UC inexistente.'});
+                }
+                throw error;
             }
 
-            const exists = await pool.query('SELECT 1 FROM uc_horas_contacto WHERE id_uc = $1 AND tipo = $2', [id_uc, tipo]);
-            if (exists.rowCount > 0) {
+            // Check if already exists (composite key)
+            const existing = await GrpcClient.getAll('uc_horas_contacto', {
+                filters: {id_uc: parseInt(id_uc), tipo}
+            });
+            if (existing.length > 0) {
                 return res.status(409).json({message: 'Horas de contacto já definidas para este tipo.'});
             }
 
-            const result = await pool.query(
-                'INSERT INTO uc_horas_contacto (id_uc,tipo,horas) VALUES($1,$2,$3) RETURNING *;',
-                [id_uc, tipo, horas]
-            );
-            return res.status(201).json(result.rows[0]);
+            const result = await GrpcClient.create('uc_horas_contacto', {
+                id_uc,
+                tipo,
+                horas
+            });
+            return res.status(201).json(result);
         } catch (error) {
-            console.error(error);
-            return res.status(500).json({message: 'Internal Server Error'});
+            const statusCode = error.statusCode || 500;
+            return res.status(statusCode).json({message: error.message || 'Internal Server Error'});
         }
     } else {
         res.setHeader('Allow', ['GET', 'POST']);

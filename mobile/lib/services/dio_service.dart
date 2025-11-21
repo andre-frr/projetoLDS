@@ -10,7 +10,9 @@ import 'storage_service.dart';
 
 class DioService {
   static final DioService _instance = DioService._internal();
+
   factory DioService() => _instance;
+
   DioService._internal();
 
   late Dio _dio;

@@ -11,7 +11,9 @@ class DepartamentoProvider with ChangeNotifier {
   String? _errorMessage;
 
   List<DepartamentoModel> get departamentos => _departamentos;
+
   bool get isLoading => _isLoading;
+
   String? get errorMessage => _errorMessage;
 
   // Load all departments

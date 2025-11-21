@@ -9,18 +9,10 @@ export const ucHorasContactoTypeDefs = gql`
     }
 
     type UcHorasContacto {
-        uc: Uc!
+        id_uc: Int!
+        uc: Uc
         tipo: TipoHora!
         horas: Int!
     }
 
-    type Query {
-        ucHorasContactos(id_uc: ID!): [UcHorasContacto]
-    }
-
-    type Mutation {
-        adicionarUcHorasContacto(id_uc: Int!, tipo: TipoHora!, horas: Int!): UcHorasContacto
-        atualizarUcHorasContacto(id_uc: Int!, tipo: TipoHora!, horas: Int!): UcHorasContacto
-        removerUcHorasContacto(id_uc: Int!, tipo: TipoHora!): UcHorasContacto
-    }
 `;

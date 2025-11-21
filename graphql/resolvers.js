@@ -3,7 +3,6 @@ import {areaCientificaResolvers} from "./resolvers/area_cientifica.js";
 import {docenteResolvers} from "./resolvers/docente.js";
 import {cursoResolvers} from "./resolvers/curso.js";
 import {ucResolvers} from "./resolvers/uc.js";
-import {grauResolvers} from "./resolvers/grau.js";
 import {docenteGrauResolvers} from "./resolvers/docente_grau.js";
 import {historicoCVDocenteResolvers} from "./resolvers/historico_cv_docente.js";
 import {ucHorasContactoResolvers} from "./resolvers/uc_horas_contacto.js";
@@ -15,7 +14,6 @@ export const resolvers = merge(
     docenteResolvers,
     cursoResolvers,
     ucResolvers,
-    grauResolvers,
     docenteGrauResolvers,
     historicoCVDocenteResolvers,
     ucHorasContactoResolvers

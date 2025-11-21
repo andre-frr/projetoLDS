@@ -7,16 +7,16 @@ export const departamentoTypeDefs = gql`
         sigla: String!
         ativo: Boolean
         areasCientificas: [AreaCientifica]
+        num_areas: Int
+        num_docentes: Int
+        num_cursos: Int
     }
 
     type Query {
-        departamentos: [Departamento]
-        departamento(id_dep: ID!): Departamento
-    }
+        # Complex nested query: Department with all its scientific areas
+        departamentoWithDetails(id_dep: ID!): Departamento
 
-    type Mutation {
-        adicionarDepartamento(nome: String!, sigla: String!): Departamento
-        atualizarDepartamento(id_dep: ID!, nome: String, sigla: String, ativo: Boolean): Departamento
-        removerDepartamento(id_dep: ID!): Departamento
+        # Complex aggregated query: All departments with statistics
+        departamentosWithStats: [Departamento]
     }
 `;

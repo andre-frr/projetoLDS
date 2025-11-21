@@ -6,7 +6,9 @@ import 'storage_service.dart';
 
 class GraphQLService {
   static final GraphQLService _instance = GraphQLService._internal();
+
   factory GraphQLService() => _instance;
+
   GraphQLService._internal();
 
   late GraphQLClient _client;

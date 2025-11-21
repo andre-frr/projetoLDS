@@ -1,54 +1,30 @@
-import pkg from "pg";
-
-const {Pool} = pkg;
-
-const pool = new Pool({
-    connectionString: process.env.DATABASE_URL,
-});
+import {getWithRelations, getAll, getById} from '../grpc-helper.js';
 
 export const areaCientificaResolvers = {
     Query: {
-        areasCientificas: async () => {
-            const res = await pool.query("SELECT * FROM area_cientifica");
-            return res.rows;
-        },
-        areaCientifica: async (_, {id_area}) => {
-            const res = await pool.query("SELECT * FROM area_cientifica WHERE id_area = $1", [id_area]);
-            return res.rows[0];
-        },
-    },
-    Mutation: {
-        adicionarAreaCientifica: async (_, {nome, sigla, id_dep}) => {
-            const res = await pool.query(
-                "INSERT INTO area_cientifica (nome, sigla, id_dep) VALUES ($1, $2, $3) RETURNING *",
-                [nome, sigla, id_dep]
-            );
-            return res.rows[0];
-        },
-        atualizarAreaCientifica: async (_, {id_area, nome, sigla, id_dep, ativo}) => {
-            const res = await pool.query(
-                "UPDATE area_cientifica SET nome = $1, sigla = $2, id_dep = $3, ativo = $4 WHERE id_area = $5 RETURNING *",
-                [nome, sigla, id_dep, ativo, id_area]
-            );
-            return res.rows[0];
-        },
-        removerAreaCientifica: async (_, {id_area}) => {
-            const res = await pool.query("DELETE FROM area_cientifica WHERE id_area = $1 RETURNING *", [id_area]);
-            return res.rows[0];
+        // Complex query: Area with all related entities
+        areaWithDetails: async (_, {id_area}) => {
+            return await getWithRelations('area_cientifica', id_area, ['departamento', 'docentes']);
         },
     },
     AreaCientifica: {
         departamento: async (areaCientifica) => {
-            const res = await pool.query("SELECT * FROM departamento WHERE id_dep = $1", [areaCientifica.id_dep]);
-            return res.rows[0];
+            if (areaCientifica.departamento) {
+                return areaCientifica.departamento;
+            }
+            return await getById('departamento', areaCientifica.id_dep);
         },
         docentes: async (areaCientifica) => {
-            const res = await pool.query("SELECT * FROM docente WHERE id_area = $1", [areaCientifica.id_area]);
-            return res.rows;
+            if (areaCientifica.docentes) {
+                return areaCientifica.docentes;
+            }
+            return await getAll('docente', {id_area: areaCientifica.id_area});
         },
         ucs: async (areaCientifica) => {
-            const res = await pool.query("SELECT * FROM uc WHERE id_area = $1", [areaCientifica.id_area]);
-            return res.rows;
+            if (areaCientifica.ucs) {
+                return areaCientifica.ucs;
+            }
+            return await getAll('uc', {id_area: areaCientifica.id_area});
         }
     }
 };

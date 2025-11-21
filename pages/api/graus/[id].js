@@ -1,18 +1,17 @@
-import pool from '@/lib/db.js';
+import GrpcClient from '@/lib/grpc-client.js';
 
 export default async function handler(req, res) {
     const {id} = req.query;
 
     if (req.method === 'GET') {
         try {
-            const result = await pool.query('SELECT * FROM grau WHERE id_grau=$1;', [id]);
-            if (!result.rows.length) {
-                return res.status(404).json({message: 'Grau inexistente.'});
-            }
-            return res.status(200).json(result.rows[0]);
+            const result = await GrpcClient.getById('grau', id);
+            return res.status(200).json(result);
         } catch (error) {
-            console.error(error);
-            return res.status(500).json({message: 'Internal Server Error'});
+            const statusCode = error.statusCode || 500;
+            return res.status(statusCode).json({
+                message: statusCode === 404 ? 'Grau inexistente.' : error.message
+            });
         }
     } else if (req.method === 'PUT') {
         const {nome} = req.body;
@@ -21,28 +20,23 @@ export default async function handler(req, res) {
         }
 
         try {
-            const result = await pool.query(
-                'UPDATE grau SET nome=$1 WHERE id_grau=$2 RETURNING *;',
-                [nome, id]
-            );
-            if (!result.rows.length) {
-                return res.status(404).json({message: 'Grau inexistente.'});
-            }
-            return res.status(200).json(result.rows[0]);
+            const result = await GrpcClient.update('grau', id, {nome});
+            return res.status(200).json(result);
         } catch (error) {
-            console.error(error);
-            return res.status(500).json({message: 'Internal Server Error'});
+            const statusCode = error.statusCode || 500;
+            return res.status(statusCode).json({
+                message: statusCode === 404 ? 'Grau inexistente.' : error.message
+            });
         }
     } else if (req.method === 'DELETE') {
         try {
-            const result = await pool.query('DELETE FROM grau WHERE id_grau=$1 RETURNING *;', [id]);
-            if (!result.rows.length) {
-                return res.status(404).json({message: 'Grau inexistente.'});
-            }
+            await GrpcClient.delete('grau', id);
             return res.status(204).end();
         } catch (error) {
-            console.error(error);
-            return res.status(500).json({message: 'Internal Server Error'});
+            const statusCode = error.statusCode || 500;
+            return res.status(statusCode).json({
+                message: statusCode === 404 ? 'Grau inexistente.' : error.message
+            });
         }
     } else {
         res.setHeader('Allow', ['GET', 'PUT', 'DELETE']);
