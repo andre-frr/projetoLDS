@@ -68,24 +68,4 @@ class GraphQLService {
       rethrow;
     }
   }
-
-  Future<QueryResult> mutate(
-    String mutation, {
-    Map<String, dynamic>? variables,
-  }) async {
-    try {
-      final result = await _client.mutate(
-        MutationOptions(document: gql(mutation), variables: variables ?? {}),
-      );
-
-      if (result.hasException) {
-        _logger.e('GraphQL Mutation Error: ${result.exception}');
-      }
-
-      return result;
-    } catch (e) {
-      _logger.e('GraphQL Mutation Error: $e');
-      rethrow;
-    }
-  }
 }

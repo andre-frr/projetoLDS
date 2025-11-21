@@ -136,13 +136,13 @@ class DioService {
 
       final response = await _dio.post(
         ApiConstants.refresh,
-        data: {'refresh_token': refreshToken},
+        data: {'refreshToken': refreshToken},
         options: Options(headers: {'Authorization': 'Bearer $refreshToken'}),
       );
 
       if (response.statusCode == 200) {
-        final newAccessToken = response.data['access_token'];
-        final newRefreshToken = response.data['refresh_token'];
+        final newAccessToken = response.data['accessToken'];
+        final newRefreshToken = response.data['refreshToken'];
 
         await _storage.write(ApiConstants.accessTokenKey, newAccessToken);
         if (newRefreshToken != null) {

@@ -12,24 +12,24 @@ class LoginScreen extends StatefulWidget {
 
 class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _usernameController = TextEditingController();
+  final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
 
   @override
   void dispose() {
-    _usernameController.dispose();
+    _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
   }
 
   void _handleLogin() async {
     if (_formKey.currentState!.validate()) {
-      final username = _usernameController.text;
+      final email = _emailController.text;
       final password = _passwordController.text;
 
       final authProvider = context.read<AuthProvider>();
-      final success = await authProvider.login(username, password);
+      final success = await authProvider.login(email, password);
 
       if (!success && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -77,18 +77,22 @@ class _LoginScreenState extends State<LoginScreen> {
                             ),
                             const SizedBox(height: 32),
 
-                            // Username field
+                            // Email field
                             TextFormField(
-                              controller: _usernameController,
+                              controller: _emailController,
                               enabled: !authProvider.isLoading,
+                              keyboardType: TextInputType.emailAddress,
                               decoration: const InputDecoration(
-                                labelText: 'Username',
-                                prefixIcon: Icon(Icons.person),
+                                labelText: 'Email',
+                                prefixIcon: Icon(Icons.email),
                                 border: OutlineInputBorder(),
                               ),
                               validator: (value) {
                                 if (value == null || value.isEmpty) {
-                                  return 'Please enter your username';
+                                  return 'Please enter your email';
+                                }
+                                if (!value.contains('@')) {
+                                  return 'Please enter a valid email';
                                 }
                                 return null;
                               },

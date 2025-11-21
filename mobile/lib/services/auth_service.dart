@@ -20,31 +20,37 @@ class AuthService {
   final _logger = Logger();
 
   // Login
-  Future<UserModel> login(String username, String password) async {
+  Future<UserModel> login(String email, String password) async {
     try {
       final response = await _dio.post(
         ApiConstants.login,
-        data: {'username': username, 'password': password},
+        data: {'email': email, 'password': password},
       );
 
       if (response.statusCode == 200) {
         final data = response.data;
 
-        // Store tokens
-        await _storage.write(ApiConstants.accessTokenKey, data['access_token']);
+        // Store tokens (backend returns accessToken and refreshToken)
+        await _storage.write(ApiConstants.accessTokenKey, data['accessToken']);
         await _storage.write(
           ApiConstants.refreshTokenKey,
-          data['refresh_token'],
+          data['refreshToken'],
         );
 
-        // Store user data
-        final user = UserModel.fromJson(data['user']);
+        // Create user model from email (backend doesn't return user object)
+        final user = UserModel(
+          id: 0, // Will be set when fetching user profile
+          email: email,
+          username: email.split('@')[0], // Extract username from email
+          role: 'user', // Default role
+        );
+
         await _storage.write(
           ApiConstants.userDataKey,
           jsonEncode(user.toJson()),
         );
 
-        _logger.i('Login successful for user: ${user.username}');
+        _logger.i('Login successful for user: $email');
         return user;
       } else {
         throw Exception('Login failed');
@@ -56,35 +62,37 @@ class AuthService {
   }
 
   // Register
-  Future<UserModel> register(
-    String username,
-    String password,
-    String email,
-  ) async {
+  Future<UserModel> register(String email, String password, String role) async {
     try {
       final response = await _dio.post(
         ApiConstants.register,
-        data: {'username': username, 'password': password, 'email': email},
+        data: {'email': email, 'password': password, 'role': role},
       );
 
       if (response.statusCode == 201) {
         final data = response.data;
 
-        // Store tokens
-        await _storage.write(ApiConstants.accessTokenKey, data['access_token']);
+        // Store tokens (backend returns accessToken and refreshToken)
+        await _storage.write(ApiConstants.accessTokenKey, data['accessToken']);
         await _storage.write(
           ApiConstants.refreshTokenKey,
-          data['refresh_token'],
+          data['refreshToken'],
         );
 
-        // Store user data
-        final user = UserModel.fromJson(data['user']);
+        // Create user model from email (backend doesn't return user object)
+        final user = UserModel(
+          id: 0, // Will be set when fetching user profile
+          email: email,
+          username: email.split('@')[0], // Extract username from email
+          role: role,
+        );
+
         await _storage.write(
           ApiConstants.userDataKey,
           jsonEncode(user.toJson()),
         );
 
-        _logger.i('Registration successful for user: ${user.username}');
+        _logger.i('Registration successful for user: $email');
         return user;
       } else {
         throw Exception('Registration failed');
