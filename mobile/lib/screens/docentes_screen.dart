@@ -81,6 +81,13 @@ class _DocentesScreenState extends State<DocentesScreen> {
                         backgroundColor: Colors.green,
                       ),
                     );
+                  } else if (provider.error != null) {
+                    messenger.showSnackBar(
+                      SnackBar(
+                        content: Text(provider.error!),
+                        backgroundColor: Colors.red,
+                      ),
+                    );
                   }
                 },
                 decoration: const InputDecoration(
@@ -126,6 +133,13 @@ class _DocentesScreenState extends State<DocentesScreen> {
                     const SnackBar(
                       content: Text('Docente criado com sucesso'),
                       backgroundColor: Colors.green,
+                    ),
+                  );
+                } else if (mounted && context.read<DocenteProvider>().error != null) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(context.read<DocenteProvider>().error!),
+                      backgroundColor: Colors.red,
                     ),
                   );
                 }
@@ -394,6 +408,13 @@ class _DocentesScreenState extends State<DocentesScreen> {
                               backgroundColor: Colors.green,
                             ),
                           );
+                        } else if (mounted && provider.error != null) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(provider.error!),
+                              backgroundColor: Colors.red,
+                            ),
+                          );
                         }
                       }
                     } else if (value == 'deactivate') {
@@ -402,6 +423,13 @@ class _DocentesScreenState extends State<DocentesScreen> {
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(
                             content: Text('Docente inativado'),
+                          ),
+                        );
+                      } else if (mounted && provider.error != null) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(provider.error!),
+                            backgroundColor: Colors.red,
                           ),
                         );
                       }
@@ -421,6 +449,13 @@ class _DocentesScreenState extends State<DocentesScreen> {
                           const SnackBar(
                             content: Text('Docente reativado'),
                             backgroundColor: Colors.green,
+                          ),
+                        );
+                      } else if (mounted && provider.error != null) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(provider.error!),
+                            backgroundColor: Colors.red,
                           ),
                         );
                       }
@@ -454,6 +489,13 @@ class _DocentesScreenState extends State<DocentesScreen> {
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
                               content: Text('Docente excluído'),
+                              backgroundColor: Colors.red,
+                            ),
+                          );
+                        } else if (mounted && provider.error != null) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(provider.error!),
                               backgroundColor: Colors.red,
                             ),
                           );

@@ -66,6 +66,13 @@ class _DepartamentosScreenState extends State<DepartamentosScreen> {
                       backgroundColor: Colors.green,
                     ),
                   );
+                } else if (provider.errorMessage != null) {
+                  messenger.showSnackBar(
+                    SnackBar(
+                      content: Text(provider.errorMessage!),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
                 }
               },
               decoration: const InputDecoration(
@@ -99,6 +106,13 @@ class _DepartamentosScreenState extends State<DepartamentosScreen> {
                   const SnackBar(
                     content: Text('Departamento criado com sucesso'),
                     backgroundColor: Colors.green,
+                  ),
+                );
+              } else if (mounted && context.read<DepartamentoProvider>().errorMessage != null) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(context.read<DepartamentoProvider>().errorMessage!),
+                    backgroundColor: Colors.red,
                   ),
                 );
               }
@@ -323,6 +337,13 @@ class _DepartamentosScreenState extends State<DepartamentosScreen> {
                                 backgroundColor: Colors.green,
                               ),
                             );
+                          } else if (mounted && provider.errorMessage != null) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(provider.errorMessage!),
+                                backgroundColor: Colors.red,
+                              ),
+                            );
                           }
                         }
                       } else if (value == 'deactivate') {
@@ -331,6 +352,13 @@ class _DepartamentosScreenState extends State<DepartamentosScreen> {
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
                               content: Text('Departamento inativado'),
+                            ),
+                          );
+                        } else if (mounted && provider.errorMessage != null) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(provider.errorMessage!),
+                              backgroundColor: Colors.red,
                             ),
                           );
                         }
@@ -347,6 +375,13 @@ class _DepartamentosScreenState extends State<DepartamentosScreen> {
                             const SnackBar(
                               content: Text('Departamento reativado'),
                               backgroundColor: Colors.green,
+                            ),
+                          );
+                        } else if (mounted && provider.errorMessage != null) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(provider.errorMessage!),
+                              backgroundColor: Colors.red,
                             ),
                           );
                         }
@@ -381,6 +416,13 @@ class _DepartamentosScreenState extends State<DepartamentosScreen> {
                               const SnackBar(
                                 content: Text('Departamento excluído'),
                                 backgroundColor: Colors.green,
+                              ),
+                            );
+                          } else if (mounted && provider.errorMessage != null) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(provider.errorMessage!),
+                                backgroundColor: Colors.red,
                               ),
                             );
                           }

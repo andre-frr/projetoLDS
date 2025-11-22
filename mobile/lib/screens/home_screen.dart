@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../providers/auth_provider.dart';
+
 import 'departamentos_screen.dart';
+import 'docentes_screen.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -109,8 +111,13 @@ class HomeScreen extends StatelessWidget {
               leading: const Icon(Icons.person),
               title: const Text('Docentes'),
               onTap: () {
-                // TODO: Navigate to teachers
                 Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const DocentesScreen(),
+                  ),
+                );
               },
             ),
             ListTile(
