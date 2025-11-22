@@ -229,28 +229,33 @@ class _DocentesScreenState extends State<DocentesScreen> {
           }
 
           return ListView.builder(
+            padding: const EdgeInsets.all(16),
             itemCount: provider.docentes.length,
             itemBuilder: (context, index) {
               final docente = provider.docentes[index];
-              return ListTile(
-                leading: CircleAvatar(
-                  backgroundColor: docente.ativo ? Colors.blue : Colors.grey,
-                  child: Text(
-                    docente.nome.substring(0, 1).toUpperCase(),
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
+              return Card(
+                margin: const EdgeInsets.only(bottom: 12),
+                child: ListTile(
+                  leading: CircleAvatar(
+                    backgroundColor: docente.ativo
+                        ? Theme.of(context).primaryColor
+                        : Colors.grey,
+                    child: Text(
+                      docente.nome.substring(0, 1).toUpperCase(),
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ),
-                ),
-                title: Text(
-                  docente.nome,
-                  style: TextStyle(
-                    decoration: docente.ativo
-                        ? null
-                        : TextDecoration.lineThrough,
+                  title: Text(
+                    docente.nome,
+                    style: TextStyle(
+                      decoration: docente.ativo
+                          ? null
+                          : TextDecoration.lineThrough,
+                    ),
                   ),
-                ),
                 subtitle: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
