@@ -33,6 +33,7 @@ class _DepartamentosScreenState extends State<DepartamentosScreen> {
           children: [
             TextField(
               controller: nomeController,
+              textInputAction: TextInputAction.next,
               decoration: const InputDecoration(
                 labelText: 'Nome',
                 border: OutlineInputBorder(),
@@ -41,6 +42,29 @@ class _DepartamentosScreenState extends State<DepartamentosScreen> {
             const SizedBox(height: 16),
             TextField(
               controller: siglaController,
+              textInputAction: TextInputAction.done,
+              onSubmitted: (_) async {
+                final departamento = DepartamentoModel(
+                  id: 0,
+                  nome: nomeController.text,
+                  sigla: siglaController.text,
+                  ativo: true,
+                );
+
+                final success = await context.read<DepartamentoProvider>().create(
+                  departamento,
+                );
+
+                if (success && mounted) {
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Departamento criado com sucesso'),
+                      backgroundColor: Colors.green,
+                    ),
+                  );
+                }
+              },
               decoration: const InputDecoration(
                 labelText: 'Sigla',
                 border: OutlineInputBorder(),
@@ -206,6 +230,20 @@ class _DepartamentosScreenState extends State<DepartamentosScreen> {
                               Text('Inativar'),
                             ],
                           ),
+                        )
+                      else
+                        const PopupMenuItem(
+                          value: 'reactivate',
+                          child: Row(
+                            children: [
+                              Icon(Icons.check_circle, color: Colors.green),
+                              SizedBox(width: 8),
+                              Text(
+                                'Reativar',
+                                style: TextStyle(color: Colors.green),
+                              ),
+                            ],
+                          ),
                         ),
                       const PopupMenuItem(
                         value: 'delete',
@@ -235,6 +273,7 @@ class _DepartamentosScreenState extends State<DepartamentosScreen> {
                               children: [
                                 TextField(
                                   controller: nomeController,
+                                  textInputAction: TextInputAction.next,
                                   decoration: const InputDecoration(
                                     labelText: 'Nome',
                                     border: OutlineInputBorder(),
@@ -243,6 +282,8 @@ class _DepartamentosScreenState extends State<DepartamentosScreen> {
                                 const SizedBox(height: 16),
                                 TextField(
                                   controller: siglaController,
+                                  textInputAction: TextInputAction.done,
+                                  onSubmitted: (_) => Navigator.pop(context, true),
                                   decoration: const InputDecoration(
                                     labelText: 'Sigla',
                                     border: OutlineInputBorder(),
@@ -287,6 +328,22 @@ class _DepartamentosScreenState extends State<DepartamentosScreen> {
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
                               content: Text('Departamento inativado'),
+                            ),
+                          );
+                        }
+                      } else if (value == 'reactivate') {
+                        final updatedDept = DepartamentoModel(
+                          id: dept.id,
+                          nome: dept.nome,
+                          sigla: dept.sigla,
+                          ativo: true,
+                        );
+                        final success = await provider.update(dept.id, updatedDept);
+                        if (success && mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Departamento reativado'),
+                              backgroundColor: Colors.green,
                             ),
                           );
                         }
