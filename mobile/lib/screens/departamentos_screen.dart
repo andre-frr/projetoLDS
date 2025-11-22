@@ -44,6 +44,11 @@ class _DepartamentosScreenState extends State<DepartamentosScreen> {
               controller: siglaController,
               textInputAction: TextInputAction.done,
               onSubmitted: (_) async {
+                // Get provider reference before async operation
+                final provider = context.read<DepartamentoProvider>();
+                final navigator = Navigator.of(context);
+                final messenger = ScaffoldMessenger.of(context);
+                
                 final departamento = DepartamentoModel(
                   id: 0,
                   nome: nomeController.text,
@@ -51,13 +56,11 @@ class _DepartamentosScreenState extends State<DepartamentosScreen> {
                   ativo: true,
                 );
 
-                final success = await context.read<DepartamentoProvider>().create(
-                  departamento,
-                );
+                final success = await provider.create(departamento);
 
-                if (success && mounted) {
-                  Navigator.pop(context);
-                  ScaffoldMessenger.of(context).showSnackBar(
+                if (success) {
+                  navigator.pop();
+                  messenger.showSnackBar(
                     const SnackBar(
                       content: Text('Departamento criado com sucesso'),
                       backgroundColor: Colors.green,
