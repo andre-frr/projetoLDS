@@ -15,6 +15,10 @@ def main():
     cert_file = sys.argv[2] if len(sys.argv) > 2 else '../certs/localhost+1.pem'
     key_file = sys.argv[3] if len(sys.argv) > 3 else '../certs/localhost+1-key.pem'
     
+    # Resolve certificate paths to absolute paths BEFORE changing directory
+    cert_file = os.path.abspath(cert_file)
+    key_file = os.path.abspath(key_file)
+    
     # Change to build/web directory
     web_dir = os.path.join(os.path.dirname(__file__), 'build', 'web')
     if os.path.exists(web_dir):
