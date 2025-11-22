@@ -97,7 +97,7 @@ class DepartamentoService {
   // Deactivate department
   Future<void> deactivate(int id) async {
     try {
-      final response = await _dio.patch('$_basePath/$id/inativar');
+      final response = await _dio.delete('$_basePath/$id/inativar');
 
       if (response.statusCode != 200) {
         throw Exception('Failed to deactivate department');
