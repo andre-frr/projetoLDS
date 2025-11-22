@@ -86124,7 +86124,7 @@ A.JP.prototype={
 gMG(){var s=this.a
 s===$&&A.a()
 return s},
-el(a){var s,r,q=this,p="application/json",o=null,n=A.aJb("https://localhost:3000/api",B.n8,A.ax(["Content-Type",p,"Accept",p],t.N,t.z),B.n8),m=new A.Le(A.c([B.Bl],t.i6))
+el(a){var s,r,q=this,p="application/json",o=null,n=A.aJb("https://192.168.246.55:3000/api",B.n8,A.ax(["Content-Type",p,"Accept",p],t.N,t.z),B.n8),m=new A.Le(A.c([B.Bl],t.i6))
 m.U(m,B.HO)
 m=new A.a2a($,m,$,new A.a5p(51200),!1)
 m.Un$=n
@@ -86279,7 +86279,7 @@ el(a){var s=0,r=A.N(t.H),q=this,p
 var $async$el=A.O(function(b,c){if(b===1)return A.K(c,r)
 for(;;)switch(s){case 0:p=t.N
 A.ax(["Content-Type","application/json"],p,p)
-A.ij("http://localhost:4000/graphql")
+A.ij("http://192.168.246.55:4000/graphql")
 A.aJ8("Authorization",new A.a5R(q))
 A.aLB()
 A.aUH(A.aTJ())
