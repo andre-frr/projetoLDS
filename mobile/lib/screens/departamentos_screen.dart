@@ -222,7 +222,66 @@ class _DepartamentosScreenState extends State<DepartamentosScreen> {
                       ),
                     ],
                     onSelected: (value) async {
-                      if (value == 'deactivate') {
+                      if (value == 'edit') {
+                        final nomeController = TextEditingController(text: dept.nome);
+                        final siglaController = TextEditingController(text: dept.sigla);
+
+                        final result = await showDialog<bool>(
+                          context: context,
+                          builder: (context) => AlertDialog(
+                            title: const Text('Editar Departamento'),
+                            content: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                TextField(
+                                  controller: nomeController,
+                                  decoration: const InputDecoration(
+                                    labelText: 'Nome',
+                                    border: OutlineInputBorder(),
+                                  ),
+                                ),
+                                const SizedBox(height: 16),
+                                TextField(
+                                  controller: siglaController,
+                                  decoration: const InputDecoration(
+                                    labelText: 'Sigla',
+                                    border: OutlineInputBorder(),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            actions: [
+                              TextButton(
+                                onPressed: () => Navigator.pop(context, false),
+                                child: const Text('Cancelar'),
+                              ),
+                              ElevatedButton(
+                                onPressed: () => Navigator.pop(context, true),
+                                child: const Text('Salvar'),
+                              ),
+                            ],
+                          ),
+                        );
+
+                        if (result == true && mounted) {
+                          final updatedDept = DepartamentoModel(
+                            id: dept.id,
+                            nome: nomeController.text,
+                            sigla: siglaController.text,
+                            ativo: dept.ativo,
+                          );
+
+                          final success = await provider.update(dept.id, updatedDept);
+                          if (success && mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Departamento atualizado'),
+                                backgroundColor: Colors.green,
+                              ),
+                            );
+                          }
+                        }
+                      } else if (value == 'deactivate') {
                         final success = await provider.deactivate(dept.id);
                         if (success && mounted) {
                           ScaffoldMessenger.of(context).showSnackBar(
