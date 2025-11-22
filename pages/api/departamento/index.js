@@ -55,12 +55,14 @@ async function handler(req, res) {
 }
 
 export default async function handlerWithCors(req, res) {
-  return new Promise((resolve, reject) => {
+  await new Promise((resolve, reject) => {
     corsMiddleware(req, res, (result) => {
       if (result instanceof Error) {
         return reject(result);
       }
-      return resolve(handler(req, res));
+      return resolve(result);
     });
   });
+
+  return handler(req, res);
 }
