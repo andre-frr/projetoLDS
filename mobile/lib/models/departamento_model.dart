@@ -13,7 +13,7 @@ class DepartamentoModel {
 
   factory DepartamentoModel.fromJson(Map<String, dynamic> json) {
     return DepartamentoModel(
-      id: json['id_departamento'] ?? json['id'] ?? 0,
+      id: json['id_dep'] ?? json['id_departamento'] ?? json['id'] ?? 0,
       nome: json['nome'] ?? '',
       sigla: json['sigla'] ?? '',
       ativo: json['ativo'] ?? true,

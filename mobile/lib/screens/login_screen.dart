@@ -82,6 +82,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               controller: _emailController,
                               enabled: !authProvider.isLoading,
                               keyboardType: TextInputType.emailAddress,
+                              textInputAction: TextInputAction.next,
                               decoration: const InputDecoration(
                                 labelText: 'Email',
                                 prefixIcon: Icon(Icons.email),
@@ -104,6 +105,8 @@ class _LoginScreenState extends State<LoginScreen> {
                               controller: _passwordController,
                               enabled: !authProvider.isLoading,
                               obscureText: _obscurePassword,
+                              textInputAction: TextInputAction.done,
+                              onFieldSubmitted: (_) => _handleLogin(),
                               decoration: InputDecoration(
                                 labelText: 'Password',
                                 prefixIcon: const Icon(Icons.lock),
