@@ -161,7 +161,22 @@ class _LoginScreenState extends State<LoginScreen> {
                             // Register link
                             TextButton(
                               onPressed: () {
-                                // TODO: Implement register screen navigation
+                                showDialog(
+                                  context: context,
+                                  builder: (context) => AlertDialog(
+                                    title: const Text('Registro de Conta'),
+                                    content: const Text(
+                                      'O registro de novas contas é feito por administradores. '
+                                      'Entre em contato com o administrador do sistema para criar uma conta.',
+                                    ),
+                                    actions: [
+                                      TextButton(
+                                        onPressed: () => Navigator.pop(context),
+                                        child: const Text('OK'),
+                                      ),
+                                    ],
+                                  ),
+                                );
                               },
                               child: const Text(
                                 'Don\'t have an account? Register',
