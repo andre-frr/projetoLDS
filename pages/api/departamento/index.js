@@ -10,12 +10,21 @@ const postHandler = async (req, res) => {
 
   try {
     // Check if sigla already exists
-    const existing = await GrpcClient.getAll("departamento", {
+    const existingSigla = await GrpcClient.getAll("departamento", {
       filters: { sigla },
     });
 
-    if (existing.length > 0) {
+    if (existingSigla.length > 0) {
       return res.status(409).json({ message: "Sigla duplicada." });
+    }
+
+    // Check if nome already exists
+    const existingNome = await GrpcClient.getAll("departamento", {
+      filters: { nome },
+    });
+
+    if (existingNome.length > 0) {
+      return res.status(409).json({ message: "Nome duplicado." });
     }
 
     const result = await GrpcClient.create("departamento", {

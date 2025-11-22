@@ -39,7 +39,8 @@ CREATE TABLE IF NOT EXISTS departamento
     nome   TEXT    NOT NULL,
     sigla  TEXT    NOT NULL,
     ativo  BOOLEAN NOT NULL DEFAULT TRUE,
-    CONSTRAINT uq_departamento_sigla UNIQUE (sigla)
+    CONSTRAINT uq_departamento_sigla UNIQUE (sigla),
+    CONSTRAINT uq_departamento_nome UNIQUE (nome)
 );
 
 CREATE TABLE IF NOT EXISTS area_cientifica

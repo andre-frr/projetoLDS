@@ -36,6 +36,17 @@ async function handler(req, res) {
         }
       }
 
+      // Check nome uniqueness if changed
+      if (nome && nome !== current.nome) {
+        const existing = await GrpcClient.getAll("departamento", {
+          filters: { nome },
+        });
+        const duplicate = existing.find((dep) => dep.id_dep !== parseInt(id));
+        if (duplicate) {
+          return res.status(409).json({ message: "Nome duplicado." });
+        }
+      }
+
       // Prepare update data
       const updateData = {
         nome: nome ?? current.nome,
