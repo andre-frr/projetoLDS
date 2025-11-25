@@ -3,11 +3,13 @@ import 'package:provider/provider.dart';
 
 import 'providers/area_cientifica_provider.dart';
 import 'providers/auth_provider.dart';
+import 'providers/curso_provider.dart';
 import 'providers/departamento_provider.dart';
 import 'providers/docente_provider.dart';
 import 'screens/home_screen.dart';
 import 'screens/login_screen.dart';
 import 'services/area_cientifica_service.dart';
+import 'services/curso_service.dart';
 import 'services/dio_service.dart';
 import 'services/docente_service.dart';
 import 'services/graphql_service.dart';
@@ -42,6 +44,9 @@ class MyApp extends StatelessWidget {
         ),
         ChangeNotifierProvider(
           create: (_) => AreaCientificaProvider(AreaCientificaService(DioService().dio)),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => CursoProvider(CursoService(DioService().dio)),
         ),
       ],
       child: MaterialApp(

@@ -7,7 +7,7 @@ DO
 $$
     BEGIN
         IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'curso_tipo') THEN
-            CREATE TYPE curso_tipo AS ENUM ('T', 'LIC', 'MEST', 'DOUT');
+            CREATE TYPE curso_tipo AS ENUM ('TeSP', 'LIC', 'MEST', 'DOUT');
         END IF;
     END
 $$;
@@ -22,6 +22,16 @@ $$
     END
 $$;
 
+-- Turmas
+DO
+$$
+    BEGIN
+        IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'turma') THEN
+            CREATE TYPE turma AS ENUM ('A', 'B');
+        END IF;
+    END
+$$;
+
 -- (Opcional) lista de graus académicos
 CREATE TABLE IF NOT EXISTS grau
 (
@@ -32,6 +42,13 @@ CREATE TABLE IF NOT EXISTS grau
 -- ===============
 --   Entidades
 -- ===============
+
+CREATE TABLE IF NOT EXISTS ano_letivo
+(
+    id_ano SERIAL PRIMARY KEY, -- 1
+    anoInicio INTEGER NOT NULL -- 2024
+    anoFim INTEGER NOT NULL -- 2025
+)
 
 CREATE TABLE IF NOT EXISTS departamento
 (
@@ -64,6 +81,7 @@ CREATE TABLE IF NOT EXISTS docente
     email     TEXT    NOT NULL,
     ativo     BOOLEAN NOT NULL DEFAULT TRUE,
     convidado BOOLEAN NOT NULL DEFAULT FALSE,
+    dataInicio TIMESTAMP NOT NULL DEFAULT NOW(),
     CONSTRAINT uq_docente_email UNIQUE (email)
 );
 
@@ -89,6 +107,17 @@ CREATE TABLE IF NOT EXISTS uc
     sem_curso SMALLINT      NOT NULL CHECK (sem_curso IN (1, 2)),
     ects      NUMERIC(4, 1) NOT NULL CHECK (ects >= 0),
     ativo     BOOLEAN       NOT NULL DEFAULT TRUE
+);
+
+-- Turmas por UC
+CREATE TABLE IF NOT EXISTS uc_turma
+(
+    id_uc INTEGER   NOT NULL REFERENCES uc (id_uc)
+        ON UPDATE CASCADE ON DELETE CASCADE,
+    turma turma NOT NULL DEFAULT 'A',
+    ano_letivo INTEGER NOT NULL REFERENCES ano_letivo (id_ano)
+        ON UPDATE CASCADE ON DELETE RESTRICT,
+    PRIMARY KEY (id_uc, turma, ano_letivo)
 );
 
 -- Tabela associativa para horas por tipo numa UC
@@ -127,6 +156,34 @@ CREATE TABLE IF NOT EXISTS historico_cv_docente
     data    DATE    NOT NULL,
     link_cv TEXT    NOT NULL
 );
+
+ -- Histórico de contratos
+ CREATE TABLE IF NOT EXISTS historico_contrato_docente
+ (
+    id_hcd SERIAL PRIMARY KEY,
+    id_doc INTEGER NOT NULL REFERENCES docente (id_doc)
+        ON UPDATE CASCADE ON DELETE CASCADE,
+    dataInicio TIMESTAMP NOT NULL DEFAULT NOW(),
+    dataFim DATE
+    id_ano INTEGER NOT NULL REFERENCES ano_letivo (id_ano)
+        ON UPDATE CASCADE ON DELETE RESTRICT
+    
+ );
+
+ -- DSD
+ CREATE TABLE IF NOT EXISTS DSD
+ (
+    id_dsd SERIAL PRIMARY KEY,
+    id_doc INTEGER NOT NULL REFERENCES docente (id_doc)
+        ON UPDATE CASCADE ON DELETE CASCADE,
+    id_ano INTEGER NOT NULL REFERENCES ano_letivo (id_ano)
+        ON UPDATE CASCADE ON DELETE RESTRICT
+    id_uc INTEGER NOT NULL REFERENCES uc (id_uc)
+        ON UPDATE CASCADE ON DELETE RESTRICT
+    tipo tipo_hora NOT NULL,
+    horas INTEGER NOT NULL CHECK (horas >= 0)
+    turma turma NOT NULL
+ );
 
 -- =========================
 --   Índices adicionais

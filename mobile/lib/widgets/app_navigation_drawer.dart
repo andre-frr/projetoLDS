@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../providers/auth_provider.dart';
 import '../screens/areas_cientificas_screen.dart';
+import '../screens/cursos_screen.dart';
 import '../screens/departamentos_screen.dart';
 import '../screens/docentes_screen.dart';
 import '../screens/home_screen.dart';
@@ -69,6 +70,15 @@ class AppNavigationDrawer extends StatelessWidget {
             route: 'departamentos',
             onTap: () {
               _navigateTo(context, const DepartamentosScreen());
+            },
+          ),
+          _buildDrawerItem(
+            context,
+            icon: Icons.school,
+            title: 'Cursos',
+            route: 'cursos',
+            onTap: () {
+              _navigateTo(context, const CursosScreen());
             },
           ),
           _buildDrawerItem(
