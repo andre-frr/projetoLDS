@@ -256,20 +256,20 @@ class _DocentesScreenState extends State<DocentesScreen> {
                           : TextDecoration.lineThrough,
                     ),
                   ),
-                subtitle: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(docente.email),
-                    Text(
-                      '${docente.ativo ? 'Ativo' : 'Inativo'}${docente.convidado ? ' • Convidado' : ''}',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: docente.ativo ? Colors.green : Colors.red,
+                  subtitle: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(docente.email),
+                      Text(
+                        '${docente.ativo ? 'Ativo' : 'Inativo'}${docente.convidado ? ' • Convidado' : ''}',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: docente.ativo ? Colors.green : Colors.red,
+                        ),
                       ),
-                    ),
-                  ],
-                ),
-                trailing: PopupMenuButton(
+                    ],
+                  ),
+                  trailing: PopupMenuButton(
                   itemBuilder: (context) => [
                     const PopupMenuItem(
                       value: 'edit',
@@ -508,6 +508,7 @@ class _DocentesScreenState extends State<DocentesScreen> {
                       }
                     }
                   },
+                ),
                 ),
               );
             },

@@ -51,7 +51,8 @@ CREATE TABLE IF NOT EXISTS area_cientifica
     id_dep  INTEGER NOT NULL REFERENCES departamento (id_dep)
         ON UPDATE CASCADE ON DELETE RESTRICT,
     ativo   BOOLEAN NOT NULL DEFAULT TRUE,
-    CONSTRAINT uq_area_sigla UNIQUE (sigla)
+    CONSTRAINT uq_area_sigla UNIQUE (sigla),
+    CONSTRAINT uq_area_nome UNIQUE (nome)
 );
 
 CREATE TABLE IF NOT EXISTS docente

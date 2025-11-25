@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../providers/auth_provider.dart';
 
+import 'areas_cientificas_screen.dart';
 import 'departamentos_screen.dart';
 import 'docentes_screen.dart';
 
@@ -121,11 +122,16 @@ class HomeScreen extends StatelessWidget {
               },
             ),
             ListTile(
-              leading: const Icon(Icons.book),
-              title: const Text('Unidades Curriculares'),
+              leading: const Icon(Icons.science),
+              title: const Text('Áreas Científicas'),
               onTap: () {
-                // TODO: Navigate to curricular units
                 Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const AreasCientificasScreen(),
+                  ),
+                );
               },
             ),
             const Divider(),
