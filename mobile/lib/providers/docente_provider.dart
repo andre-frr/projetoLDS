@@ -13,7 +13,9 @@ class DocenteProvider with ChangeNotifier {
   DocenteProvider(this._service);
 
   List<DocenteModel> get docentes => _docentes;
+
   bool get isLoading => _isLoading;
+
   String? get error => _error;
 
   Future<void> loadAll({bool incluirInativos = false}) async {

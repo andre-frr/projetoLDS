@@ -62,7 +62,7 @@ class _AreasCientificasScreenState extends State<AreasCientificasScreen> {
                   ),
                   const SizedBox(height: 16),
                   DropdownButtonFormField<int>(
-                    value: selectedDepartamento,
+                    initialValue: selectedDepartamento,
                     decoration: const InputDecoration(
                       labelText: 'Departamento',
                       border: OutlineInputBorder(),
@@ -108,7 +108,9 @@ class _AreasCientificasScreenState extends State<AreasCientificasScreen> {
                   ativo: true,
                 );
 
-                final success = await context.read<AreaCientificaProvider>().create(area);
+                final success = await context
+                    .read<AreaCientificaProvider>()
+                    .create(area);
 
                 if (success && mounted) {
                   Navigator.pop(context);
@@ -118,10 +120,14 @@ class _AreasCientificasScreenState extends State<AreasCientificasScreen> {
                       backgroundColor: Colors.green,
                     ),
                   );
-                } else if (mounted && context.read<AreaCientificaProvider>().errorMessage != null) {
+                } else if (mounted &&
+                    context.read<AreaCientificaProvider>().errorMessage !=
+                        null) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
-                      content: Text(context.read<AreaCientificaProvider>().errorMessage!),
+                      content: Text(
+                        context.read<AreaCientificaProvider>().errorMessage!,
+                      ),
                       backgroundColor: Colors.red,
                     ),
                   );
@@ -210,17 +216,12 @@ class _AreasCientificasScreenState extends State<AreasCientificasScreen> {
                   const SizedBox(height: 16),
                   Text(
                     'Nenhuma área científica encontrada',
-                    style: TextStyle(
-                      fontSize: 18,
-                      color: Colors.grey[600],
-                    ),
+                    style: TextStyle(fontSize: 18, color: Colors.grey[600]),
                   ),
                   const SizedBox(height: 8),
                   Text(
                     'Clique no botão + para adicionar',
-                    style: TextStyle(
-                      color: Colors.grey[500],
-                    ),
+                    style: TextStyle(color: Colors.grey[500]),
                   ),
                 ],
               ),
@@ -330,7 +331,10 @@ class _AreasCientificasScreenState extends State<AreasCientificasScreen> {
                         }
                       } else if (value == 'reactivate') {
                         final updatedArea = area.copyWith(ativo: true);
-                        final success = await provider.update(area.id, updatedArea);
+                        final success = await provider.update(
+                          area.id,
+                          updatedArea,
+                        );
                         if (success && mounted) {
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
@@ -438,7 +442,7 @@ class _AreasCientificasScreenState extends State<AreasCientificasScreen> {
                   ),
                   const SizedBox(height: 16),
                   DropdownButtonFormField<int>(
-                    value: selectedDepartamento,
+                    initialValue: selectedDepartamento,
                     decoration: const InputDecoration(
                       labelText: 'Departamento',
                       border: OutlineInputBorder(),
@@ -484,10 +488,9 @@ class _AreasCientificasScreenState extends State<AreasCientificasScreen> {
                   ativo: area.ativo,
                 );
 
-                final success = await context.read<AreaCientificaProvider>().update(
-                  area.id,
-                  updatedArea,
-                );
+                final success = await context
+                    .read<AreaCientificaProvider>()
+                    .update(area.id, updatedArea);
 
                 if (success && mounted) {
                   Navigator.pop(context);
@@ -497,10 +500,14 @@ class _AreasCientificasScreenState extends State<AreasCientificasScreen> {
                       backgroundColor: Colors.green,
                     ),
                   );
-                } else if (mounted && context.read<AreaCientificaProvider>().errorMessage != null) {
+                } else if (mounted &&
+                    context.read<AreaCientificaProvider>().errorMessage !=
+                        null) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
-                      content: Text(context.read<AreaCientificaProvider>().errorMessage!),
+                      content: Text(
+                        context.read<AreaCientificaProvider>().errorMessage!,
+                      ),
                       backgroundColor: Colors.red,
                     ),
                   );

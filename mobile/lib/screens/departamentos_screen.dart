@@ -49,7 +49,7 @@ class _DepartamentosScreenState extends State<DepartamentosScreen> {
                 final provider = context.read<DepartamentoProvider>();
                 final navigator = Navigator.of(context);
                 final messenger = ScaffoldMessenger.of(context);
-                
+
                 final departamento = DepartamentoModel(
                   id: 0,
                   nome: nomeController.text,
@@ -109,10 +109,13 @@ class _DepartamentosScreenState extends State<DepartamentosScreen> {
                     backgroundColor: Colors.green,
                   ),
                 );
-              } else if (mounted && context.read<DepartamentoProvider>().errorMessage != null) {
+              } else if (mounted &&
+                  context.read<DepartamentoProvider>().errorMessage != null) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
-                    content: Text(context.read<DepartamentoProvider>().errorMessage!),
+                    content: Text(
+                      context.read<DepartamentoProvider>().errorMessage!,
+                    ),
                     backgroundColor: Colors.red,
                   ),
                 );
@@ -280,8 +283,12 @@ class _DepartamentosScreenState extends State<DepartamentosScreen> {
                     ],
                     onSelected: (value) async {
                       if (value == 'edit') {
-                        final nomeController = TextEditingController(text: dept.nome);
-                        final siglaController = TextEditingController(text: dept.sigla);
+                        final nomeController = TextEditingController(
+                          text: dept.nome,
+                        );
+                        final siglaController = TextEditingController(
+                          text: dept.sigla,
+                        );
 
                         final result = await showDialog<bool>(
                           context: context,
@@ -302,7 +309,8 @@ class _DepartamentosScreenState extends State<DepartamentosScreen> {
                                 TextField(
                                   controller: siglaController,
                                   textInputAction: TextInputAction.done,
-                                  onSubmitted: (_) => Navigator.pop(context, true),
+                                  onSubmitted: (_) =>
+                                      Navigator.pop(context, true),
                                   decoration: const InputDecoration(
                                     labelText: 'Sigla',
                                     border: OutlineInputBorder(),
@@ -331,7 +339,10 @@ class _DepartamentosScreenState extends State<DepartamentosScreen> {
                             ativo: dept.ativo,
                           );
 
-                          final success = await provider.update(dept.id, updatedDept);
+                          final success = await provider.update(
+                            dept.id,
+                            updatedDept,
+                          );
                           if (success && mounted) {
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(
@@ -371,7 +382,10 @@ class _DepartamentosScreenState extends State<DepartamentosScreen> {
                           sigla: dept.sigla,
                           ativo: true,
                         );
-                        final success = await provider.update(dept.id, updatedDept);
+                        final success = await provider.update(
+                          dept.id,
+                          updatedDept,
+                        );
                         if (success && mounted) {
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(

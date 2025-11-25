@@ -13,7 +13,9 @@ class AreaCientificaProvider with ChangeNotifier {
   AreaCientificaProvider(this._service);
 
   List<AreaCientificaModel> get areas => _areas;
+
   bool get isLoading => _isLoading;
+
   String? get errorMessage => _errorMessage;
 
   Future<void> loadAll({bool incluirInativos = false}) async {

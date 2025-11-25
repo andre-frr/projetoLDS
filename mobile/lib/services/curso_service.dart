@@ -27,9 +27,7 @@ class CursoService {
       throw Exception('Failed to load cursos');
     } on DioException catch (e) {
       _logger.e('Error loading cursos: ${e.response?.data ?? e.message}');
-      throw Exception(
-        e.response?.data['message'] ?? 'Failed to load cursos',
-      );
+      throw Exception(e.response?.data['message'] ?? 'Failed to load cursos');
     }
   }
 
@@ -45,9 +43,7 @@ class CursoService {
       throw Exception('Failed to load curso');
     } on DioException catch (e) {
       _logger.e('Error loading curso: ${e.response?.data ?? e.message}');
-      throw Exception(
-        e.response?.data['message'] ?? 'Failed to load curso',
-      );
+      throw Exception(e.response?.data['message'] ?? 'Failed to load curso');
     }
   }
 
@@ -56,11 +52,7 @@ class CursoService {
     try {
       final response = await _dio.post(
         _basePath,
-        data: {
-          'nome': curso.nome,
-          'sigla': curso.sigla,
-          'tipo': curso.tipo,
-        },
+        data: {'nome': curso.nome, 'sigla': curso.sigla, 'tipo': curso.tipo},
       );
 
       if (response.statusCode == 201) {
@@ -70,9 +62,7 @@ class CursoService {
       throw Exception('Failed to create curso');
     } on DioException catch (e) {
       _logger.e('Error creating curso: ${e.response?.data ?? e.message}');
-      throw Exception(
-        e.response?.data['message'] ?? 'Failed to create curso',
-      );
+      throw Exception(e.response?.data['message'] ?? 'Failed to create curso');
     }
   }
 
@@ -96,9 +86,7 @@ class CursoService {
       throw Exception('Failed to update curso');
     } on DioException catch (e) {
       _logger.e('Error updating curso: ${e.response?.data ?? e.message}');
-      throw Exception(
-        e.response?.data['message'] ?? 'Failed to update curso',
-      );
+      throw Exception(e.response?.data['message'] ?? 'Failed to update curso');
     }
   }
 
@@ -111,9 +99,7 @@ class CursoService {
         throw Exception('Failed to deactivate curso');
       }
     } on DioException catch (e) {
-      _logger.e(
-        'Error deactivating curso: ${e.response?.data ?? e.message}',
-      );
+      _logger.e('Error deactivating curso: ${e.response?.data ?? e.message}');
       throw Exception(
         e.response?.data['message'] ?? 'Failed to deactivate curso',
       );
@@ -130,9 +116,7 @@ class CursoService {
       }
     } on DioException catch (e) {
       _logger.e('Error deleting curso: ${e.response?.data ?? e.message}');
-      throw Exception(
-        e.response?.data['message'] ?? 'Failed to delete curso',
-      );
+      throw Exception(e.response?.data['message'] ?? 'Failed to delete curso');
     }
   }
 }

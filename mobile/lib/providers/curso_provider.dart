@@ -13,7 +13,9 @@ class CursoProvider with ChangeNotifier {
   CursoProvider(this._service);
 
   List<CursoModel> get cursos => _cursos;
+
   bool get isLoading => _isLoading;
+
   String? get errorMessage => _errorMessage;
 
   Future<void> loadAll({bool incluirInativos = false}) async {

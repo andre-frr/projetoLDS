@@ -6,15 +6,11 @@ import '../screens/areas_cientificas_screen.dart';
 import '../screens/cursos_screen.dart';
 import '../screens/departamentos_screen.dart';
 import '../screens/docentes_screen.dart';
-import '../screens/home_screen.dart';
 
 class AppNavigationDrawer extends StatelessWidget {
   final String currentRoute;
 
-  const AppNavigationDrawer({
-    super.key,
-    required this.currentRoute,
-  });
+  const AppNavigationDrawer({super.key, required this.currentRoute});
 
   @override
   Widget build(BuildContext context) {
@@ -45,10 +41,7 @@ class AppNavigationDrawer extends StatelessWidget {
                   const SizedBox(height: 4),
                   Text(
                     user.username,
-                    style: const TextStyle(
-                      color: Colors.white70,
-                      fontSize: 14,
-                    ),
+                    style: const TextStyle(color: Colors.white70, fontSize: 14),
                   ),
                 ],
               ],
@@ -133,8 +126,8 @@ class AppNavigationDrawer extends StatelessWidget {
   void _navigateTo(BuildContext context, Widget screen) {
     Navigator.pop(context); // Close drawer
     // Replace current screen instead of pushing
-    Navigator.of(context).pushReplacement(
-      MaterialPageRoute(builder: (context) => screen),
-    );
+    Navigator.of(
+      context,
+    ).pushReplacement(MaterialPageRoute(builder: (context) => screen));
   }
 }

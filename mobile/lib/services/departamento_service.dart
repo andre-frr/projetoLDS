@@ -93,7 +93,8 @@ class DepartamentoService {
     } on DioException catch (e) {
       _logger.e('Error updating department: ${e.response?.data ?? e.message}');
       throw Exception(
-          e.response?.data['message'] ?? 'Failed to update department');
+        e.response?.data['message'] ?? 'Failed to update department',
+      );
     }
   }
 

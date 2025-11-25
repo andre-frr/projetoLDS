@@ -27,9 +27,7 @@ class DocenteService {
       throw Exception('Failed to load docentes');
     } on DioException catch (e) {
       _logger.e('Error loading docentes: ${e.response?.data ?? e.message}');
-      throw Exception(
-        e.response?.data['message'] ?? 'Failed to load docentes',
-      );
+      throw Exception(e.response?.data['message'] ?? 'Failed to load docentes');
     }
   }
 
@@ -45,9 +43,7 @@ class DocenteService {
       throw Exception('Failed to load docente');
     } on DioException catch (e) {
       _logger.e('Error loading docente: ${e.response?.data ?? e.message}');
-      throw Exception(
-        e.response?.data['message'] ?? 'Failed to load docente',
-      );
+      throw Exception(e.response?.data['message'] ?? 'Failed to load docente');
     }
   }
 
@@ -113,9 +109,7 @@ class DocenteService {
         throw Exception('Failed to deactivate docente');
       }
     } on DioException catch (e) {
-      _logger.e(
-        'Error deactivating docente: ${e.response?.data ?? e.message}',
-      );
+      _logger.e('Error deactivating docente: ${e.response?.data ?? e.message}');
       throw Exception(
         e.response?.data['message'] ?? 'Failed to deactivate docente',
       );

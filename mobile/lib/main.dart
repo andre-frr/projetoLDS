@@ -43,7 +43,8 @@ class MyApp extends StatelessWidget {
           create: (_) => DocenteProvider(DocenteService(DioService().dio)),
         ),
         ChangeNotifierProvider(
-          create: (_) => AreaCientificaProvider(AreaCientificaService(DioService().dio)),
+          create: (_) =>
+              AreaCientificaProvider(AreaCientificaService(DioService().dio)),
         ),
         ChangeNotifierProvider(
           create: (_) => CursoProvider(CursoService(DioService().dio)),

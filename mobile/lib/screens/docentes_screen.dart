@@ -125,8 +125,8 @@ class _DocentesScreenState extends State<DocentesScreen> {
                 );
 
                 final success = await context.read<DocenteProvider>().create(
-                      docente,
-                    );
+                  docente,
+                );
 
                 if (success && mounted) {
                   Navigator.pop(context);
@@ -136,7 +136,8 @@ class _DocentesScreenState extends State<DocentesScreen> {
                       backgroundColor: Colors.green,
                     ),
                   );
-                } else if (mounted && context.read<DocenteProvider>().error != null) {
+                } else if (mounted &&
+                    context.read<DocenteProvider>().error != null) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
                       content: Text(context.read<DocenteProvider>().error!),
@@ -213,17 +214,12 @@ class _DocentesScreenState extends State<DocentesScreen> {
                   const SizedBox(height: 16),
                   Text(
                     'Nenhum docente encontrado',
-                    style: TextStyle(
-                      fontSize: 18,
-                      color: Colors.grey[600],
-                    ),
+                    style: TextStyle(fontSize: 18, color: Colors.grey[600]),
                   ),
                   const SizedBox(height: 8),
                   Text(
                     'Clique no botão + para adicionar',
-                    style: TextStyle(
-                      color: Colors.grey[500],
-                    ),
+                    style: TextStyle(color: Colors.grey[500]),
                   ),
                 ],
               ),
@@ -272,146 +268,195 @@ class _DocentesScreenState extends State<DocentesScreen> {
                     ],
                   ),
                   trailing: PopupMenuButton(
-                  itemBuilder: (context) => [
-                    const PopupMenuItem(
-                      value: 'edit',
-                      child: Row(
-                        children: [
-                          Icon(Icons.edit),
-                          SizedBox(width: 8),
-                          Text('Editar'),
-                        ],
-                      ),
-                    ),
-                    if (docente.ativo)
+                    itemBuilder: (context) => [
                       const PopupMenuItem(
-                        value: 'deactivate',
+                        value: 'edit',
                         child: Row(
                           children: [
-                            Icon(Icons.block),
+                            Icon(Icons.edit),
                             SizedBox(width: 8),
-                            Text('Inativar'),
-                          ],
-                        ),
-                      )
-                    else
-                      const PopupMenuItem(
-                        value: 'reactivate',
-                        child: Row(
-                          children: [
-                            Icon(Icons.check_circle, color: Colors.green),
-                            SizedBox(width: 8),
-                            Text(
-                              'Reativar',
-                              style: TextStyle(color: Colors.green),
-                            ),
+                            Text('Editar'),
                           ],
                         ),
                       ),
-                    const PopupMenuItem(
-                      value: 'delete',
-                      child: Row(
-                        children: [
-                          Icon(Icons.delete, color: Colors.red),
-                          SizedBox(width: 8),
-                          Text(
-                            'Excluir',
-                            style: TextStyle(color: Colors.red),
+                      if (docente.ativo)
+                        const PopupMenuItem(
+                          value: 'deactivate',
+                          child: Row(
+                            children: [
+                              Icon(Icons.block),
+                              SizedBox(width: 8),
+                              Text('Inativar'),
+                            ],
                           ),
-                        ],
-                      ),
-                    ),
-                  ],
-                  onSelected: (value) async {
-                    if (value == 'edit') {
-                      final nomeController =
-                          TextEditingController(text: docente.nome);
-                      final emailController =
-                          TextEditingController(text: docente.email);
-                      final idAreaController = TextEditingController(
-                          text: docente.idArea.toString());
-                      bool convidado = docente.convidado;
-
-                      final result = await showDialog<bool>(
-                        context: context,
-                        builder: (context) => StatefulBuilder(
-                          builder: (context, setState) => AlertDialog(
-                            title: const Text('Editar Docente'),
-                            content: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                TextField(
-                                  controller: nomeController,
-                                  textInputAction: TextInputAction.next,
-                                  decoration: const InputDecoration(
-                                    labelText: 'Nome',
-                                    border: OutlineInputBorder(),
-                                  ),
-                                ),
-                                const SizedBox(height: 16),
-                                TextField(
-                                  controller: emailController,
-                                  textInputAction: TextInputAction.next,
-                                  keyboardType: TextInputType.emailAddress,
-                                  decoration: const InputDecoration(
-                                    labelText: 'Email',
-                                    border: OutlineInputBorder(),
-                                  ),
-                                ),
-                                const SizedBox(height: 16),
-                                TextField(
-                                  controller: idAreaController,
-                                  textInputAction: TextInputAction.done,
-                                  keyboardType: TextInputType.number,
-                                  onSubmitted: (_) =>
-                                      Navigator.pop(context, true),
-                                  decoration: const InputDecoration(
-                                    labelText: 'ID Área Científica',
-                                    border: OutlineInputBorder(),
-                                  ),
-                                ),
-                                const SizedBox(height: 16),
-                                CheckboxListTile(
-                                  title: const Text('Convidado'),
-                                  value: convidado,
-                                  onChanged: (value) {
-                                    setState(() {
-                                      convidado = value ?? false;
-                                    });
-                                  },
-                                ),
-                              ],
-                            ),
-                            actions: [
-                              TextButton(
-                                onPressed: () => Navigator.pop(context, false),
-                                child: const Text('Cancelar'),
-                              ),
-                              ElevatedButton(
-                                onPressed: () => Navigator.pop(context, true),
-                                child: const Text('Salvar'),
+                        )
+                      else
+                        const PopupMenuItem(
+                          value: 'reactivate',
+                          child: Row(
+                            children: [
+                              Icon(Icons.check_circle, color: Colors.green),
+                              SizedBox(width: 8),
+                              Text(
+                                'Reativar',
+                                style: TextStyle(color: Colors.green),
                               ),
                             ],
                           ),
                         ),
-                      );
+                      const PopupMenuItem(
+                        value: 'delete',
+                        child: Row(
+                          children: [
+                            Icon(Icons.delete, color: Colors.red),
+                            SizedBox(width: 8),
+                            Text(
+                              'Excluir',
+                              style: TextStyle(color: Colors.red),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                    onSelected: (value) async {
+                      if (value == 'edit') {
+                        final nomeController = TextEditingController(
+                          text: docente.nome,
+                        );
+                        final emailController = TextEditingController(
+                          text: docente.email,
+                        );
+                        final idAreaController = TextEditingController(
+                          text: docente.idArea.toString(),
+                        );
+                        bool convidado = docente.convidado;
 
-                      if (result == true && mounted) {
-                        final updatedDocente = DocenteModel(
-                          id: docente.id,
-                          nome: nomeController.text,
-                          email: emailController.text,
-                          idArea: int.tryParse(idAreaController.text) ?? 0,
-                          ativo: docente.ativo,
-                          convidado: convidado,
+                        final result = await showDialog<bool>(
+                          context: context,
+                          builder: (context) => StatefulBuilder(
+                            builder: (context, setState) => AlertDialog(
+                              title: const Text('Editar Docente'),
+                              content: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  TextField(
+                                    controller: nomeController,
+                                    textInputAction: TextInputAction.next,
+                                    decoration: const InputDecoration(
+                                      labelText: 'Nome',
+                                      border: OutlineInputBorder(),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 16),
+                                  TextField(
+                                    controller: emailController,
+                                    textInputAction: TextInputAction.next,
+                                    keyboardType: TextInputType.emailAddress,
+                                    decoration: const InputDecoration(
+                                      labelText: 'Email',
+                                      border: OutlineInputBorder(),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 16),
+                                  TextField(
+                                    controller: idAreaController,
+                                    textInputAction: TextInputAction.done,
+                                    keyboardType: TextInputType.number,
+                                    onSubmitted: (_) =>
+                                        Navigator.pop(context, true),
+                                    decoration: const InputDecoration(
+                                      labelText: 'ID Área Científica',
+                                      border: OutlineInputBorder(),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 16),
+                                  CheckboxListTile(
+                                    title: const Text('Convidado'),
+                                    value: convidado,
+                                    onChanged: (value) {
+                                      setState(() {
+                                        convidado = value ?? false;
+                                      });
+                                    },
+                                  ),
+                                ],
+                              ),
+                              actions: [
+                                TextButton(
+                                  onPressed: () =>
+                                      Navigator.pop(context, false),
+                                  child: const Text('Cancelar'),
+                                ),
+                                ElevatedButton(
+                                  onPressed: () => Navigator.pop(context, true),
+                                  child: const Text('Salvar'),
+                                ),
+                              ],
+                            ),
+                          ),
                         );
 
+                        if (result == true && mounted) {
+                          final updatedDocente = DocenteModel(
+                            id: docente.id,
+                            nome: nomeController.text,
+                            email: emailController.text,
+                            idArea: int.tryParse(idAreaController.text) ?? 0,
+                            ativo: docente.ativo,
+                            convidado: convidado,
+                          );
+
+                          final success = await provider.update(
+                            docente.id,
+                            updatedDocente,
+                          );
+                          if (success && mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Docente atualizado'),
+                                backgroundColor: Colors.green,
+                              ),
+                            );
+                          } else if (mounted && provider.error != null) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(provider.error!),
+                                backgroundColor: Colors.red,
+                              ),
+                            );
+                          }
+                        }
+                      } else if (value == 'deactivate') {
+                        final success = await provider.deactivate(docente.id);
+                        if (success && mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Docente inativado')),
+                          );
+                        } else if (mounted && provider.error != null) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(provider.error!),
+                              backgroundColor: Colors.red,
+                            ),
+                          );
+                        }
+                      } else if (value == 'reactivate') {
+                        final updatedDocente = DocenteModel(
+                          id: docente.id,
+                          nome: docente.nome,
+                          email: docente.email,
+                          idArea: docente.idArea,
+                          ativo: true,
+                          convidado: docente.convidado,
+                        );
                         final success = await provider.update(
-                            docente.id, updatedDocente);
+                          docente.id,
+                          updatedDocente,
+                        );
                         if (success && mounted) {
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
-                              content: Text('Docente atualizado'),
+                              content: Text('Docente reativado'),
                               backgroundColor: Colors.green,
                             ),
                           );
@@ -423,94 +468,51 @@ class _DocentesScreenState extends State<DocentesScreen> {
                             ),
                           );
                         }
-                      }
-                    } else if (value == 'deactivate') {
-                      final success = await provider.deactivate(docente.id);
-                      if (success && mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Docente inativado'),
-                          ),
-                        );
-                      } else if (mounted && provider.error != null) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(provider.error!),
-                            backgroundColor: Colors.red,
-                          ),
-                        );
-                      }
-                    } else if (value == 'reactivate') {
-                      final updatedDocente = DocenteModel(
-                        id: docente.id,
-                        nome: docente.nome,
-                        email: docente.email,
-                        idArea: docente.idArea,
-                        ativo: true,
-                        convidado: docente.convidado,
-                      );
-                      final success =
-                          await provider.update(docente.id, updatedDocente);
-                      if (success && mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Docente reativado'),
-                            backgroundColor: Colors.green,
-                          ),
-                        );
-                      } else if (mounted && provider.error != null) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(provider.error!),
-                            backgroundColor: Colors.red,
-                          ),
-                        );
-                      }
-                    } else if (value == 'delete') {
-                      final confirm = await showDialog<bool>(
-                        context: context,
-                        builder: (context) => AlertDialog(
-                          title: const Text('Confirmar exclusão'),
-                          content: Text(
-                            'Deseja realmente excluir o docente "${docente.nome}"?',
-                          ),
-                          actions: [
-                            TextButton(
-                              onPressed: () => Navigator.pop(context, false),
-                              child: const Text('Cancelar'),
+                      } else if (value == 'delete') {
+                        final confirm = await showDialog<bool>(
+                          context: context,
+                          builder: (context) => AlertDialog(
+                            title: const Text('Confirmar exclusão'),
+                            content: Text(
+                              'Deseja realmente excluir o docente "${docente.nome}"?',
                             ),
-                            ElevatedButton(
-                              onPressed: () => Navigator.pop(context, true),
-                              style: ElevatedButton.styleFrom(
+                            actions: [
+                              TextButton(
+                                onPressed: () => Navigator.pop(context, false),
+                                child: const Text('Cancelar'),
+                              ),
+                              ElevatedButton(
+                                onPressed: () => Navigator.pop(context, true),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.red,
+                                ),
+                                child: const Text('Excluir'),
+                              ),
+                            ],
+                          ),
+                        );
+
+                        if (confirm == true && mounted) {
+                          final success = await provider.delete(docente.id);
+                          if (success && mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Docente excluído'),
                                 backgroundColor: Colors.red,
                               ),
-                              child: const Text('Excluir'),
-                            ),
-                          ],
-                        ),
-                      );
-
-                      if (confirm == true && mounted) {
-                        final success = await provider.delete(docente.id);
-                        if (success && mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Docente excluído'),
-                              backgroundColor: Colors.red,
-                            ),
-                          );
-                        } else if (mounted && provider.error != null) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text(provider.error!),
-                              backgroundColor: Colors.red,
-                            ),
-                          );
+                            );
+                          } else if (mounted && provider.error != null) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(provider.error!),
+                                backgroundColor: Colors.red,
+                              ),
+                            );
+                          }
                         }
                       }
-                    }
-                  },
-                ),
+                    },
+                  ),
                 ),
               );
             },

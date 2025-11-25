@@ -53,13 +53,16 @@ class _CursosScreenState extends State<CursosScreen> {
               ),
               const SizedBox(height: 16),
               DropdownButtonFormField<String>(
-                value: selectedTipo,
+                initialValue: selectedTipo,
                 decoration: const InputDecoration(
                   labelText: 'Tipo',
                   border: OutlineInputBorder(),
                 ),
                 items: const [
-                  DropdownMenuItem(value: 'TeSP', child: Text('Técnico Superior Profissional')),
+                  DropdownMenuItem(
+                    value: 'TeSP',
+                    child: Text('Técnico Superior Profissional'),
+                  ),
                   DropdownMenuItem(value: 'LIC', child: Text('Licenciatura')),
                   DropdownMenuItem(value: 'MEST', child: Text('Mestrado')),
                   DropdownMenuItem(value: 'DOUT', child: Text('Doutoramento')),
@@ -97,7 +100,9 @@ class _CursosScreenState extends State<CursosScreen> {
                   ativo: true,
                 );
 
-                final success = await context.read<CursoProvider>().create(curso);
+                final success = await context.read<CursoProvider>().create(
+                  curso,
+                );
 
                 if (success && mounted) {
                   Navigator.pop(context);
@@ -107,10 +112,13 @@ class _CursosScreenState extends State<CursosScreen> {
                       backgroundColor: Colors.green,
                     ),
                   );
-                } else if (mounted && context.read<CursoProvider>().errorMessage != null) {
+                } else if (mounted &&
+                    context.read<CursoProvider>().errorMessage != null) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
-                      content: Text(context.read<CursoProvider>().errorMessage!),
+                      content: Text(
+                        context.read<CursoProvider>().errorMessage!,
+                      ),
                       backgroundColor: Colors.red,
                     ),
                   );
@@ -184,17 +192,12 @@ class _CursosScreenState extends State<CursosScreen> {
                   const SizedBox(height: 16),
                   Text(
                     'Nenhum curso encontrado',
-                    style: TextStyle(
-                      fontSize: 18,
-                      color: Colors.grey[600],
-                    ),
+                    style: TextStyle(fontSize: 18, color: Colors.grey[600]),
                   ),
                   const SizedBox(height: 8),
                   Text(
                     'Clique no botão + para adicionar',
-                    style: TextStyle(
-                      color: Colors.grey[500],
-                    ),
+                    style: TextStyle(color: Colors.grey[500]),
                   ),
                 ],
               ),
@@ -291,9 +294,7 @@ class _CursosScreenState extends State<CursosScreen> {
                         final success = await provider.deactivate(curso.id);
                         if (success && mounted) {
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Curso inativado'),
-                            ),
+                            const SnackBar(content: Text('Curso inativado')),
                           );
                         } else if (mounted && provider.errorMessage != null) {
                           ScaffoldMessenger.of(context).showSnackBar(
@@ -305,7 +306,10 @@ class _CursosScreenState extends State<CursosScreen> {
                         }
                       } else if (value == 'reactivate') {
                         final updatedCurso = curso.copyWith(ativo: true);
-                        final success = await provider.update(curso.id, updatedCurso);
+                        final success = await provider.update(
+                          curso.id,
+                          updatedCurso,
+                        );
                         if (success && mounted) {
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
@@ -407,13 +411,16 @@ class _CursosScreenState extends State<CursosScreen> {
               ),
               const SizedBox(height: 16),
               DropdownButtonFormField<String>(
-                value: selectedTipo,
+                initialValue: selectedTipo,
                 decoration: const InputDecoration(
                   labelText: 'Tipo',
                   border: OutlineInputBorder(),
                 ),
                 items: const [
-                  DropdownMenuItem(value: 'TeSP', child: Text('Técnico Superior Profissional')),
+                  DropdownMenuItem(
+                    value: 'TeSP',
+                    child: Text('Técnico Superior Profissional'),
+                  ),
                   DropdownMenuItem(value: 'LIC', child: Text('Licenciatura')),
                   DropdownMenuItem(value: 'MEST', child: Text('Mestrado')),
                   DropdownMenuItem(value: 'DOUT', child: Text('Doutoramento')),
@@ -464,10 +471,13 @@ class _CursosScreenState extends State<CursosScreen> {
                       backgroundColor: Colors.green,
                     ),
                   );
-                } else if (mounted && context.read<CursoProvider>().errorMessage != null) {
+                } else if (mounted &&
+                    context.read<CursoProvider>().errorMessage != null) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
-                      content: Text(context.read<CursoProvider>().errorMessage!),
+                      content: Text(
+                        context.read<CursoProvider>().errorMessage!,
+                      ),
                       backgroundColor: Colors.red,
                     ),
                   );

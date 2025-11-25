@@ -12,7 +12,9 @@ class AreaCientificaService {
   AreaCientificaService(this._dio);
 
   // Get all areas
-  Future<List<AreaCientificaModel>> getAll({bool incluirInativos = false}) async {
+  Future<List<AreaCientificaModel>> getAll({
+    bool incluirInativos = false,
+  }) async {
     try {
       final response = await _dio.get(
         _basePath,
@@ -56,11 +58,7 @@ class AreaCientificaService {
     try {
       final response = await _dio.post(
         _basePath,
-        data: {
-          'nome': area.nome,
-          'sigla': area.sigla,
-          'id_dep': area.idDep,
-        },
+        data: {'nome': area.nome, 'sigla': area.sigla, 'id_dep': area.idDep},
       );
 
       if (response.statusCode == 201) {
@@ -111,9 +109,7 @@ class AreaCientificaService {
         throw Exception('Failed to deactivate área científica');
       }
     } on DioException catch (e) {
-      _logger.e(
-        'Error deactivating area: ${e.response?.data ?? e.message}',
-      );
+      _logger.e('Error deactivating area: ${e.response?.data ?? e.message}');
       throw Exception(
         e.response?.data['message'] ?? 'Failed to deactivate área científica',
       );
