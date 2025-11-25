@@ -46,9 +46,9 @@ CREATE TABLE IF NOT EXISTS grau
 CREATE TABLE IF NOT EXISTS ano_letivo
 (
     id_ano SERIAL PRIMARY KEY, -- 1
-    anoInicio INTEGER NOT NULL -- 2024
+    anoInicio INTEGER NOT NULL, -- 2024
     anoFim INTEGER NOT NULL -- 2025
-)
+);
 
 CREATE TABLE IF NOT EXISTS departamento
 (
@@ -164,10 +164,9 @@ CREATE TABLE IF NOT EXISTS historico_cv_docente
     id_doc INTEGER NOT NULL REFERENCES docente (id_doc)
         ON UPDATE CASCADE ON DELETE CASCADE,
     dataInicio TIMESTAMP NOT NULL DEFAULT NOW(),
-    dataFim DATE
+    dataFim DATE,
     id_ano INTEGER NOT NULL REFERENCES ano_letivo (id_ano)
         ON UPDATE CASCADE ON DELETE RESTRICT
-    
  );
 
  -- DSD
@@ -177,11 +176,11 @@ CREATE TABLE IF NOT EXISTS historico_cv_docente
     id_doc INTEGER NOT NULL REFERENCES docente (id_doc)
         ON UPDATE CASCADE ON DELETE CASCADE,
     id_ano INTEGER NOT NULL REFERENCES ano_letivo (id_ano)
-        ON UPDATE CASCADE ON DELETE RESTRICT
+        ON UPDATE CASCADE ON DELETE RESTRICT,
     id_uc INTEGER NOT NULL REFERENCES uc (id_uc)
-        ON UPDATE CASCADE ON DELETE RESTRICT
+        ON UPDATE CASCADE ON DELETE RESTRICT,
     tipo tipo_hora NOT NULL,
-    horas INTEGER NOT NULL CHECK (horas >= 0)
+    horas INTEGER NOT NULL CHECK (horas >= 0),
     turma turma NOT NULL
  );
 
