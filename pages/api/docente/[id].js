@@ -15,7 +15,7 @@ async function handler(req, res) {
       });
     }
   } else if (req.method === "PUT") {
-    const { nome, email, id_area, convidado } = req.body;
+    const { nome, email, id_area, convidado, ativo } = req.body;
 
     if (!nome || !email || !id_area) {
       return res.status(400).json({ message: "Dados mal formatados." });
@@ -45,12 +45,19 @@ async function handler(req, res) {
         throw error;
       }
 
-      const result = await GrpcClient.update("docente", id, {
+      const updateData = {
         nome,
         email,
         id_area,
         convidado,
-      });
+      };
+
+      // Only include ativo if it's explicitly provided
+      if (ativo !== undefined) {
+        updateData.ativo = ativo;
+      }
+
+      const result = await GrpcClient.update("docente", id, updateData);
       return res.status(200).json(result);
     } catch (error) {
       const statusCode = error.statusCode || 500;

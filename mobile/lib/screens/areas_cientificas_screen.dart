@@ -5,6 +5,7 @@ import '../models/area_cientifica_model.dart';
 import '../models/departamento_model.dart';
 import '../providers/area_cientifica_provider.dart';
 import '../providers/departamento_provider.dart';
+import '../widgets/app_navigation_drawer.dart';
 
 class AreasCientificasScreen extends StatefulWidget {
   const AreasCientificasScreen({super.key});
@@ -163,6 +164,7 @@ class _AreasCientificasScreenState extends State<AreasCientificasScreen> {
           ),
         ],
       ),
+      drawer: const AppNavigationDrawer(currentRoute: 'areas_cientificas'),
       floatingActionButton: FloatingActionButton(
         onPressed: _showCreateDialog,
         child: const Icon(Icons.add),

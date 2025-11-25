@@ -87,6 +87,7 @@ class DocenteService {
           'email': docente.email,
           'id_area': docente.idArea,
           'convidado': docente.convidado,
+          'ativo': docente.ativo,
         },
       );
 

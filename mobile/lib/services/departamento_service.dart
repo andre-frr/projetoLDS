@@ -78,7 +78,11 @@ class DepartamentoService {
     try {
       final response = await _dio.put(
         '$_basePath/$id',
-        data: departamento.toJson(),
+        data: {
+          'nome': departamento.nome,
+          'sigla': departamento.sigla,
+          'ativo': departamento.ativo,
+        },
       );
 
       if (response.statusCode == 200) {
@@ -89,8 +93,7 @@ class DepartamentoService {
     } on DioException catch (e) {
       _logger.e('Error updating department: ${e.response?.data ?? e.message}');
       throw Exception(
-        e.response?.data['message'] ?? 'Failed to update department',
-      );
+          e.response?.data['message'] ?? 'Failed to update department');
     }
   }
 

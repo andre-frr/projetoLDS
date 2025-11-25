@@ -85,6 +85,7 @@ class AreaCientificaService {
           'nome': area.nome,
           'sigla': area.sigla,
           'id_dep': area.idDep,
+          'ativo': area.ativo,
         },
       );
 

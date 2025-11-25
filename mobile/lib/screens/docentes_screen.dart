@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../models/docente_model.dart';
 import '../providers/docente_provider.dart';
+import '../widgets/app_navigation_drawer.dart';
 
 class DocentesScreen extends StatefulWidget {
   const DocentesScreen({super.key});
@@ -166,6 +167,7 @@ class _DocentesScreenState extends State<DocentesScreen> {
           ),
         ],
       ),
+      drawer: const AppNavigationDrawer(currentRoute: 'docentes'),
       floatingActionButton: FloatingActionButton(
         onPressed: _showCreateDialog,
         child: const Icon(Icons.add),

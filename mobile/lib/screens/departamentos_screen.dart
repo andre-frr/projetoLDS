@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../models/departamento_model.dart';
 import '../providers/departamento_provider.dart';
+import '../widgets/app_navigation_drawer.dart';
 
 class DepartamentosScreen extends StatefulWidget {
   const DepartamentosScreen({super.key});
@@ -138,6 +139,7 @@ class _DepartamentosScreenState extends State<DepartamentosScreen> {
           ),
         ],
       ),
+      drawer: const AppNavigationDrawer(currentRoute: 'departamentos'),
       floatingActionButton: FloatingActionButton(
         onPressed: _showCreateDialog,
         child: const Icon(Icons.add),
