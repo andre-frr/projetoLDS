@@ -13,6 +13,8 @@ class DocentesScreen extends StatefulWidget {
 }
 
 class _DocentesScreenState extends State<DocentesScreen> {
+  bool _showInactive = true;
+
   @override
   void initState() {
     super.initState();
@@ -170,6 +172,15 @@ class _DocentesScreenState extends State<DocentesScreen> {
               context.read<DocenteProvider>().loadAll();
             },
           ),
+          IconButton(
+            icon: Icon(_showInactive ? Icons.visibility : Icons.visibility_off),
+            tooltip: _showInactive ? 'Ocultar inativos' : 'Mostrar inativos',
+            onPressed: () {
+              setState(() {
+                _showInactive = !_showInactive;
+              });
+            },
+          ),
         ],
       ),
       drawer: const AppNavigationDrawer(currentRoute: 'docentes'),
@@ -205,19 +216,22 @@ class _DocentesScreenState extends State<DocentesScreen> {
             );
           }
 
-          if (provider.docentes.isEmpty) {
+          // Filter the list based on _showInactive toggle
+          final displayList = _showInactive
+              ? provider.docentes
+              : provider.docentes.where((d) => d.ativo).toList();
+
+          if (displayList.isEmpty) {
             return Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(
-                    Icons.person_outlined,
-                    size: 64,
-                    color: Colors.grey[400],
-                  ),
+                  Icon(Icons.person_outline, size: 64, color: Colors.grey[400]),
                   const SizedBox(height: 16),
                   Text(
-                    'Nenhum docente encontrado',
+                    _showInactive
+                        ? 'Nenhum docente encontrado'
+                        : 'Nenhum docente ativo encontrado',
                     style: TextStyle(fontSize: 18, color: Colors.grey[600]),
                   ),
                   const SizedBox(height: 8),
@@ -232,9 +246,9 @@ class _DocentesScreenState extends State<DocentesScreen> {
 
           return ListView.builder(
             padding: const EdgeInsets.all(16),
-            itemCount: provider.docentes.length,
+            itemCount: displayList.length,
             itemBuilder: (itemContext, index) {
-              final docente = provider.docentes[index];
+              final docente = displayList[index];
               return Card(
                 margin: const EdgeInsets.only(bottom: 12),
                 child: ListTile(

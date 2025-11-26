@@ -13,6 +13,8 @@ class DepartamentosScreen extends StatefulWidget {
 }
 
 class _DepartamentosScreenState extends State<DepartamentosScreen> {
+  bool _showInactive = true;
+
   @override
   void initState() {
     super.initState();
@@ -139,6 +141,15 @@ class _DepartamentosScreenState extends State<DepartamentosScreen> {
               context.read<DepartamentoProvider>().loadAll();
             },
           ),
+          IconButton(
+            icon: Icon(_showInactive ? Icons.visibility : Icons.visibility_off),
+            tooltip: _showInactive ? 'Ocultar inativos' : 'Mostrar inativos',
+            onPressed: () {
+              setState(() {
+                _showInactive = !_showInactive;
+              });
+            },
+          ),
         ],
       ),
       drawer: const AppNavigationDrawer(currentRoute: 'departamentos'),
@@ -174,7 +185,12 @@ class _DepartamentosScreenState extends State<DepartamentosScreen> {
             );
           }
 
-          if (provider.departamentos.isEmpty) {
+          // Filter the list based on _showInactive toggle
+          final displayList = _showInactive
+              ? provider.departamentos
+              : provider.departamentos.where((d) => d.ativo).toList();
+
+          if (displayList.isEmpty) {
             return Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -186,7 +202,9 @@ class _DepartamentosScreenState extends State<DepartamentosScreen> {
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    'Nenhum departamento encontrado',
+                    _showInactive
+                        ? 'Nenhum departamento encontrado'
+                        : 'Nenhum departamento ativo encontrado',
                     style: TextStyle(fontSize: 16, color: Colors.grey[600]),
                   ),
                   const SizedBox(height: 16),
@@ -202,9 +220,9 @@ class _DepartamentosScreenState extends State<DepartamentosScreen> {
 
           return ListView.builder(
             padding: const EdgeInsets.all(16),
-            itemCount: provider.departamentos.length,
+            itemCount: displayList.length,
             itemBuilder: (itemContext, index) {
-              final dept = provider.departamentos[index];
+              final dept = displayList[index];
               return Card(
                 margin: const EdgeInsets.only(bottom: 12),
                 child: ListTile(

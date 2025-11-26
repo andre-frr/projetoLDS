@@ -13,6 +13,8 @@ class CursosScreen extends StatefulWidget {
 }
 
 class _CursosScreenState extends State<CursosScreen> {
+  bool _showInactive = true;
+
   @override
   void initState() {
     super.initState();
@@ -146,6 +148,15 @@ class _CursosScreenState extends State<CursosScreen> {
               context.read<CursoProvider>().loadAll();
             },
           ),
+          IconButton(
+            icon: Icon(_showInactive ? Icons.visibility : Icons.visibility_off),
+            tooltip: _showInactive ? 'Ocultar inativos' : 'Mostrar inativos',
+            onPressed: () {
+              setState(() {
+                _showInactive = !_showInactive;
+              });
+            },
+          ),
         ],
       ),
       drawer: const AppNavigationDrawer(currentRoute: 'cursos'),
@@ -181,7 +192,12 @@ class _CursosScreenState extends State<CursosScreen> {
             );
           }
 
-          if (provider.cursos.isEmpty) {
+          // Filter the list based on _showInactive toggle
+          final displayList = _showInactive
+              ? provider.cursos
+              : provider.cursos.where((c) => c.ativo).toList();
+
+          if (displayList.isEmpty) {
             return Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -193,7 +209,9 @@ class _CursosScreenState extends State<CursosScreen> {
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    'Nenhum curso encontrado',
+                    _showInactive
+                        ? 'Nenhum curso encontrado'
+                        : 'Nenhum curso ativo encontrado',
                     style: TextStyle(fontSize: 18, color: Colors.grey[600]),
                   ),
                   const SizedBox(height: 8),
@@ -208,9 +226,9 @@ class _CursosScreenState extends State<CursosScreen> {
 
           return ListView.builder(
             padding: const EdgeInsets.all(16),
-            itemCount: provider.cursos.length,
+            itemCount: displayList.length,
             itemBuilder: (itemContext, index) {
-              final curso = provider.cursos[index];
+              final curso = displayList[index];
               return Card(
                 margin: const EdgeInsets.only(bottom: 12),
                 child: ListTile(

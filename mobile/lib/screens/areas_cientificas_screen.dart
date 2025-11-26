@@ -15,6 +15,8 @@ class AreasCientificasScreen extends StatefulWidget {
 }
 
 class _AreasCientificasScreenState extends State<AreasCientificasScreen> {
+  bool _showInactive = true;
+
   @override
   void initState() {
     super.initState();
@@ -169,6 +171,15 @@ class _AreasCientificasScreenState extends State<AreasCientificasScreen> {
               context.read<DepartamentoProvider>().loadAll();
             },
           ),
+          IconButton(
+            icon: Icon(_showInactive ? Icons.visibility : Icons.visibility_off),
+            tooltip: _showInactive ? 'Ocultar inativos' : 'Mostrar inativos',
+            onPressed: () {
+              setState(() {
+                _showInactive = !_showInactive;
+              });
+            },
+          ),
         ],
       ),
       drawer: const AppNavigationDrawer(currentRoute: 'areas_cientificas'),
@@ -204,7 +215,12 @@ class _AreasCientificasScreenState extends State<AreasCientificasScreen> {
             );
           }
 
-          if (provider.areas.isEmpty) {
+          // Filter the list based on _showInactive toggle
+          final displayList = _showInactive
+              ? provider.areas
+              : provider.areas.where((a) => a.ativo).toList();
+
+          if (displayList.isEmpty) {
             return Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -216,7 +232,9 @@ class _AreasCientificasScreenState extends State<AreasCientificasScreen> {
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    'Nenhuma área científica encontrada',
+                    _showInactive
+                        ? 'Nenhuma área científica encontrada'
+                        : 'Nenhuma área científica ativa encontrada',
                     style: TextStyle(fontSize: 18, color: Colors.grey[600]),
                   ),
                   const SizedBox(height: 8),
@@ -231,9 +249,9 @@ class _AreasCientificasScreenState extends State<AreasCientificasScreen> {
 
           return ListView.builder(
             padding: const EdgeInsets.all(16),
-            itemCount: provider.areas.length,
+            itemCount: displayList.length,
             itemBuilder: (itemContext, index) {
-              final area = provider.areas[index];
+              final area = displayList[index];
               return Card(
                 margin: const EdgeInsets.only(bottom: 12),
                 child: ListTile(
