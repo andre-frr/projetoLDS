@@ -23,7 +23,7 @@ void main() async {
     DioService().initialize();
     await GraphQLService().initialize();
   } catch (e) {
-    print('Error initializing services: $e');
+    debugPrint('Error initializing services: $e');
     // Continue anyway - services will be retried on first use
   }
 

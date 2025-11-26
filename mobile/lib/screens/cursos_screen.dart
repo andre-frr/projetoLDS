@@ -100,26 +100,26 @@ class _CursosScreenState extends State<CursosScreen> {
                   ativo: true,
                 );
 
-                final success = await context.read<CursoProvider>().create(
-                  curso,
-                );
+                final provider = context.read<CursoProvider>();
+                final navigator = Navigator.of(context);
+                final messenger = ScaffoldMessenger.of(context);
+
+                final success = await provider.create(curso);
 
                 if (!mounted) return;
 
                 if (success) {
-                  Navigator.pop(context);
-                  ScaffoldMessenger.of(context).showSnackBar(
+                  navigator.pop();
+                  messenger.showSnackBar(
                     const SnackBar(
                       content: Text('Curso criado com sucesso'),
                       backgroundColor: Colors.green,
                     ),
                   );
-                } else if (context.read<CursoProvider>().errorMessage != null) {
-                  ScaffoldMessenger.of(context).showSnackBar(
+                } else if (provider.errorMessage != null) {
+                  messenger.showSnackBar(
                     SnackBar(
-                      content: Text(
-                        context.read<CursoProvider>().errorMessage!,
-                      ),
+                      content: Text(provider.errorMessage!),
                       backgroundColor: Colors.red,
                     ),
                   );
@@ -208,14 +208,14 @@ class _CursosScreenState extends State<CursosScreen> {
           return ListView.builder(
             padding: const EdgeInsets.all(16),
             itemCount: provider.cursos.length,
-            itemBuilder: (context, index) {
+            itemBuilder: (itemContext, index) {
               final curso = provider.cursos[index];
               return Card(
                 margin: const EdgeInsets.only(bottom: 12),
                 child: ListTile(
                   leading: CircleAvatar(
                     backgroundColor: curso.ativo
-                        ? Theme.of(context).primaryColor
+                        ? Theme.of(itemContext).primaryColor
                         : Colors.grey,
                     child: Text(
                       curso.sigla,
@@ -292,14 +292,17 @@ class _CursosScreenState extends State<CursosScreen> {
                       if (value == 'edit') {
                         _showEditDialog(curso);
                       } else if (value == 'deactivate') {
+                        final provider = context.read<CursoProvider>();
+                        final messenger = ScaffoldMessenger.of(context);
+
                         final success = await provider.deactivate(curso.id);
                         if (!mounted) return;
                         if (success) {
-                          ScaffoldMessenger.of(context).showSnackBar(
+                          messenger.showSnackBar(
                             const SnackBar(content: Text('Curso inativado')),
                           );
                         } else if (provider.errorMessage != null) {
-                          ScaffoldMessenger.of(context).showSnackBar(
+                          messenger.showSnackBar(
                             SnackBar(
                               content: Text(provider.errorMessage!),
                               backgroundColor: Colors.red,
@@ -307,6 +310,9 @@ class _CursosScreenState extends State<CursosScreen> {
                           );
                         }
                       } else if (value == 'reactivate') {
+                        final provider = context.read<CursoProvider>();
+                        final messenger = ScaffoldMessenger.of(context);
+
                         final updatedCurso = curso.copyWith(ativo: true);
                         final success = await provider.update(
                           curso.id,
@@ -314,14 +320,14 @@ class _CursosScreenState extends State<CursosScreen> {
                         );
                         if (!mounted) return;
                         if (success) {
-                          ScaffoldMessenger.of(context).showSnackBar(
+                          messenger.showSnackBar(
                             const SnackBar(
                               content: Text('Curso reativado'),
                               backgroundColor: Colors.green,
                             ),
                           );
                         } else if (provider.errorMessage != null) {
-                          ScaffoldMessenger.of(context).showSnackBar(
+                          messenger.showSnackBar(
                             SnackBar(
                               content: Text(provider.errorMessage!),
                               backgroundColor: Colors.red,
@@ -329,6 +335,9 @@ class _CursosScreenState extends State<CursosScreen> {
                           );
                         }
                       } else if (value == 'delete') {
+                        final provider = context.read<CursoProvider>();
+                        final messenger = ScaffoldMessenger.of(context);
+
                         final confirm = await showDialog<bool>(
                           context: context,
                           builder: (context) => AlertDialog(
@@ -356,14 +365,14 @@ class _CursosScreenState extends State<CursosScreen> {
                           final success = await provider.delete(curso.id);
                           if (!mounted) return;
                           if (success) {
-                            ScaffoldMessenger.of(context).showSnackBar(
+                            messenger.showSnackBar(
                               const SnackBar(
                                 content: Text('Curso excluído'),
                                 backgroundColor: Colors.red,
                               ),
                             );
                           } else if (provider.errorMessage != null) {
-                            ScaffoldMessenger.of(context).showSnackBar(
+                            messenger.showSnackBar(
                               SnackBar(
                                 content: Text(provider.errorMessage!),
                                 backgroundColor: Colors.red,
@@ -462,27 +471,26 @@ class _CursosScreenState extends State<CursosScreen> {
                   ativo: curso.ativo,
                 );
 
-                final success = await context.read<CursoProvider>().update(
-                  curso.id,
-                  updatedCurso,
-                );
+                final provider = context.read<CursoProvider>();
+                final navigator = Navigator.of(context);
+                final messenger = ScaffoldMessenger.of(context);
+
+                final success = await provider.update(curso.id, updatedCurso);
 
                 if (!mounted) return;
 
                 if (success) {
-                  Navigator.pop(context);
-                  ScaffoldMessenger.of(context).showSnackBar(
+                  navigator.pop();
+                  messenger.showSnackBar(
                     const SnackBar(
                       content: Text('Curso atualizado'),
                       backgroundColor: Colors.green,
                     ),
                   );
-                } else if (context.read<CursoProvider>().errorMessage != null) {
-                  ScaffoldMessenger.of(context).showSnackBar(
+                } else if (provider.errorMessage != null) {
+                  messenger.showSnackBar(
                     SnackBar(
-                      content: Text(
-                        context.read<CursoProvider>().errorMessage!,
-                      ),
+                      content: Text(provider.errorMessage!),
                       backgroundColor: Colors.red,
                     ),
                   );

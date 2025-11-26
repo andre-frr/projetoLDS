@@ -90,6 +90,10 @@ class _DepartamentosScreenState extends State<DepartamentosScreen> {
           ),
           ElevatedButton(
             onPressed: () async {
+              final provider = context.read<DepartamentoProvider>();
+              final navigator = Navigator.of(context);
+              final messenger = ScaffoldMessenger.of(context);
+
               final departamento = DepartamentoModel(
                 id: 0,
                 nome: nomeController.text,
@@ -97,27 +101,22 @@ class _DepartamentosScreenState extends State<DepartamentosScreen> {
                 ativo: true,
               );
 
-              final success = await context.read<DepartamentoProvider>().create(
-                departamento,
-              );
+              final success = await provider.create(departamento);
 
               if (!mounted) return;
 
               if (success) {
-                Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
+                navigator.pop();
+                messenger.showSnackBar(
                   const SnackBar(
                     content: Text('Departamento criado com sucesso'),
                     backgroundColor: Colors.green,
                   ),
                 );
-              } else if (context.read<DepartamentoProvider>().errorMessage !=
-                  null) {
-                ScaffoldMessenger.of(context).showSnackBar(
+              } else if (provider.errorMessage != null) {
+                messenger.showSnackBar(
                   SnackBar(
-                    content: Text(
-                      context.read<DepartamentoProvider>().errorMessage!,
-                    ),
+                    content: Text(provider.errorMessage!),
                     backgroundColor: Colors.red,
                   ),
                 );
@@ -206,14 +205,14 @@ class _DepartamentosScreenState extends State<DepartamentosScreen> {
           return ListView.builder(
             padding: const EdgeInsets.all(16),
             itemCount: provider.departamentos.length,
-            itemBuilder: (context, index) {
+            itemBuilder: (itemContext, index) {
               final dept = provider.departamentos[index];
               return Card(
                 margin: const EdgeInsets.only(bottom: 12),
                 child: ListTile(
                   leading: CircleAvatar(
                     backgroundColor: dept.ativo
-                        ? Theme.of(context).primaryColor
+                        ? Theme.of(itemContext).primaryColor
                         : Colors.grey,
                     child: Text(
                       dept.sigla,
@@ -292,6 +291,9 @@ class _DepartamentosScreenState extends State<DepartamentosScreen> {
                           text: dept.sigla,
                         );
 
+                        final provider = context.read<DepartamentoProvider>();
+                        final messenger = ScaffoldMessenger.of(context);
+
                         final result = await showDialog<bool>(
                           context: context,
                           builder: (context) => AlertDialog(
@@ -347,14 +349,14 @@ class _DepartamentosScreenState extends State<DepartamentosScreen> {
                           );
                           if (!mounted) return;
                           if (success) {
-                            ScaffoldMessenger.of(context).showSnackBar(
+                            messenger.showSnackBar(
                               const SnackBar(
                                 content: Text('Departamento atualizado'),
                                 backgroundColor: Colors.green,
                               ),
                             );
                           } else if (provider.errorMessage != null) {
-                            ScaffoldMessenger.of(context).showSnackBar(
+                            messenger.showSnackBar(
                               SnackBar(
                                 content: Text(provider.errorMessage!),
                                 backgroundColor: Colors.red,
@@ -363,16 +365,19 @@ class _DepartamentosScreenState extends State<DepartamentosScreen> {
                           }
                         }
                       } else if (value == 'deactivate') {
+                        final provider = context.read<DepartamentoProvider>();
+                        final messenger = ScaffoldMessenger.of(context);
+
                         final success = await provider.deactivate(dept.id);
                         if (!mounted) return;
                         if (success) {
-                          ScaffoldMessenger.of(context).showSnackBar(
+                          messenger.showSnackBar(
                             const SnackBar(
                               content: Text('Departamento inativado'),
                             ),
                           );
                         } else if (provider.errorMessage != null) {
-                          ScaffoldMessenger.of(context).showSnackBar(
+                          messenger.showSnackBar(
                             SnackBar(
                               content: Text(provider.errorMessage!),
                               backgroundColor: Colors.red,
@@ -380,6 +385,9 @@ class _DepartamentosScreenState extends State<DepartamentosScreen> {
                           );
                         }
                       } else if (value == 'reactivate') {
+                        final provider = context.read<DepartamentoProvider>();
+                        final messenger = ScaffoldMessenger.of(context);
+
                         final updatedDept = DepartamentoModel(
                           id: dept.id,
                           nome: dept.nome,
@@ -392,14 +400,14 @@ class _DepartamentosScreenState extends State<DepartamentosScreen> {
                         );
                         if (!mounted) return;
                         if (success) {
-                          ScaffoldMessenger.of(context).showSnackBar(
+                          messenger.showSnackBar(
                             const SnackBar(
                               content: Text('Departamento reativado'),
                               backgroundColor: Colors.green,
                             ),
                           );
                         } else if (provider.errorMessage != null) {
-                          ScaffoldMessenger.of(context).showSnackBar(
+                          messenger.showSnackBar(
                             SnackBar(
                               content: Text(provider.errorMessage!),
                               backgroundColor: Colors.red,
@@ -407,6 +415,9 @@ class _DepartamentosScreenState extends State<DepartamentosScreen> {
                           );
                         }
                       } else if (value == 'delete') {
+                        final provider = context.read<DepartamentoProvider>();
+                        final messenger = ScaffoldMessenger.of(context);
+
                         final confirm = await showDialog<bool>(
                           context: context,
                           builder: (context) => AlertDialog(
@@ -434,14 +445,14 @@ class _DepartamentosScreenState extends State<DepartamentosScreen> {
                           final success = await provider.delete(dept.id);
                           if (!mounted) return;
                           if (success) {
-                            ScaffoldMessenger.of(context).showSnackBar(
+                            messenger.showSnackBar(
                               const SnackBar(
                                 content: Text('Departamento excluído'),
                                 backgroundColor: Colors.green,
                               ),
                             );
                           } else if (provider.errorMessage != null) {
-                            ScaffoldMessenger.of(context).showSnackBar(
+                            messenger.showSnackBar(
                               SnackBar(
                                 content: Text(provider.errorMessage!),
                                 backgroundColor: Colors.red,

@@ -115,6 +115,10 @@ class _DocentesScreenState extends State<DocentesScreen> {
             ),
             ElevatedButton(
               onPressed: () async {
+                final provider = context.read<DocenteProvider>();
+                final navigator = Navigator.of(context);
+                final messenger = ScaffoldMessenger.of(context);
+
                 final docente = DocenteModel(
                   id: 0,
                   nome: nomeController.text,
@@ -124,24 +128,22 @@ class _DocentesScreenState extends State<DocentesScreen> {
                   convidado: convidado,
                 );
 
-                final success = await context.read<DocenteProvider>().create(
-                  docente,
-                );
+                final success = await provider.create(docente);
 
                 if (!mounted) return;
 
                 if (success) {
-                  Navigator.pop(context);
-                  ScaffoldMessenger.of(context).showSnackBar(
+                  navigator.pop();
+                  messenger.showSnackBar(
                     const SnackBar(
                       content: Text('Docente criado com sucesso'),
                       backgroundColor: Colors.green,
                     ),
                   );
-                } else if (context.read<DocenteProvider>().error != null) {
-                  ScaffoldMessenger.of(context).showSnackBar(
+                } else if (provider.error != null) {
+                  messenger.showSnackBar(
                     SnackBar(
-                      content: Text(context.read<DocenteProvider>().error!),
+                      content: Text(provider.error!),
                       backgroundColor: Colors.red,
                     ),
                   );
@@ -230,14 +232,14 @@ class _DocentesScreenState extends State<DocentesScreen> {
           return ListView.builder(
             padding: const EdgeInsets.all(16),
             itemCount: provider.docentes.length,
-            itemBuilder: (context, index) {
+            itemBuilder: (itemContext, index) {
               final docente = provider.docentes[index];
               return Card(
                 margin: const EdgeInsets.only(bottom: 12),
                 child: ListTile(
                   leading: CircleAvatar(
                     backgroundColor: docente.ativo
-                        ? Theme.of(context).primaryColor
+                        ? Theme.of(itemContext).primaryColor
                         : Colors.grey,
                     child: Text(
                       docente.nome.substring(0, 1).toUpperCase(),
@@ -332,6 +334,9 @@ class _DocentesScreenState extends State<DocentesScreen> {
                         );
                         bool convidado = docente.convidado;
 
+                        final provider = context.read<DocenteProvider>();
+                        final messenger = ScaffoldMessenger.of(context);
+
                         final result = await showDialog<bool>(
                           context: context,
                           builder: (context) => StatefulBuilder(
@@ -413,14 +418,14 @@ class _DocentesScreenState extends State<DocentesScreen> {
                           );
                           if (!mounted) return;
                           if (success) {
-                            ScaffoldMessenger.of(context).showSnackBar(
+                            messenger.showSnackBar(
                               const SnackBar(
                                 content: Text('Docente atualizado'),
                                 backgroundColor: Colors.green,
                               ),
                             );
                           } else if (provider.error != null) {
-                            ScaffoldMessenger.of(context).showSnackBar(
+                            messenger.showSnackBar(
                               SnackBar(
                                 content: Text(provider.error!),
                                 backgroundColor: Colors.red,
@@ -429,14 +434,17 @@ class _DocentesScreenState extends State<DocentesScreen> {
                           }
                         }
                       } else if (value == 'deactivate') {
+                        final provider = context.read<DocenteProvider>();
+                        final messenger = ScaffoldMessenger.of(context);
+
                         final success = await provider.deactivate(docente.id);
                         if (!mounted) return;
                         if (success) {
-                          ScaffoldMessenger.of(context).showSnackBar(
+                          messenger.showSnackBar(
                             const SnackBar(content: Text('Docente inativado')),
                           );
                         } else if (provider.error != null) {
-                          ScaffoldMessenger.of(context).showSnackBar(
+                          messenger.showSnackBar(
                             SnackBar(
                               content: Text(provider.error!),
                               backgroundColor: Colors.red,
@@ -444,6 +452,9 @@ class _DocentesScreenState extends State<DocentesScreen> {
                           );
                         }
                       } else if (value == 'reactivate') {
+                        final provider = context.read<DocenteProvider>();
+                        final messenger = ScaffoldMessenger.of(context);
+
                         final updatedDocente = DocenteModel(
                           id: docente.id,
                           nome: docente.nome,
@@ -458,14 +469,14 @@ class _DocentesScreenState extends State<DocentesScreen> {
                         );
                         if (!mounted) return;
                         if (success) {
-                          ScaffoldMessenger.of(context).showSnackBar(
+                          messenger.showSnackBar(
                             const SnackBar(
                               content: Text('Docente reativado'),
                               backgroundColor: Colors.green,
                             ),
                           );
                         } else if (provider.error != null) {
-                          ScaffoldMessenger.of(context).showSnackBar(
+                          messenger.showSnackBar(
                             SnackBar(
                               content: Text(provider.error!),
                               backgroundColor: Colors.red,
@@ -473,6 +484,9 @@ class _DocentesScreenState extends State<DocentesScreen> {
                           );
                         }
                       } else if (value == 'delete') {
+                        final provider = context.read<DocenteProvider>();
+                        final messenger = ScaffoldMessenger.of(context);
+
                         final confirm = await showDialog<bool>(
                           context: context,
                           builder: (context) => AlertDialog(
@@ -500,14 +514,14 @@ class _DocentesScreenState extends State<DocentesScreen> {
                           final success = await provider.delete(docente.id);
                           if (!mounted) return;
                           if (success) {
-                            ScaffoldMessenger.of(context).showSnackBar(
+                            messenger.showSnackBar(
                               const SnackBar(
                                 content: Text('Docente excluído'),
                                 backgroundColor: Colors.red,
                               ),
                             );
                           } else if (provider.error != null) {
-                            ScaffoldMessenger.of(context).showSnackBar(
+                            messenger.showSnackBar(
                               SnackBar(
                                 content: Text(provider.error!),
                                 backgroundColor: Colors.red,
