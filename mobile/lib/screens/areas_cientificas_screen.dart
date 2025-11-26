@@ -112,7 +112,9 @@ class _AreasCientificasScreenState extends State<AreasCientificasScreen> {
                     .read<AreaCientificaProvider>()
                     .create(area);
 
-                if (success && mounted) {
+                if (!mounted) return;
+
+                if (success) {
                   Navigator.pop(context);
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
@@ -120,9 +122,10 @@ class _AreasCientificasScreenState extends State<AreasCientificasScreen> {
                       backgroundColor: Colors.green,
                     ),
                   );
-                } else if (mounted &&
-                    context.read<AreaCientificaProvider>().errorMessage !=
-                        null) {
+                } else if (context
+                        .read<AreaCientificaProvider>()
+                        .errorMessage !=
+                    null) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
                       content: Text(
@@ -315,13 +318,14 @@ class _AreasCientificasScreenState extends State<AreasCientificasScreen> {
                         _showEditDialog(area);
                       } else if (value == 'deactivate') {
                         final success = await provider.deactivate(area.id);
-                        if (success && mounted) {
+                        if (!mounted) return;
+                        if (success) {
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
                               content: Text('Área científica inativada'),
                             ),
                           );
-                        } else if (mounted && provider.errorMessage != null) {
+                        } else if (provider.errorMessage != null) {
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
                               content: Text(provider.errorMessage!),
@@ -335,14 +339,15 @@ class _AreasCientificasScreenState extends State<AreasCientificasScreen> {
                           area.id,
                           updatedArea,
                         );
-                        if (success && mounted) {
+                        if (!mounted) return;
+                        if (success) {
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
                               content: Text('Área científica reativada'),
                               backgroundColor: Colors.green,
                             ),
                           );
-                        } else if (mounted && provider.errorMessage != null) {
+                        } else if (provider.errorMessage != null) {
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
                               content: Text(provider.errorMessage!),
@@ -376,14 +381,15 @@ class _AreasCientificasScreenState extends State<AreasCientificasScreen> {
 
                         if (confirm == true && mounted) {
                           final success = await provider.delete(area.id);
-                          if (success && mounted) {
+                          if (!mounted) return;
+                          if (success) {
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(
                                 content: Text('Área científica excluída'),
                                 backgroundColor: Colors.red,
                               ),
                             );
-                          } else if (mounted && provider.errorMessage != null) {
+                          } else if (provider.errorMessage != null) {
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
                                 content: Text(provider.errorMessage!),
@@ -492,7 +498,9 @@ class _AreasCientificasScreenState extends State<AreasCientificasScreen> {
                     .read<AreaCientificaProvider>()
                     .update(area.id, updatedArea);
 
-                if (success && mounted) {
+                if (!mounted) return;
+
+                if (success) {
                   Navigator.pop(context);
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
@@ -500,9 +508,10 @@ class _AreasCientificasScreenState extends State<AreasCientificasScreen> {
                       backgroundColor: Colors.green,
                     ),
                   );
-                } else if (mounted &&
-                    context.read<AreaCientificaProvider>().errorMessage !=
-                        null) {
+                } else if (context
+                        .read<AreaCientificaProvider>()
+                        .errorMessage !=
+                    null) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
                       content: Text(

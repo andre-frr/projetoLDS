@@ -101,7 +101,9 @@ class _DepartamentosScreenState extends State<DepartamentosScreen> {
                 departamento,
               );
 
-              if (success && mounted) {
+              if (!mounted) return;
+
+              if (success) {
                 Navigator.pop(context);
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
@@ -109,8 +111,8 @@ class _DepartamentosScreenState extends State<DepartamentosScreen> {
                     backgroundColor: Colors.green,
                   ),
                 );
-              } else if (mounted &&
-                  context.read<DepartamentoProvider>().errorMessage != null) {
+              } else if (context.read<DepartamentoProvider>().errorMessage !=
+                  null) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
                     content: Text(
@@ -343,14 +345,15 @@ class _DepartamentosScreenState extends State<DepartamentosScreen> {
                             dept.id,
                             updatedDept,
                           );
-                          if (success && mounted) {
+                          if (!mounted) return;
+                          if (success) {
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(
                                 content: Text('Departamento atualizado'),
                                 backgroundColor: Colors.green,
                               ),
                             );
-                          } else if (mounted && provider.errorMessage != null) {
+                          } else if (provider.errorMessage != null) {
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
                                 content: Text(provider.errorMessage!),
@@ -361,13 +364,14 @@ class _DepartamentosScreenState extends State<DepartamentosScreen> {
                         }
                       } else if (value == 'deactivate') {
                         final success = await provider.deactivate(dept.id);
-                        if (success && mounted) {
+                        if (!mounted) return;
+                        if (success) {
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
                               content: Text('Departamento inativado'),
                             ),
                           );
-                        } else if (mounted && provider.errorMessage != null) {
+                        } else if (provider.errorMessage != null) {
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
                               content: Text(provider.errorMessage!),
@@ -386,14 +390,15 @@ class _DepartamentosScreenState extends State<DepartamentosScreen> {
                           dept.id,
                           updatedDept,
                         );
-                        if (success && mounted) {
+                        if (!mounted) return;
+                        if (success) {
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
                               content: Text('Departamento reativado'),
                               backgroundColor: Colors.green,
                             ),
                           );
-                        } else if (mounted && provider.errorMessage != null) {
+                        } else if (provider.errorMessage != null) {
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
                               content: Text(provider.errorMessage!),
@@ -427,14 +432,15 @@ class _DepartamentosScreenState extends State<DepartamentosScreen> {
 
                         if (confirm == true && mounted) {
                           final success = await provider.delete(dept.id);
-                          if (success && mounted) {
+                          if (!mounted) return;
+                          if (success) {
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(
                                 content: Text('Departamento excluído'),
                                 backgroundColor: Colors.green,
                               ),
                             );
-                          } else if (mounted && provider.errorMessage != null) {
+                          } else if (provider.errorMessage != null) {
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
                                 content: Text(provider.errorMessage!),

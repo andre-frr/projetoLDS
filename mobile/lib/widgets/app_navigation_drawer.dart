@@ -118,7 +118,7 @@ class AppNavigationDrawer extends StatelessWidget {
       leading: Icon(icon),
       title: Text(title),
       selected: isSelected,
-      selectedTileColor: Theme.of(context).primaryColor.withOpacity(0.1),
+      selectedTileColor: Theme.of(context).primaryColor.withValues(alpha: 0.1),
       onTap: isSelected ? () => Navigator.pop(context) : onTap,
     );
   }

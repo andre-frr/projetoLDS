@@ -128,7 +128,9 @@ class _DocentesScreenState extends State<DocentesScreen> {
                   docente,
                 );
 
-                if (success && mounted) {
+                if (!mounted) return;
+
+                if (success) {
                   Navigator.pop(context);
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
@@ -136,8 +138,7 @@ class _DocentesScreenState extends State<DocentesScreen> {
                       backgroundColor: Colors.green,
                     ),
                   );
-                } else if (mounted &&
-                    context.read<DocenteProvider>().error != null) {
+                } else if (context.read<DocenteProvider>().error != null) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
                       content: Text(context.read<DocenteProvider>().error!),
@@ -410,14 +411,15 @@ class _DocentesScreenState extends State<DocentesScreen> {
                             docente.id,
                             updatedDocente,
                           );
-                          if (success && mounted) {
+                          if (!mounted) return;
+                          if (success) {
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(
                                 content: Text('Docente atualizado'),
                                 backgroundColor: Colors.green,
                               ),
                             );
-                          } else if (mounted && provider.error != null) {
+                          } else if (provider.error != null) {
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
                                 content: Text(provider.error!),
@@ -428,11 +430,12 @@ class _DocentesScreenState extends State<DocentesScreen> {
                         }
                       } else if (value == 'deactivate') {
                         final success = await provider.deactivate(docente.id);
-                        if (success && mounted) {
+                        if (!mounted) return;
+                        if (success) {
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(content: Text('Docente inativado')),
                           );
-                        } else if (mounted && provider.error != null) {
+                        } else if (provider.error != null) {
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
                               content: Text(provider.error!),
@@ -453,14 +456,15 @@ class _DocentesScreenState extends State<DocentesScreen> {
                           docente.id,
                           updatedDocente,
                         );
-                        if (success && mounted) {
+                        if (!mounted) return;
+                        if (success) {
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
                               content: Text('Docente reativado'),
                               backgroundColor: Colors.green,
                             ),
                           );
-                        } else if (mounted && provider.error != null) {
+                        } else if (provider.error != null) {
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
                               content: Text(provider.error!),
@@ -494,14 +498,15 @@ class _DocentesScreenState extends State<DocentesScreen> {
 
                         if (confirm == true && mounted) {
                           final success = await provider.delete(docente.id);
-                          if (success && mounted) {
+                          if (!mounted) return;
+                          if (success) {
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(
                                 content: Text('Docente excluído'),
                                 backgroundColor: Colors.red,
                               ),
                             );
-                          } else if (mounted && provider.error != null) {
+                          } else if (provider.error != null) {
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
                                 content: Text(provider.error!),

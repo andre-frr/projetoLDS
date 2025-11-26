@@ -104,7 +104,9 @@ class _CursosScreenState extends State<CursosScreen> {
                   curso,
                 );
 
-                if (success && mounted) {
+                if (!mounted) return;
+
+                if (success) {
                   Navigator.pop(context);
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
@@ -112,8 +114,7 @@ class _CursosScreenState extends State<CursosScreen> {
                       backgroundColor: Colors.green,
                     ),
                   );
-                } else if (mounted &&
-                    context.read<CursoProvider>().errorMessage != null) {
+                } else if (context.read<CursoProvider>().errorMessage != null) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
                       content: Text(
@@ -292,11 +293,12 @@ class _CursosScreenState extends State<CursosScreen> {
                         _showEditDialog(curso);
                       } else if (value == 'deactivate') {
                         final success = await provider.deactivate(curso.id);
-                        if (success && mounted) {
+                        if (!mounted) return;
+                        if (success) {
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(content: Text('Curso inativado')),
                           );
-                        } else if (mounted && provider.errorMessage != null) {
+                        } else if (provider.errorMessage != null) {
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
                               content: Text(provider.errorMessage!),
@@ -310,14 +312,15 @@ class _CursosScreenState extends State<CursosScreen> {
                           curso.id,
                           updatedCurso,
                         );
-                        if (success && mounted) {
+                        if (!mounted) return;
+                        if (success) {
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
                               content: Text('Curso reativado'),
                               backgroundColor: Colors.green,
                             ),
                           );
-                        } else if (mounted && provider.errorMessage != null) {
+                        } else if (provider.errorMessage != null) {
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
                               content: Text(provider.errorMessage!),
@@ -351,14 +354,15 @@ class _CursosScreenState extends State<CursosScreen> {
 
                         if (confirm == true && mounted) {
                           final success = await provider.delete(curso.id);
-                          if (success && mounted) {
+                          if (!mounted) return;
+                          if (success) {
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(
                                 content: Text('Curso excluído'),
                                 backgroundColor: Colors.red,
                               ),
                             );
-                          } else if (mounted && provider.errorMessage != null) {
+                          } else if (provider.errorMessage != null) {
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
                                 content: Text(provider.errorMessage!),
@@ -463,7 +467,9 @@ class _CursosScreenState extends State<CursosScreen> {
                   updatedCurso,
                 );
 
-                if (success && mounted) {
+                if (!mounted) return;
+
+                if (success) {
                   Navigator.pop(context);
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
@@ -471,8 +477,7 @@ class _CursosScreenState extends State<CursosScreen> {
                       backgroundColor: Colors.green,
                     ),
                   );
-                } else if (mounted &&
-                    context.read<CursoProvider>().errorMessage != null) {
+                } else if (context.read<CursoProvider>().errorMessage != null) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
                       content: Text(

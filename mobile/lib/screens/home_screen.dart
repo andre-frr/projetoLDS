@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../providers/auth_provider.dart';
 import 'areas_cientificas_screen.dart';
+import 'cursos_screen.dart';
 import 'departamentos_screen.dart';
 import 'docentes_screen.dart';
 
@@ -103,8 +104,11 @@ class HomeScreen extends StatelessWidget {
               leading: const Icon(Icons.school),
               title: const Text('Cursos'),
               onTap: () {
-                // TODO: Navigate to courses
                 Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const CursosScreen()),
+                );
               },
             ),
             ListTile(
