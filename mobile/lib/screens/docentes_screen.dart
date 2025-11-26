@@ -27,6 +27,11 @@ class _DocentesScreenState extends State<DocentesScreen> {
     final idAreaController = TextEditingController();
     bool convidado = false;
 
+    // Capture provider and UI services from State context before showing dialog
+    final provider = context.read<DocenteProvider>();
+    final navigator = Navigator.of(context);
+    final messenger = ScaffoldMessenger.of(context);
+
     showDialog(
       context: context,
       builder: (context) => StatefulBuilder(
@@ -115,10 +120,6 @@ class _DocentesScreenState extends State<DocentesScreen> {
             ),
             ElevatedButton(
               onPressed: () async {
-                final provider = context.read<DocenteProvider>();
-                final navigator = Navigator.of(context);
-                final messenger = ScaffoldMessenger.of(context);
-
                 final docente = DocenteModel(
                   id: 0,
                   nome: nomeController.text,

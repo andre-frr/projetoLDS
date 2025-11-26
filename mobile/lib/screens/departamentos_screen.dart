@@ -25,6 +25,11 @@ class _DepartamentosScreenState extends State<DepartamentosScreen> {
     final nomeController = TextEditingController();
     final siglaController = TextEditingController();
 
+    // Capture provider and UI services from State context before showing dialog
+    final provider = context.read<DepartamentoProvider>();
+    final navigator = Navigator.of(context);
+    final messenger = ScaffoldMessenger.of(context);
+
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -45,11 +50,6 @@ class _DepartamentosScreenState extends State<DepartamentosScreen> {
               controller: siglaController,
               textInputAction: TextInputAction.done,
               onSubmitted: (_) async {
-                // Get provider reference before async operation
-                final provider = context.read<DepartamentoProvider>();
-                final navigator = Navigator.of(context);
-                final messenger = ScaffoldMessenger.of(context);
-
                 final departamento = DepartamentoModel(
                   id: 0,
                   nome: nomeController.text,
@@ -58,6 +58,8 @@ class _DepartamentosScreenState extends State<DepartamentosScreen> {
                 );
 
                 final success = await provider.create(departamento);
+
+                if (!mounted) return;
 
                 if (success) {
                   navigator.pop();
@@ -90,10 +92,6 @@ class _DepartamentosScreenState extends State<DepartamentosScreen> {
           ),
           ElevatedButton(
             onPressed: () async {
-              final provider = context.read<DepartamentoProvider>();
-              final navigator = Navigator.of(context);
-              final messenger = ScaffoldMessenger.of(context);
-
               final departamento = DepartamentoModel(
                 id: 0,
                 nome: nomeController.text,

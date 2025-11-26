@@ -29,10 +29,12 @@ class _LoginScreenState extends State<LoginScreen> {
       final password = _passwordController.text;
 
       final authProvider = context.read<AuthProvider>();
+      final messenger = ScaffoldMessenger.of(context);
+
       final success = await authProvider.login(email, password);
 
       if (!success && mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
+        messenger.showSnackBar(
           SnackBar(
             content: Text(authProvider.errorMessage ?? 'Login failed'),
             backgroundColor: Colors.red,

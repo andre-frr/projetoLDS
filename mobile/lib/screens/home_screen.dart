@@ -22,6 +22,8 @@ class HomeScreen extends StatelessWidget {
           IconButton(
             icon: const Icon(Icons.logout),
             onPressed: () async {
+              final authProvider = context.read<AuthProvider>();
+
               final shouldLogout = await showDialog<bool>(
                 context: context,
                 builder: (context) => AlertDialog(
@@ -41,7 +43,7 @@ class HomeScreen extends StatelessWidget {
               );
 
               if (shouldLogout == true && context.mounted) {
-                await context.read<AuthProvider>().logout();
+                await authProvider.logout();
               }
             },
           ),

@@ -26,6 +26,11 @@ class _CursosScreenState extends State<CursosScreen> {
     final siglaController = TextEditingController();
     String? selectedTipo;
 
+    // Capture provider and UI services from State context before showing dialog
+    final provider = context.read<CursoProvider>();
+    final navigator = Navigator.of(context);
+    final messenger = ScaffoldMessenger.of(context);
+
     showDialog(
       context: context,
       builder: (context) => StatefulBuilder(
@@ -99,10 +104,6 @@ class _CursosScreenState extends State<CursosScreen> {
                   tipo: selectedTipo!,
                   ativo: true,
                 );
-
-                final provider = context.read<CursoProvider>();
-                final navigator = Navigator.of(context);
-                final messenger = ScaffoldMessenger.of(context);
 
                 final success = await provider.create(curso);
 
