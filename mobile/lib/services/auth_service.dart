@@ -50,7 +50,7 @@ class AuthService {
           jsonEncode(user.toJson()),
         );
 
-        _logger.i('Login successful for user: $email');
+        _logger.i('Login successful');
         return user;
       } else {
         throw Exception('Login failed');
@@ -92,7 +92,7 @@ class AuthService {
           jsonEncode(user.toJson()),
         );
 
-        _logger.i('Registration successful for user: $email');
+        _logger.i('Registration successful');
         return user;
       } else {
         throw Exception('Registration failed');

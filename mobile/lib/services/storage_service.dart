@@ -9,6 +9,9 @@ class StorageService {
   StorageService._internal();
 
   // Configure storage options based on platform
+  // WARNING: On web, tokens are stored in IndexedDB which is accessible
+  // via browser DevTools. For production web apps, consider using HttpOnly
+  // cookies or implementing additional XSS protections (CSP headers, etc.).
   final _storage = FlutterSecureStorage(
     webOptions: WebOptions(
       dbName: 'lds_project_storage',

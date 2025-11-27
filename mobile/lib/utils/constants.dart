@@ -1,7 +1,7 @@
 class ApiConstants {
   static const String baseUrl = String.fromEnvironment(
     'API_BASE_URL',
-    defaultValue: 'https://localhost:3000/api',
+    defaultValue: 'http://localhost:3000/api', // Use HTTP for localhost
   );
   static const String graphqlUrl = String.fromEnvironment(
     'GRAPHQL_URL',
