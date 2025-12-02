@@ -17,7 +17,7 @@ class UCProvider with ChangeNotifier {
   String? get errorMessage => _errorMessage;
 
   // Load all UCs
-  Future<void> loadAll({bool incluirInativos = false}) async {
+  Future<void> loadAll({bool incluirInativos = true}) async {
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();

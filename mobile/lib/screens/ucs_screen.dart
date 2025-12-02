@@ -18,6 +18,9 @@ class UCsScreen extends StatefulWidget {
 
 class _UCsScreenState extends State<UCsScreen> {
   bool _showInactive = true;
+  int? _filterCursoId;
+  int? _filterAno;
+  int? _filterSemestre;
 
   @override
   void initState() {
@@ -533,260 +536,450 @@ class _UCsScreenState extends State<UCsScreen> {
         onPressed: _showCreateDialog,
         child: const Icon(Icons.add),
       ),
-      body: Consumer<UCProvider>(
-        builder: (context, provider, child) {
-          if (provider.isLoading) {
-            return const Center(child: CircularProgressIndicator());
-          }
-
-          if (provider.errorMessage != null) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(Icons.error_outline, size: 64, color: Colors.red),
-                  const SizedBox(height: 16),
-                  Text(
-                    'Erro: ${provider.errorMessage}',
-                    style: const TextStyle(color: Colors.red),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 16),
-                  ElevatedButton(
-                    onPressed: () => provider.loadAll(),
-                    child: const Text('Tentar Novamente'),
-                  ),
-                ],
-              ),
-            );
-          }
-
-          // Filter the list based on _showInactive toggle
-          final displayList = _showInactive
-              ? provider.ucs
-              : provider.ucs.where((uc) => uc.ativo).toList();
-
-          if (displayList.isEmpty) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    Icons.menu_book_outlined,
-                    size: 64,
-                    color: Colors.grey[400],
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    _showInactive
-                        ? 'Nenhuma UC encontrada'
-                        : 'Nenhuma UC ativa encontrada',
-                    style: TextStyle(fontSize: 18, color: Colors.grey[600]),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Clique no botão + para adicionar',
-                    style: TextStyle(color: Colors.grey[500]),
-                  ),
-                ],
-              ),
-            );
-          }
-
-          return ListView.builder(
-            padding: const EdgeInsets.all(16),
-            itemCount: displayList.length,
-            itemBuilder: (itemContext, index) {
-              final uc = displayList[index];
-
-              // Get curso and area names
-              final curso = context.read<CursoProvider>().cursos.firstWhere(
-                (c) => c.id == uc.idCurso,
-                orElse: () => CursoModel(
-                  id: 0,
-                  nome: 'Desconhecido',
-                  sigla: '?',
-                  tipo: 'T',
-                  ativo: false,
-                ),
-              );
-
-              return Card(
-                margin: const EdgeInsets.only(bottom: 12),
-                child: ListTile(
-                  leading: CircleAvatar(
-                    backgroundColor: uc.ativo
-                        ? Theme.of(itemContext).primaryColor
-                        : Colors.grey,
-                    child: Text(
-                      uc.nome.substring(0, 1).toUpperCase(),
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
+      body: Column(
+        children: [
+          // Filter Bar
+          Container(
+            padding: const EdgeInsets.all(8),
+            color: Colors.grey[100],
+            child: Row(
+              children: [
+                // Curso filter
+                Expanded(
+                  flex: 2,
+                  child: InputDecorator(
+                    decoration: const InputDecoration(
+                      labelText: 'Curso',
+                      isDense: true,
+                      contentPadding: EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 8,
                       ),
+                      border: OutlineInputBorder(),
                     ),
-                  ),
-                  title: Text(
-                    uc.nome,
-                    style: TextStyle(
-                      decoration: uc.ativo ? null : TextDecoration.lineThrough,
-                    ),
-                  ),
-                  subtitle: Text(
-                    'Curso: ${curso.sigla} • Ano ${uc.anoCurso} • Sem ${uc.semCurso} • ${uc.ects} ECTS',
-                    style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-                  ),
-                  trailing: PopupMenuButton(
-                    itemBuilder: (context) => [
-                      const PopupMenuItem(
-                        value: 'edit',
-                        child: Row(
-                          children: [
-                            Icon(Icons.edit),
-                            SizedBox(width: 8),
-                            Text('Editar'),
-                          ],
-                        ),
-                      ),
-                      if (uc.ativo)
-                        const PopupMenuItem(
-                          value: 'deactivate',
-                          child: Row(
-                            children: [
-                              Icon(Icons.block),
-                              SizedBox(width: 8),
-                              Text('Inativar'),
-                            ],
+                    child: DropdownButtonHideUnderline(
+                      child: DropdownButton<int>(
+                        value: _filterCursoId,
+                        isDense: true,
+                        items: [
+                          const DropdownMenuItem<int>(
+                            value: null,
+                            child: Text('Todos'),
                           ),
-                        )
-                      else
-                        const PopupMenuItem(
-                          value: 'reactivate',
-                          child: Row(
-                            children: [
-                              Icon(Icons.check_circle, color: Colors.green),
-                              SizedBox(width: 8),
-                              Text(
-                                'Reativar',
-                                style: TextStyle(color: Colors.green),
-                              ),
-                            ],
-                          ),
-                        ),
-                      const PopupMenuItem(
-                        value: 'delete',
-                        child: Row(
-                          children: [
-                            Icon(Icons.delete, color: Colors.red),
-                            SizedBox(width: 8),
-                            Text(
-                              'Excluir',
-                              style: TextStyle(color: Colors.red),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                    onSelected: (value) async {
-                      if (value == 'edit') {
-                        _showEditDialog(uc);
-                      } else if (value == 'deactivate') {
-                        final provider = context.read<UCProvider>();
-                        final messenger = ScaffoldMessenger.of(context);
-
-                        final success = await provider.deactivate(uc.id);
-                        if (!mounted) return;
-                        if (success) {
-                          messenger.showSnackBar(
-                            const SnackBar(
-                              content: Text('UC inativada'),
-                              backgroundColor: Colors.orange,
-                            ),
-                          );
-                        } else if (provider.errorMessage != null) {
-                          messenger.showSnackBar(
-                            SnackBar(
-                              content: Text(provider.errorMessage!),
-                              backgroundColor: Colors.red,
-                            ),
-                          );
-                        }
-                      } else if (value == 'reactivate') {
-                        final provider = context.read<UCProvider>();
-                        final messenger = ScaffoldMessenger.of(context);
-
-                        final success = await provider.reactivate(uc.id);
-                        if (!mounted) return;
-                        if (success) {
-                          messenger.showSnackBar(
-                            const SnackBar(
-                              content: Text('UC reativada'),
-                              backgroundColor: Colors.green,
-                            ),
-                          );
-                        } else if (provider.errorMessage != null) {
-                          messenger.showSnackBar(
-                            SnackBar(
-                              content: Text(provider.errorMessage!),
-                              backgroundColor: Colors.red,
-                            ),
-                          );
-                        }
-                      } else if (value == 'delete') {
-                        final provider = context.read<UCProvider>();
-                        final navigator = Navigator.of(context);
-                        final messenger = ScaffoldMessenger.of(context);
-
-                        final confirm = await showDialog<bool>(
-                          context: context,
-                          builder: (context) => AlertDialog(
-                            title: const Text('Confirmar Exclusão'),
-                            content: Text(
-                              'Tem certeza que deseja excluir a UC "${uc.nome}"?',
-                            ),
-                            actions: [
-                              TextButton(
-                                onPressed: () => navigator.pop(false),
-                                child: const Text('Cancelar'),
-                              ),
-                              ElevatedButton(
-                                onPressed: () => navigator.pop(true),
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: Colors.red,
+                          ...context
+                              .watch<CursoProvider>()
+                              .cursos
+                              .where((c) => c.ativo)
+                              .map(
+                                (curso) => DropdownMenuItem<int>(
+                                  value: curso.id,
+                                  child: Text(curso.sigla),
                                 ),
-                                child: const Text('Excluir'),
                               ),
-                            ],
+                        ],
+                        onChanged: (value) {
+                          setState(() {
+                            _filterCursoId = value;
+                          });
+                        },
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                // Ano filter
+                SizedBox(
+                  width: 90,
+                  child: InputDecorator(
+                    decoration: const InputDecoration(
+                      labelText: 'Ano',
+                      isDense: true,
+                      contentPadding: EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 8,
+                      ),
+                      border: OutlineInputBorder(),
+                    ),
+                    child: DropdownButtonHideUnderline(
+                      child: DropdownButton<int>(
+                        value: _filterAno,
+                        isDense: true,
+                        items: [
+                          const DropdownMenuItem<int>(
+                            value: null,
+                            child: Text('Todos'),
+                          ),
+                          ...List.generate(
+                            10,
+                            (index) => DropdownMenuItem<int>(
+                              value: index + 1,
+                              child: Text('${index + 1}º'),
+                            ),
+                          ),
+                        ],
+                        onChanged: (value) {
+                          setState(() {
+                            _filterAno = value;
+                          });
+                        },
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                // Semestre filter
+                SizedBox(
+                  width: 100,
+                  child: InputDecorator(
+                    decoration: const InputDecoration(
+                      labelText: 'Sem',
+                      isDense: true,
+                      contentPadding: EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 8,
+                      ),
+                      border: OutlineInputBorder(),
+                    ),
+                    child: DropdownButtonHideUnderline(
+                      child: DropdownButton<int>(
+                        value: _filterSemestre,
+                        isDense: true,
+                        items: const [
+                          DropdownMenuItem<int>(
+                            value: null,
+                            child: Text('Todos'),
+                          ),
+                          DropdownMenuItem<int>(value: 1, child: Text('1º')),
+                          DropdownMenuItem<int>(value: 2, child: Text('2º')),
+                        ],
+                        onChanged: (value) {
+                          setState(() {
+                            _filterSemestre = value;
+                          });
+                        },
+                      ),
+                    ),
+                  ),
+                ),
+                // Clear filters button
+                if (_filterCursoId != null ||
+                    _filterAno != null ||
+                    _filterSemestre != null)
+                  IconButton(
+                    icon: const Icon(Icons.clear),
+                    tooltip: 'Limpar filtros',
+                    onPressed: () {
+                      setState(() {
+                        _filterCursoId = null;
+                        _filterAno = null;
+                        _filterSemestre = null;
+                      });
+                    },
+                  ),
+              ],
+            ),
+          ),
+          // UC List
+          Expanded(
+            child: Consumer<UCProvider>(
+              builder: (context, provider, child) {
+                if (provider.isLoading) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+
+                if (provider.errorMessage != null) {
+                  return Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(
+                          Icons.error_outline,
+                          size: 64,
+                          color: Colors.red,
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          'Erro: ${provider.errorMessage}',
+                          style: const TextStyle(color: Colors.red),
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 16),
+                        ElevatedButton(
+                          onPressed: () => provider.loadAll(),
+                          child: const Text('Tentar Novamente'),
+                        ),
+                      ],
+                    ),
+                  );
+                }
+
+                // Filter the list based on all active filters
+                var displayList = provider.ucs;
+
+                // Hide inactive filter
+                if (!_showInactive) {
+                  displayList = displayList.where((uc) => uc.ativo).toList();
+                }
+
+                // Curso filter
+                if (_filterCursoId != null) {
+                  displayList = displayList
+                      .where((uc) => uc.idCurso == _filterCursoId)
+                      .toList();
+                }
+
+                // Ano filter
+                if (_filterAno != null) {
+                  displayList = displayList
+                      .where((uc) => uc.anoCurso == _filterAno)
+                      .toList();
+                }
+
+                // Semestre filter
+                if (_filterSemestre != null) {
+                  displayList = displayList
+                      .where((uc) => uc.semCurso == _filterSemestre)
+                      .toList();
+                }
+
+                if (displayList.isEmpty) {
+                  return Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.menu_book_outlined,
+                          size: 64,
+                          color: Colors.grey[400],
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          _showInactive
+                              ? 'Nenhuma UC encontrada'
+                              : 'Nenhuma UC ativa encontrada',
+                          style: TextStyle(
+                            fontSize: 18,
+                            color: Colors.grey[600],
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Clique no botão + para adicionar',
+                          style: TextStyle(color: Colors.grey[500]),
+                        ),
+                      ],
+                    ),
+                  );
+                }
+
+                return ListView.builder(
+                  padding: const EdgeInsets.all(16),
+                  itemCount: displayList.length,
+                  itemBuilder: (itemContext, index) {
+                    final uc = displayList[index];
+
+                    // Get curso and area names
+                    final curso = context
+                        .read<CursoProvider>()
+                        .cursos
+                        .firstWhere(
+                          (c) => c.id == uc.idCurso,
+                          orElse: () => CursoModel(
+                            id: 0,
+                            nome: 'Desconhecido',
+                            sigla: '?',
+                            tipo: 'T',
+                            ativo: false,
                           ),
                         );
 
-                        if (confirm == true && mounted) {
-                          final success = await provider.delete(uc.id);
-                          if (!mounted) return;
-                          if (success) {
-                            messenger.showSnackBar(
-                              const SnackBar(
-                                content: Text('UC excluída'),
-                                backgroundColor: Colors.red,
+                    return Card(
+                      margin: const EdgeInsets.only(bottom: 12),
+                      child: ListTile(
+                        leading: CircleAvatar(
+                          backgroundColor: uc.ativo
+                              ? Theme.of(itemContext).primaryColor
+                              : Colors.grey,
+                          child: Text(
+                            uc.nome.substring(0, 1).toUpperCase(),
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                        title: Text(
+                          uc.nome,
+                          style: TextStyle(
+                            decoration: uc.ativo
+                                ? null
+                                : TextDecoration.lineThrough,
+                          ),
+                        ),
+                        subtitle: Text(
+                          'Curso: ${curso.sigla} • Ano ${uc.anoCurso} • Sem ${uc.semCurso} • ${uc.ects} ECTS',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey[600],
+                          ),
+                        ),
+                        trailing: PopupMenuButton(
+                          itemBuilder: (context) => [
+                            const PopupMenuItem(
+                              value: 'edit',
+                              child: Row(
+                                children: [
+                                  Icon(Icons.edit),
+                                  SizedBox(width: 8),
+                                  Text('Editar'),
+                                ],
                               ),
-                            );
-                          } else if (provider.errorMessage != null) {
-                            messenger.showSnackBar(
-                              SnackBar(
-                                content: Text(provider.errorMessage!),
-                                backgroundColor: Colors.red,
+                            ),
+                            if (uc.ativo)
+                              const PopupMenuItem(
+                                value: 'deactivate',
+                                child: Row(
+                                  children: [
+                                    Icon(Icons.block),
+                                    SizedBox(width: 8),
+                                    Text('Inativar'),
+                                  ],
+                                ),
+                              )
+                            else
+                              const PopupMenuItem(
+                                value: 'reactivate',
+                                child: Row(
+                                  children: [
+                                    Icon(
+                                      Icons.check_circle,
+                                      color: Colors.green,
+                                    ),
+                                    SizedBox(width: 8),
+                                    Text(
+                                      'Reativar',
+                                      style: TextStyle(color: Colors.green),
+                                    ),
+                                  ],
+                                ),
                               ),
-                            );
-                          }
-                        }
-                      }
-                    },
-                  ),
-                ),
-              );
-            },
-          );
-        },
+                            const PopupMenuItem(
+                              value: 'delete',
+                              child: Row(
+                                children: [
+                                  Icon(Icons.delete, color: Colors.red),
+                                  SizedBox(width: 8),
+                                  Text(
+                                    'Excluir',
+                                    style: TextStyle(color: Colors.red),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                          onSelected: (value) async {
+                            if (value == 'edit') {
+                              _showEditDialog(uc);
+                            } else if (value == 'deactivate') {
+                              final provider = context.read<UCProvider>();
+                              final messenger = ScaffoldMessenger.of(context);
+
+                              final success = await provider.deactivate(uc.id);
+                              if (!mounted) return;
+                              if (success) {
+                                messenger.showSnackBar(
+                                  const SnackBar(
+                                    content: Text('UC inativada'),
+                                    backgroundColor: Colors.orange,
+                                  ),
+                                );
+                              } else if (provider.errorMessage != null) {
+                                messenger.showSnackBar(
+                                  SnackBar(
+                                    content: Text(provider.errorMessage!),
+                                    backgroundColor: Colors.red,
+                                  ),
+                                );
+                              }
+                            } else if (value == 'reactivate') {
+                              final provider = context.read<UCProvider>();
+                              final messenger = ScaffoldMessenger.of(context);
+
+                              final success = await provider.reactivate(uc.id);
+                              if (!mounted) return;
+                              if (success) {
+                                messenger.showSnackBar(
+                                  const SnackBar(
+                                    content: Text('UC reativada'),
+                                    backgroundColor: Colors.green,
+                                  ),
+                                );
+                              } else if (provider.errorMessage != null) {
+                                messenger.showSnackBar(
+                                  SnackBar(
+                                    content: Text(provider.errorMessage!),
+                                    backgroundColor: Colors.red,
+                                  ),
+                                );
+                              }
+                            } else if (value == 'delete') {
+                              final provider = context.read<UCProvider>();
+                              final navigator = Navigator.of(context);
+                              final messenger = ScaffoldMessenger.of(context);
+
+                              final confirm = await showDialog<bool>(
+                                context: context,
+                                builder: (context) => AlertDialog(
+                                  title: const Text('Confirmar Exclusão'),
+                                  content: Text(
+                                    'Tem certeza que deseja excluir a UC "${uc.nome}"?',
+                                  ),
+                                  actions: [
+                                    TextButton(
+                                      onPressed: () => navigator.pop(false),
+                                      child: const Text('Cancelar'),
+                                    ),
+                                    ElevatedButton(
+                                      onPressed: () => navigator.pop(true),
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: Colors.red,
+                                      ),
+                                      child: const Text('Excluir'),
+                                    ),
+                                  ],
+                                ),
+                              );
+
+                              if (confirm == true && mounted) {
+                                final success = await provider.delete(uc.id);
+                                if (!mounted) return;
+                                if (success) {
+                                  messenger.showSnackBar(
+                                    const SnackBar(
+                                      content: Text('UC excluída'),
+                                      backgroundColor: Colors.red,
+                                    ),
+                                  );
+                                } else if (provider.errorMessage != null) {
+                                  messenger.showSnackBar(
+                                    SnackBar(
+                                      content: Text(provider.errorMessage!),
+                                      backgroundColor: Colors.red,
+                                    ),
+                                  );
+                                }
+                              }
+                            }
+                          },
+                        ),
+                      ),
+                    );
+                  },
+                );
+              },
+            ),
+          ),
+        ],
       ),
     );
   }
