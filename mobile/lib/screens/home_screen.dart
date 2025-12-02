@@ -6,6 +6,7 @@ import 'areas_cientificas_screen.dart';
 import 'cursos_screen.dart';
 import 'departamentos_screen.dart';
 import 'docentes_screen.dart';
+import 'ucs_screen.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -136,6 +137,17 @@ class HomeScreen extends StatelessWidget {
                   MaterialPageRoute(
                     builder: (context) => const AreasCientificasScreen(),
                   ),
+                );
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.menu_book),
+              title: const Text('Unidades Curriculares'),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const UCsScreen()),
                 );
               },
             ),
