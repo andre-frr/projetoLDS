@@ -27,7 +27,9 @@ class UCModel {
       idArea: json['id_area'],
       anoCurso: json['ano_curso'],
       semCurso: json['sem_curso'],
-      ects: (json['ects'] as num).toDouble(),
+      ects: json['ects'] is String
+          ? double.parse(json['ects'])
+          : (json['ects'] as num).toDouble(),
       ativo: json['ativo'],
     );
   }
