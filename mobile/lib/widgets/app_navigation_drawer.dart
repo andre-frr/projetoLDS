@@ -6,6 +6,7 @@ import '../screens/areas_cientificas_screen.dart';
 import '../screens/cursos_screen.dart';
 import '../screens/departamentos_screen.dart';
 import '../screens/docentes_screen.dart';
+import '../screens/ucs_screen.dart';
 
 class AppNavigationDrawer extends StatelessWidget {
   final String currentRoute;
@@ -90,6 +91,15 @@ class AppNavigationDrawer extends StatelessWidget {
             route: 'areas_cientificas',
             onTap: () {
               _navigateTo(context, const AreasCientificasScreen());
+            },
+          ),
+          _buildDrawerItem(
+            context,
+            icon: Icons.menu_book,
+            title: 'Unidades Curriculares',
+            route: 'ucs',
+            onTap: () {
+              _navigateTo(context, const UCsScreen());
             },
           ),
           const Divider(),

@@ -6,6 +6,7 @@ import 'providers/auth_provider.dart';
 import 'providers/curso_provider.dart';
 import 'providers/departamento_provider.dart';
 import 'providers/docente_provider.dart';
+import 'providers/uc_provider.dart';
 import 'screens/home_screen.dart';
 import 'screens/login_screen.dart';
 import 'services/area_cientifica_service.dart';
@@ -49,6 +50,7 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(
           create: (_) => CursoProvider(CursoService(DioService().dio)),
         ),
+        ChangeNotifierProvider(create: (_) => UCProvider()),
       ],
       child: MaterialApp(
         title: AppConstants.appName,
