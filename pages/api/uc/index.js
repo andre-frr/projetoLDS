@@ -23,12 +23,10 @@ async function handler(req, res) {
       !sem_curso ||
       ects == null
     ) {
-      return res
-        .status(400)
-        .json({
-          message:
-            "Dados mal formatados. Campos obrigatórios: nome, id_curso, id_area, ano_curso, sem_curso, ects",
-        });
+      return res.status(400).json({
+        message:
+          "Dados mal formatados. Campos obrigatórios: nome, id_curso, id_area, ano_curso, sem_curso, ects",
+      });
     }
 
     try {
@@ -78,4 +76,15 @@ async function handler(req, res) {
   }
 }
 
-export default corsMiddleware(handler);
+export default async function handlerWithCors(req, res) {
+  await new Promise((resolve, reject) => {
+    corsMiddleware(req, res, (result) => {
+      if (result instanceof Error) {
+        return reject(result);
+      }
+      return resolve(result);
+    });
+  });
+
+  return handler(req, res);
+}

@@ -15,19 +15,19 @@ class UCService {
   final _logger = Logger();
 
   // Get all UCs
-  Future<List<UCModel>> getAll({bool incluirInativos = true}) async {
+  Future<List<UCModel>> getAll({bool incluirInativos = false}) async {
     try {
       final response = await _dio.get(
         '/uc',
-        queryParameters: {'incluirInativos': incluirInativos},
+        queryParameters: incluirInativos ? {'incluirInativos': 'true'} : null,
       );
 
       if (response.statusCode == 200) {
-        final List<dynamic> data = response.data;
+        final List<dynamic> data = response.data as List<dynamic>;
         return data.map((json) => UCModel.fromJson(json)).toList();
-      } else {
-        throw Exception('Failed to load UCs');
       }
+
+      throw Exception('Failed to load UCs');
     } on DioException catch (e) {
       _logger.e('Error loading UCs: ${e.response?.data ?? e.message}');
       throw Exception(e.response?.data['message'] ?? 'Failed to load UCs');
@@ -41,12 +41,12 @@ class UCService {
 
       if (response.statusCode == 200) {
         return UCModel.fromJson(response.data);
-      } else {
-        throw Exception('UC not found');
       }
+
+      throw Exception('Failed to load UC');
     } on DioException catch (e) {
       _logger.e('Error loading UC: ${e.response?.data ?? e.message}');
-      throw Exception(e.response?.data['message'] ?? 'UC not found');
+      throw Exception(e.response?.data['message'] ?? 'Failed to load UC');
     }
   }
 
@@ -57,9 +57,9 @@ class UCService {
 
       if (response.statusCode == 201) {
         return UCModel.fromJson(response.data['uc']);
-      } else {
-        throw Exception('Failed to create UC');
       }
+
+      throw Exception('Failed to create UC');
     } on DioException catch (e) {
       _logger.e('Error creating UC: ${e.response?.data ?? e.message}');
       throw Exception(e.response?.data['message'] ?? 'Failed to create UC');
@@ -73,9 +73,9 @@ class UCService {
 
       if (response.statusCode == 200) {
         return UCModel.fromJson(response.data);
-      } else {
-        throw Exception('Failed to update UC');
       }
+
+      throw Exception('Failed to update UC');
     } on DioException catch (e) {
       _logger.e('Error updating UC: ${e.response?.data ?? e.message}');
       throw Exception(e.response?.data['message'] ?? 'Failed to update UC');
@@ -83,13 +83,11 @@ class UCService {
   }
 
   // Deactivate UC
-  Future<UCModel> deactivate(int id) async {
+  Future<void> deactivate(int id) async {
     try {
       final response = await _dio.delete('/uc/$id/inativar');
 
-      if (response.statusCode == 200) {
-        return UCModel.fromJson(response.data);
-      } else {
+      if (response.statusCode != 200) {
         throw Exception('Failed to deactivate UC');
       }
     } on DioException catch (e) {

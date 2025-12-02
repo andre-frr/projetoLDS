@@ -27,7 +27,7 @@ class CursoProvider with ChangeNotifier {
       _cursos = await _service.getAll(incluirInativos: incluirInativos);
       _errorMessage = null;
     } catch (e) {
-      _errorMessage = e.toString();
+      _errorMessage = e.toString().replaceAll('Exception: ', '');
       _cursos = [];
     } finally {
       _isLoading = false;
@@ -43,7 +43,7 @@ class CursoProvider with ChangeNotifier {
       notifyListeners();
       return true;
     } catch (e) {
-      _errorMessage = e.toString();
+      _errorMessage = e.toString().replaceAll('Exception: ', '');
       notifyListeners();
       return false;
     }
@@ -60,7 +60,7 @@ class CursoProvider with ChangeNotifier {
       }
       return true;
     } catch (e) {
-      _errorMessage = e.toString();
+      _errorMessage = e.toString().replaceAll('Exception: ', '');
       notifyListeners();
       return false;
     }
@@ -77,7 +77,7 @@ class CursoProvider with ChangeNotifier {
       }
       return true;
     } catch (e) {
-      _errorMessage = e.toString();
+      _errorMessage = e.toString().replaceAll('Exception: ', '');
       notifyListeners();
       return false;
     }
@@ -91,7 +91,7 @@ class CursoProvider with ChangeNotifier {
       notifyListeners();
       return true;
     } catch (e) {
-      _errorMessage = e.toString();
+      _errorMessage = e.toString().replaceAll('Exception: ', '');
       notifyListeners();
       return false;
     }

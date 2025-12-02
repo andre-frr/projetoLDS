@@ -17,7 +17,7 @@ class UCProvider with ChangeNotifier {
   String? get errorMessage => _errorMessage;
 
   // Load all UCs
-  Future<void> loadAll({bool incluirInativos = true}) async {
+  Future<void> loadAll({bool incluirInativos = false}) async {
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
@@ -86,10 +86,10 @@ class UCProvider with ChangeNotifier {
     notifyListeners();
 
     try {
-      final updatedUC = await _ucService.deactivate(id);
+      await _ucService.deactivate(id);
       final index = _ucs.indexWhere((u) => u.id == id);
       if (index != -1) {
-        _ucs[index] = updatedUC;
+        _ucs[index] = _ucs[index].copyWith(ativo: false);
       }
       _errorMessage = null;
       _isLoading = false;
