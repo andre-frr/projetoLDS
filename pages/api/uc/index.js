@@ -1,5 +1,5 @@
 import GrpcClient from "@/lib/grpc-client.js";
-import corsMiddleware from "@/lib/cors-middleware.js";
+import corsMiddleware from "@/lib/cors.js";
 
 async function handler(req, res) {
   if (req.method === "GET") {
