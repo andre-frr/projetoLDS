@@ -113,10 +113,7 @@ class UCService {
   // Update UC hours
   Future<void> updateHoras(int ucId, String tipo, int horas) async {
     try {
-      await _dio.post(
-        '/uc/$ucId/horas',
-        data: {'tipo_hora': tipo, 'horas': horas},
-      );
+      await _dio.post('/uc/$ucId/horas', data: {'tipo': tipo, 'horas': horas});
       _logger.i('UC hours updated successfully for UC: $ucId, tipo: $tipo');
     } on DioException catch (e) {
       _logger.e('Failed to update UC hours: ${e.message}');

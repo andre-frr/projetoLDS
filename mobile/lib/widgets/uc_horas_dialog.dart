@@ -123,8 +123,8 @@ class _UCHorasDialogState extends State<UCHorasDialog> {
           ),
         ],
       ),
-      content: SizedBox(
-        width: double.maxFinite,
+      content: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 400),
         child: _isLoading
             ? const Center(child: CircularProgressIndicator())
             : SingleChildScrollView(

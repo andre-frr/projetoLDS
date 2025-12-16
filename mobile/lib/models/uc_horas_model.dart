@@ -6,12 +6,12 @@ class UCHorasModel {
 
   factory UCHorasModel.fromJson(Map<String, dynamic> json) {
     return UCHorasModel(
-      tipo: json['tipo_hora'] as String,
+      tipo: json['tipo'] as String,
       horas: json['horas'] as int,
     );
   }
 
   Map<String, dynamic> toJson() {
-    return {'tipo_hora': tipo, 'horas': horas};
+    return {'tipo': tipo, 'horas': horas};
   }
 }
