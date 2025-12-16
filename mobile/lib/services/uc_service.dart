@@ -105,6 +105,11 @@ class UCService {
           .map((json) => UCHorasModel.fromJson(json as Map<String, dynamic>))
           .toList();
     } on DioException catch (e) {
+      // 404 means no hours saved yet - this is normal, return empty list
+      if (e.response?.statusCode == 404) {
+        _logger.i('No hours found for UC: $ucId (404)');
+        return [];
+      }
       _logger.e('Failed to fetch UC hours: ${e.message}');
       throw Exception('Erro ao carregar horas da UC');
     }
