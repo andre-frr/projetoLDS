@@ -8,6 +8,7 @@ import '../providers/curso_provider.dart';
 import '../providers/uc_provider.dart';
 import '../utils/validators.dart';
 import '../widgets/app_navigation_drawer.dart';
+import '../widgets/uc_horas_dialog.dart';
 
 class UCsScreen extends StatefulWidget {
   const UCsScreen({super.key});
@@ -835,6 +836,16 @@ class _UCsScreenState extends State<UCsScreen> {
                                 ],
                               ),
                             ),
+                            const PopupMenuItem(
+                              value: 'horas',
+                              child: Row(
+                                children: [
+                                  Icon(Icons.access_time),
+                                  SizedBox(width: 8),
+                                  Text('Gerir Horas'),
+                                ],
+                              ),
+                            ),
                             if (uc.ativo)
                               const PopupMenuItem(
                                 value: 'deactivate',
@@ -880,6 +891,11 @@ class _UCsScreenState extends State<UCsScreen> {
                           onSelected: (value) async {
                             if (value == 'edit') {
                               _showEditDialog(uc);
+                            } else if (value == 'horas') {
+                              showDialog(
+                                context: context,
+                                builder: (context) => UCHorasDialog(uc: uc),
+                              );
                             } else if (value == 'deactivate') {
                               final provider = context.read<UCProvider>();
                               final messenger = ScaffoldMessenger.of(context);

@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:logger/logger.dart';
 
 import '../models/uc_model.dart';
+import '../models/uc_horas_model.dart';
 import 'dio_service.dart';
 
 class UCService {
@@ -79,6 +80,47 @@ class UCService {
     } on DioException catch (e) {
       _logger.e('Error updating UC: ${e.response?.data ?? e.message}');
       throw Exception(e.response?.data['message'] ?? 'Failed to update UC');
+    }
+  }
+
+  // Reactivate UC
+  Future<void> reactivate(int id) async {
+    try {
+      await _dio.put('/uc/$id/reativar');
+      _logger.i('UC reactivated successfully: $id');
+    } on DioException catch (e) {
+      _logger.e('Failed to reactivate UC: ${e.message}');
+      throw Exception('Erro ao reativar UC');
+    }
+  }
+
+  // Get UC hours
+  Future<List<UCHorasModel>> getHoras(int ucId) async {
+    try {
+      final response = await _dio.get('/uc/$ucId/horas');
+      _logger.i('UC hours fetched successfully for UC: $ucId');
+
+      final List<dynamic> data = response.data as List<dynamic>;
+      return data
+          .map((json) => UCHorasModel.fromJson(json as Map<String, dynamic>))
+          .toList();
+    } on DioException catch (e) {
+      _logger.e('Failed to fetch UC hours: ${e.message}');
+      throw Exception('Erro ao carregar horas da UC');
+    }
+  }
+
+  // Update UC hours
+  Future<void> updateHoras(int ucId, String tipo, int horas) async {
+    try {
+      await _dio.post(
+        '/uc/$ucId/horas',
+        data: {'tipo_hora': tipo, 'horas': horas},
+      );
+      _logger.i('UC hours updated successfully for UC: $ucId, tipo: $tipo');
+    } on DioException catch (e) {
+      _logger.e('Failed to update UC hours: ${e.message}');
+      throw Exception('Erro ao atualizar horas da UC');
     }
   }
 

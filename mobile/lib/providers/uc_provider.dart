@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../models/uc_model.dart';
+import '../models/uc_horas_model.dart';
 import '../services/uc_service.dart';
 
 class UCProvider with ChangeNotifier {
@@ -134,5 +135,28 @@ class UCProvider with ChangeNotifier {
   void clearError() {
     _errorMessage = null;
     notifyListeners();
+  }
+
+  // Get UC Hours
+  Future<List<UCHorasModel>> getHoras(int ucId) async {
+    try {
+      return await _ucService.getHoras(ucId);
+    } catch (e) {
+      _errorMessage = e.toString().replaceAll('Exception: ', '');
+      notifyListeners();
+      return [];
+    }
+  }
+
+  // Update UC Hours
+  Future<bool> updateHoras(int ucId, String tipo, int horas) async {
+    try {
+      await _ucService.updateHoras(ucId, tipo, horas);
+      return true;
+    } catch (e) {
+      _errorMessage = e.toString().replaceAll('Exception: ', '');
+      notifyListeners();
+      return false;
+    }
   }
 }
