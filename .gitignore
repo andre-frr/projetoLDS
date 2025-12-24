@@ -34,3 +34,6 @@ certs
 .vscode/
 *.swp
 *.swo
+
+#Python's Virtual Environment
+.venv
