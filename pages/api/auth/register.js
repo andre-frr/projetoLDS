@@ -1,19 +1,12 @@
 import argon2 from 'argon2';
 import pool from '@/lib/db.js';
-import corsMiddleware from '@/lib/cors.js';
+import {applyCors} from '@/lib/cors.js';
 import {auditLog} from '@/lib/audit.js';
 
 const VALID_ROLES = ['Administrador', 'Coordenador', 'Docente', 'Convidado'];
 
 export default async function handler(req, res) {
-    await new Promise((resolve, reject) => {
-        corsMiddleware(req, res, (result) => {
-            if (result instanceof Error) {
-                return reject(result);
-            }
-            return resolve(result);
-        });
-    });
+    await applyCors(req, res);
 
     if (req.method !== 'POST') {
         return res.status(405).json({message: 'Method not allowed'});
@@ -80,4 +73,3 @@ export default async function handler(req, res) {
         res.status(500).json({message: 'Internal server error'});
     }
 }
-

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
-import '../models/uc_model.dart';
 import '../models/uc_horas_model.dart';
+import '../models/uc_model.dart';
 import '../services/uc_service.dart';
 
 class UCProvider with ChangeNotifier {

@@ -1,4 +1,4 @@
-import {getWithRelations, getAll, executeCustomQuery} from '../grpc-helper.js';
+import {executeCustomQuery, getAll, getWithRelations} from '../grpc-helper.js';
 
 export const departamentoResolvers = {
     Query: {
@@ -22,4 +22,3 @@ export const departamentoResolvers = {
         }
     }
 };
-

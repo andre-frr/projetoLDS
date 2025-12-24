@@ -1,40 +1,32 @@
 import GrpcClient from "@/lib/grpc-client.js";
-import corsMiddleware from "@/lib/cors.js";
+import {applyCors} from "@/lib/cors.js";
 
 async function handler(req, res) {
-  const { id } = req.query;
+    const {id} = req.query;
 
-  if (req.method === "DELETE") {
-    try {
-      const current = await GrpcClient.getById("uc", id);
+    if (req.method === "DELETE") {
+        try {
+            const current = await GrpcClient.getById("uc", id);
 
-      const result = await GrpcClient.update("uc", id, {
-        ...current,
-        ativo: false,
-      });
+            const result = await GrpcClient.update("uc", id, {
+                ...current,
+                ativo: false,
+            });
 
-      return res.status(200).json(result);
-    } catch (error) {
-      const statusCode = error.statusCode || 500;
-      return res.status(statusCode).json({
-        message: statusCode === 404 ? "UC inexistente." : error.message,
-      });
+            return res.status(200).json(result);
+        } catch (error) {
+            const statusCode = error.statusCode || 500;
+            return res.status(statusCode).json({
+                message: statusCode === 404 ? "UC inexistente." : error.message,
+            });
+        }
+    } else {
+        res.setHeader("Allow", ["DELETE"]);
+        return res.status(405).end(`Method ${req.method} Not Allowed`);
     }
-  } else {
-    res.setHeader("Allow", ["DELETE"]);
-    return res.status(405).end(`Method ${req.method} Not Allowed`);
-  }
 }
 
 export default async function handlerWithCors(req, res) {
-  await new Promise((resolve, reject) => {
-    corsMiddleware(req, res, (result) => {
-      if (result instanceof Error) {
-        return reject(result);
-      }
-      return resolve(result);
-    });
-  });
-
-  return handler(req, res);
+    await applyCors(req, res);
+    return handler(req, res);
 }

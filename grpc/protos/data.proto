@@ -62,4 +62,3 @@ message DataResponse {
   optional string error = 2;
   optional int32 statusCode = 3;
 }
-

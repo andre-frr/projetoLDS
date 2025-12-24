@@ -1,113 +1,106 @@
 import GrpcClient from "@/lib/grpc-client.js";
-import corsMiddleware from "@/lib/cors.js";
+import {applyCors} from "@/lib/cors.js";
 
-async function handler(req, res) {
-  const { id } = req.query;
-
-  if (req.method === "GET") {
-    try {
-      const result = await GrpcClient.getById("departamento", id);
-      return res.status(200).json(result);
-    } catch (error) {
-      console.error(error);
-      const statusCode = error.statusCode || 500;
-      return res.status(statusCode).json({
+function handleError(error, res) {
+    console.error(error);
+    const statusCode = error.statusCode || 500;
+    return res.status(statusCode).json({
         message:
-          statusCode === 404
-            ? "Departamento inexistente."
-            : "Internal Server Error",
-      });
-    }
-  } else if (req.method === "PUT") {
-    const { nome, sigla, ativo } = req.body;
+            statusCode === 404
+                ? "Departamento inexistente."
+                : "Internal Server Error",
+    });
+}
 
+async function handleGet(id, res) {
     try {
-      // Get current data
-      const current = await GrpcClient.getById("departamento", id);
-
-      // Check sigla uniqueness if changed
-      if (sigla && sigla !== current.sigla) {
-        const existing = await GrpcClient.getAll("departamento", {
-          filters: { sigla },
-        });
-        const duplicate = existing.find((dep) => dep.id_dep !== parseInt(id));
-        if (duplicate) {
-          return res.status(409).json({ message: "Sigla duplicada." });
-        }
-      }
-
-      // Check nome uniqueness if changed
-      if (nome && nome !== current.nome) {
-        const existing = await GrpcClient.getAll("departamento", {
-          filters: { nome },
-        });
-        const duplicate = existing.find((dep) => dep.id_dep !== parseInt(id));
-        if (duplicate) {
-          return res.status(409).json({ message: "Nome duplicado." });
-        }
-      }
-
-      // Prepare update data
-      const updateData = {
-        nome: nome ?? current.nome,
-        sigla: sigla ?? current.sigla,
-        ativo: ativo ?? current.ativo,
-      };
-
-      const result = await GrpcClient.update("departamento", id, updateData);
-      return res.status(200).json(result);
+        const result = await GrpcClient.getById("departamento", id);
+        return res.status(200).json(result);
     } catch (error) {
-      console.error(error);
-      const statusCode = error.statusCode || 500;
-      return res.status(statusCode).json({
-        message:
-          statusCode === 404
-            ? "Departamento inexistente."
-            : "Internal Server Error",
-      });
+        return handleError(error, res);
     }
-  } else if (req.method === "DELETE") {
-    try {
-      // Check if department has areas
-      const areas = await GrpcClient.getAll("area_cientifica", {
-        filters: { id_dep: parseInt(id) },
-      });
+}
 
-      if (areas.length > 0) {
-        // Mark as inactive instead of deleting
-        await GrpcClient.update("departamento", id, { ativo: false });
-        return res
-          .status(200)
-          .json({ message: "Departamento marcado como inativo." });
-      } else {
+async function checkFieldUniqueness(field, value, currentValue, id, res) {
+    if (!value || value === currentValue) {
+        return null;
+    }
+
+    const existing = await GrpcClient.getAll("departamento", {
+        filters: {[field]: value},
+    });
+    const duplicate = existing.find((dep) => dep.id_dep !== Number.parseInt(id));
+
+    if (duplicate) {
+        const message = field === "sigla" ? "Sigla duplicada." : "Nome duplicado.";
+        return res.status(409).json({message});
+    }
+
+    return null;
+}
+
+async function handlePut(id, req, res) {
+    const {nome, sigla, ativo} = req.body;
+
+    try {
+        const current = await GrpcClient.getById("departamento", id);
+
+        // Check sigla uniqueness
+        const siglaError = await checkFieldUniqueness("sigla", sigla, current.sigla, id, res);
+        if (siglaError) return siglaError;
+
+        // Check nome uniqueness
+        const nomeError = await checkFieldUniqueness("nome", nome, current.nome, id, res);
+        if (nomeError) return nomeError;
+
+        const updateData = {
+            nome: nome ?? current.nome,
+            sigla: sigla ?? current.sigla,
+            ativo: ativo ?? current.ativo,
+        };
+
+        const result = await GrpcClient.update("departamento", id, updateData);
+        return res.status(200).json(result);
+    } catch (error) {
+        return handleError(error, res);
+    }
+}
+
+async function handleDelete(id, res) {
+    try {
+        const areas = await GrpcClient.getAll("area_cientifica", {
+            filters: {id_dep: Number.parseInt(id)},
+        });
+
+        if (areas.length > 0) {
+            await GrpcClient.update("departamento", id, {ativo: false});
+            return res.status(200).json({message: "Departamento marcado como inativo."});
+        }
+
         await GrpcClient.delete("departamento", id);
         return res.status(204).end();
-      }
     } catch (error) {
-      console.error(error);
-      const statusCode = error.statusCode || 500;
-      return res.status(statusCode).json({
-        message:
-          statusCode === 404
-            ? "Departamento inexistente."
-            : "Internal Server Error",
-      });
+        return handleError(error, res);
     }
-  } else {
-    res.setHeader("Allow", ["GET", "PUT", "DELETE"]);
-    return res.status(405).end(`Method ${req.method} Not Allowed`);
-  }
+}
+
+async function handler(req, res) {
+    const {id} = req.query;
+
+    switch (req.method) {
+        case "GET":
+            return handleGet(id, res);
+        case "PUT":
+            return handlePut(id, req, res);
+        case "DELETE":
+            return handleDelete(id, res);
+        default:
+            res.setHeader("Allow", ["GET", "PUT", "DELETE"]);
+            return res.status(405).end(`Method ${req.method} Not Allowed`);
+    }
 }
 
 export default async function handlerWithCors(req, res) {
-  await new Promise((resolve, reject) => {
-    corsMiddleware(req, res, (result) => {
-      if (result instanceof Error) {
-        return reject(result);
-      }
-      return resolve(result);
-    });
-  });
-
-  return handler(req, res);
+    await applyCors(req, res);
+    return handler(req, res);
 }

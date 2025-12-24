@@ -1,22 +1,15 @@
 import jwt from 'jsonwebtoken';
 import argon2 from 'argon2';
 import pool from '@/lib/db.js';
-import {randomUUID} from 'crypto';
-import corsMiddleware from '@/lib/cors.js';
+import {randomUUID} from 'node:crypto';
+import {applyCors} from '@/lib/cors.js';
 import {auditLog} from '@/lib/audit.js';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
 const REFRESH_TOKEN_SECRET = process.env.REFRESH_TOKEN_SECRET || 'your-refresh-secret-key';
 
 export default async function handler(req, res) {
-    await new Promise((resolve, reject) => {
-        corsMiddleware(req, res, (result) => {
-            if (result instanceof Error) {
-                return reject(result);
-            }
-            return resolve(result);
-        });
-    });
+    await applyCors(req, res);
 
     if (req.method !== 'POST') {
         return res.status(405).json({message: 'Method not allowed'});

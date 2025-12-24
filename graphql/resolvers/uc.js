@@ -1,4 +1,4 @@
-import {getWithRelations, getAll, getById} from '../grpc-helper.js';
+import {getAll, getById, getWithRelations} from '../grpc-helper.js';
 
 export const ucResolvers = {
     Query: {

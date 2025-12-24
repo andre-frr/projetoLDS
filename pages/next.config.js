@@ -1,5 +1,5 @@
-const path = require('path');
-const fs = require('fs');
+const path = require('node:path');
+const fs = require('node:fs');
 
 // Check if we're in Docker build context (lib is sibling) or local dev (lib is parent)
 const libPath = fs.existsSync(path.resolve(__dirname, './lib'))
@@ -31,4 +31,3 @@ const nextConfig = {
 };
 
 module.exports = nextConfig;
-

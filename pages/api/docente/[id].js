@@ -1,95 +1,111 @@
 import GrpcClient from "@/lib/grpc-client.js";
-import corsMiddleware from "@/lib/cors.js";
+import {applyCors} from "@/lib/cors.js";
 
-async function handler(req, res) {
-  const { id } = req.query;
+function handleError(error, res, notFoundMessage = "Docente inexistente.") {
+    const statusCode = error.statusCode || 500;
+    return res.status(statusCode).json({
+        message: statusCode === 404 ? notFoundMessage : error.message,
+    });
+}
 
-  if (req.method === "GET") {
+async function handleGet(id, res) {
     try {
-      const result = await GrpcClient.getById("docente", id);
-      return res.status(200).json(result);
+        const result = await GrpcClient.getById("docente", id);
+        return res.status(200).json(result);
     } catch (error) {
-      const statusCode = error.statusCode || 500;
-      return res.status(statusCode).json({
-        message: statusCode === 404 ? "Docente inexistente." : error.message,
-      });
+        return handleError(error, res);
     }
-  } else if (req.method === "PUT") {
-    const { nome, email, id_area, convidado, ativo } = req.body;
+}
 
-    if (!nome || !email || !id_area) {
-      return res.status(400).json({ message: "Dados mal formatados." });
+async function checkEmailUniqueness(email, currentEmail, id, res) {
+    if (email === currentEmail) {
+        return null;
     }
 
+    const existing = await GrpcClient.getAll("docente", {
+        filters: {email},
+    });
+    const duplicate = existing.find((doc) => doc.id_doc !== Number.parseInt(id));
+
+    if (duplicate) {
+        return res.status(409).json({message: "Email duplicado."});
+    }
+
+    return null;
+}
+
+async function validateAreaCientifica(id_area, res) {
     try {
-      const current = await GrpcClient.getById("docente", id);
-
-      if (email !== current.email) {
-        const existing = await GrpcClient.getAll("docente", {
-          filters: { email },
-        });
-        const duplicate = existing.find((doc) => doc.id_doc !== parseInt(id));
-        if (duplicate) {
-          return res.status(409).json({ message: "Email duplicado." });
-        }
-      }
-
-      try {
         await GrpcClient.getById("area_cientifica", id_area);
-      } catch (error) {
+        return null;
+    } catch (error) {
         if (error.statusCode === 404) {
-          return res
-            .status(404)
-            .json({ message: "Área científica inexistente." });
+            return res.status(404).json({message: "Área científica inexistente."});
         }
         throw error;
-      }
-
-      const updateData = {
-        nome,
-        email,
-        id_area,
-        convidado,
-      };
-
-      // Only include ativo if it's explicitly provided
-      if (ativo !== undefined) {
-        updateData.ativo = ativo;
-      }
-
-      const result = await GrpcClient.update("docente", id, updateData);
-      return res.status(200).json(result);
-    } catch (error) {
-      const statusCode = error.statusCode || 500;
-      return res.status(statusCode).json({
-        message: statusCode === 404 ? "Docente inexistente." : error.message,
-      });
     }
-  } else if (req.method === "DELETE") {
+}
+
+async function handlePut(id, req, res) {
+    const {nome, email, id_area, convidado, ativo} = req.body;
+
+    if (!nome || !email || !id_area) {
+        return res.status(400).json({message: "Dados mal formatados."});
+    }
+
     try {
-      await GrpcClient.delete("docente", id);
-      return res.status(204).end();
+        const current = await GrpcClient.getById("docente", id);
+
+        const emailError = await checkEmailUniqueness(email, current.email, id, res);
+        if (emailError) return emailError;
+
+        const areaError = await validateAreaCientifica(id_area, res);
+        if (areaError) return areaError;
+
+        const updateData = {
+            nome,
+            email,
+            id_area,
+            convidado,
+        };
+
+        if (ativo !== undefined) {
+            updateData.ativo = ativo;
+        }
+
+        const result = await GrpcClient.update("docente", id, updateData);
+        return res.status(200).json(result);
     } catch (error) {
-      const statusCode = error.statusCode || 500;
-      return res.status(statusCode).json({
-        message: statusCode === 404 ? "Docente inexistente." : error.message,
-      });
+        return handleError(error, res);
     }
-  } else {
-    res.setHeader("Allow", ["GET", "PUT", "DELETE"]);
-    return res.status(405).end(`Method ${req.method} Not Allowed`);
-  }
+}
+
+async function handleDelete(id, res) {
+    try {
+        await GrpcClient.delete("docente", id);
+        return res.status(204).end();
+    } catch (error) {
+        return handleError(error, res);
+    }
+}
+
+async function handler(req, res) {
+    const {id} = req.query;
+
+    switch (req.method) {
+        case "GET":
+            return handleGet(id, res);
+        case "PUT":
+            return handlePut(id, req, res);
+        case "DELETE":
+            return handleDelete(id, res);
+        default:
+            res.setHeader("Allow", ["GET", "PUT", "DELETE"]);
+            return res.status(405).end(`Method ${req.method} Not Allowed`);
+    }
 }
 
 export default async function handlerWithCors(req, res) {
-  await new Promise((resolve, reject) => {
-    corsMiddleware(req, res, (result) => {
-      if (result instanceof Error) {
-        return reject(result);
-      }
-      return resolve(result);
-    });
-  });
-
-  return handler(req, res);
+    await applyCors(req, res);
+    return handler(req, res);
 }

@@ -45,9 +45,9 @@ CREATE TABLE IF NOT EXISTS grau
 
 CREATE TABLE IF NOT EXISTS ano_letivo
 (
-    id_ano SERIAL PRIMARY KEY, -- 1
-    anoInicio INTEGER NOT NULL, -- 2024
-    anoFim INTEGER NOT NULL -- 2025
+    id_ano    SERIAL PRIMARY KEY, -- 1
+    anoInicio INTEGER NOT NULL,   -- 2024
+    anoFim    INTEGER NOT NULL    -- 2025
 );
 
 CREATE TABLE IF NOT EXISTS departamento
@@ -74,13 +74,13 @@ CREATE TABLE IF NOT EXISTS area_cientifica
 
 CREATE TABLE IF NOT EXISTS docente
 (
-    id_doc    SERIAL PRIMARY KEY,
-    nome      TEXT    NOT NULL,
-    id_area   INTEGER NOT NULL REFERENCES area_cientifica (id_area)
+    id_doc     SERIAL PRIMARY KEY,
+    nome       TEXT      NOT NULL,
+    id_area    INTEGER   NOT NULL REFERENCES area_cientifica (id_area)
         ON UPDATE CASCADE ON DELETE RESTRICT,
-    email     TEXT    NOT NULL,
-    ativo     BOOLEAN NOT NULL DEFAULT TRUE,
-    convidado BOOLEAN NOT NULL DEFAULT FALSE,
+    email      TEXT      NOT NULL,
+    ativo      BOOLEAN   NOT NULL DEFAULT TRUE,
+    convidado  BOOLEAN   NOT NULL DEFAULT FALSE,
     dataInicio TIMESTAMP NOT NULL DEFAULT NOW(),
     CONSTRAINT uq_docente_email UNIQUE (email)
 );
@@ -112,9 +112,9 @@ CREATE TABLE IF NOT EXISTS uc
 -- Turmas por UC
 CREATE TABLE IF NOT EXISTS uc_turma
 (
-    id_uc INTEGER   NOT NULL REFERENCES uc (id_uc)
+    id_uc      INTEGER NOT NULL REFERENCES uc (id_uc)
         ON UPDATE CASCADE ON DELETE CASCADE,
-    turma turma NOT NULL DEFAULT 'A',
+    turma      turma   NOT NULL DEFAULT 'A',
     ano_letivo INTEGER NOT NULL REFERENCES ano_letivo (id_ano)
         ON UPDATE CASCADE ON DELETE RESTRICT,
     PRIMARY KEY (id_uc, turma, ano_letivo)
@@ -157,32 +157,32 @@ CREATE TABLE IF NOT EXISTS historico_cv_docente
     link_cv TEXT    NOT NULL
 );
 
- -- Histórico de contratos
- CREATE TABLE IF NOT EXISTS historico_contrato_docente
- (
-    id_hcd SERIAL PRIMARY KEY,
-    id_doc INTEGER NOT NULL REFERENCES docente (id_doc)
+-- Histórico de contratos
+CREATE TABLE IF NOT EXISTS historico_contrato_docente
+(
+    id_hcd     SERIAL PRIMARY KEY,
+    id_doc     INTEGER   NOT NULL REFERENCES docente (id_doc)
         ON UPDATE CASCADE ON DELETE CASCADE,
     dataInicio TIMESTAMP NOT NULL DEFAULT NOW(),
-    dataFim DATE,
-    id_ano INTEGER NOT NULL REFERENCES ano_letivo (id_ano)
+    dataFim    DATE,
+    id_ano     INTEGER   NOT NULL REFERENCES ano_letivo (id_ano)
         ON UPDATE CASCADE ON DELETE RESTRICT
- );
+);
 
- -- DSD
- CREATE TABLE IF NOT EXISTS DSD
- (
+-- DSD
+CREATE TABLE IF NOT EXISTS DSD
+(
     id_dsd SERIAL PRIMARY KEY,
-    id_doc INTEGER NOT NULL REFERENCES docente (id_doc)
+    id_doc INTEGER   NOT NULL REFERENCES docente (id_doc)
         ON UPDATE CASCADE ON DELETE CASCADE,
-    id_ano INTEGER NOT NULL REFERENCES ano_letivo (id_ano)
+    id_ano INTEGER   NOT NULL REFERENCES ano_letivo (id_ano)
         ON UPDATE CASCADE ON DELETE RESTRICT,
-    id_uc INTEGER NOT NULL REFERENCES uc (id_uc)
+    id_uc  INTEGER   NOT NULL REFERENCES uc (id_uc)
         ON UPDATE CASCADE ON DELETE RESTRICT,
-    tipo tipo_hora NOT NULL,
-    horas INTEGER NOT NULL CHECK (horas >= 0),
-    turma turma NOT NULL
- );
+    tipo   tipo_hora NOT NULL,
+    horas  INTEGER   NOT NULL CHECK (horas >= 0),
+    turma  turma     NOT NULL
+);
 
 -- =========================
 --   Índices adicionais
@@ -257,7 +257,7 @@ CREATE TABLE IF NOT EXISTS audit_logs
 (
     id         SERIAL PRIMARY KEY,
     action     TEXT        NOT NULL,
-    user_id    INTEGER REFERENCES users (id) ON DELETE SET NULL,
+    user_id    INTEGER     REFERENCES users (id) ON DELETE SET NULL,
     details    JSONB,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );

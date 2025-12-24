@@ -1,4 +1,4 @@
-import {getWithRelations, getAll, getById, executeCustomQuery} from '../grpc-helper.js';
+import {executeCustomQuery, getAll, getById, getWithRelations} from '../grpc-helper.js';
 
 export const docenteResolvers = {
     Query: {

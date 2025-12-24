@@ -57,326 +57,380 @@ function buildPKWhere(tableName, id) {
 }
 
 // GetAll - Read all records with optional filters
-async function getAll(call, callback) {
-    const {tableName, filters, orderBy, limit, offset} = call.request;
-    console.log(
-        `[gRPC] getAll - table: ${tableName}, filters: ${
-            filters || "none"
-        }, orderBy: ${orderBy || "none"}, limit: ${limit || "none"}, offset: ${
-            offset || "none"
-        }`
-    );
-
-    if (!validateTable(tableName)) {
-        console.error(`[gRPC] getAll - Invalid table: ${tableName}`);
-        return callback(null, {
-            data: null,
-            error: "Invalid tableName",
-            statusCode: 400,
-        });
-    }
-
-    try {
-        let query = `SELECT *
-                     FROM ${tableName}`;
-        const params = [];
-        let paramIndex = 1;
-
-        // Apply filters if provided
-        if (filters) {
-            const filterObj = JSON.parse(filters);
-            const whereClauses = [];
-            for (const [key, value] of Object.entries(filterObj)) {
-                whereClauses.push(`${key} = $${paramIndex++}`);
-                params.push(value);
-            }
-            if (whereClauses.length > 0) {
-                query += ` WHERE ${whereClauses.join(" AND ")}`;
-            }
-        }
-
-        // Apply ordering
-        if (orderBy) {
-            query += ` ORDER BY ${orderBy}`;
-        }
-
-        // Apply pagination
-        if (limit) {
-            query += ` LIMIT $${paramIndex++}`;
-            params.push(limit);
-        }
-        if (offset) {
-            query += ` OFFSET $${paramIndex++}`;
-            params.push(offset);
-        }
-
-        const {rows} = await pool.query(query, params);
+function getAll(call, callback) {
+    (async () => {
+        const {tableName, filters, orderBy, limit, offset} = call.request;
         console.log(
-            `[gRPC] getAll - Success: ${rows.length} rows returned from ${tableName}`
+            `[gRPC] getAll - table: ${tableName}, filters: ${
+                filters || "none"
+            }, orderBy: ${orderBy || "none"}, limit: ${limit || "none"}, offset: ${
+                offset || "none"
+            }`
         );
-        callback(null, {
-            data: JSON.stringify(rows),
-            statusCode: 200,
-        });
-    } catch (e) {
+
+        if (!validateTable(tableName)) {
+            console.error(`[gRPC] getAll - Invalid table: ${tableName}`);
+            return callback(null, {
+                data: null,
+                error: "Invalid tableName",
+                statusCode: 400,
+            });
+        }
+
+        try {
+            let query = `SELECT *
+                         FROM ${tableName}`;
+            const params = [];
+            let paramIndex = 1;
+
+            // Apply filters if provided
+            if (filters) {
+                const filterObj = JSON.parse(filters);
+                const whereClauses = [];
+                for (const [key, value] of Object.entries(filterObj)) {
+                    whereClauses.push(`${key} = $${paramIndex++}`);
+                    params.push(value);
+                }
+                if (whereClauses.length > 0) {
+                    query += ` WHERE ${whereClauses.join(" AND ")}`;
+                }
+            }
+
+            // Apply ordering
+            if (orderBy) {
+                query += ` ORDER BY ${orderBy}`;
+            }
+
+            // Apply pagination
+            if (limit) {
+                query += ` LIMIT $${paramIndex++}`;
+                params.push(limit);
+            }
+            if (offset) {
+                query += ` OFFSET $${paramIndex++}`;
+                params.push(offset);
+            }
+
+            const {rows} = await pool.query(query, params);
+            console.log(
+                `[gRPC] getAll - Success: ${rows.length} rows returned from ${tableName}`
+            );
+            callback(null, {
+                data: JSON.stringify(rows),
+                statusCode: 200,
+            });
+        } catch (e) {
+            console.error("GetAll error:", e);
+            callback(null, {
+                data: null,
+                error: e.message,
+                statusCode: 500,
+            });
+        }
+    })().catch(e => {
         console.error("GetAll error:", e);
         callback(null, {
             data: null,
             error: e.message,
             statusCode: 500,
         });
-    }
+    });
 }
 
 // GetById - Read single record by ID
-async function getById(call, callback) {
-    const {tableName, id} = call.request;
-    console.log(`[gRPC] getById - table: ${tableName}, id: ${id}`);
+function getById(call, callback) {
+    (async () => {
+        const {tableName, id} = call.request;
+        console.log(`[gRPC] getById - table: ${tableName}, id: ${id}`);
 
-    if (!validateTable(tableName)) {
-        console.error(`[gRPC] getById - Invalid table: ${tableName}`);
-        return callback(null, {
-            data: null,
-            error: "Invalid tableName",
-            statusCode: 400,
-        });
-    }
-
-    try {
-        const {where, params} = buildPKWhere(tableName, id);
-        const query = `SELECT *
-                       FROM ${tableName}
-                       WHERE ${where}`;
-
-        const {rows} = await pool.query(query, params);
-        if (rows.length === 0) {
+        if (!validateTable(tableName)) {
+            console.error(`[gRPC] getById - Invalid table: ${tableName}`);
             return callback(null, {
                 data: null,
-                error: "Not found",
-                statusCode: 404,
+                error: "Invalid tableName",
+                statusCode: 400,
             });
         }
 
-        console.log(`[gRPC] getById - Success: Found record in ${tableName}`);
-        callback(null, {
-            data: JSON.stringify(rows[0]),
-            statusCode: 200,
-        });
-    } catch (e) {
+        try {
+            const {where, params} = buildPKWhere(tableName, id);
+            const query = `SELECT *
+                           FROM ${tableName}
+                           WHERE ${where}`;
+
+            const {rows} = await pool.query(query, params);
+            if (rows.length === 0) {
+                return callback(null, {
+                    data: null,
+                    error: "Not found",
+                    statusCode: 404,
+                });
+            }
+
+            console.log(`[gRPC] getById - Success: Found record in ${tableName}`);
+            callback(null, {
+                data: JSON.stringify(rows[0]),
+                statusCode: 200,
+            });
+        } catch (e) {
+            console.error("GetById error:", e);
+            callback(null, {
+                data: null,
+                error: e.message,
+                statusCode: 500,
+            });
+        }
+    })().catch(e => {
         console.error("GetById error:", e);
         callback(null, {
             data: null,
             error: e.message,
             statusCode: 500,
         });
-    }
+    });
 }
 
 // Create - Insert new record
-async function create(call, callback) {
-    const {tableName, data} = call.request;
-    console.log(`[gRPC] create - table: ${tableName}, data: ${data}`);
+function create(call, callback) {
+    (async () => {
+        const {tableName, data} = call.request;
+        console.log(`[gRPC] create - table: ${tableName}, data: ${data}`);
 
-    if (!validateTable(tableName)) {
-        console.error(`[gRPC] create - Invalid table: ${tableName}`);
-        return callback(null, {
-            data: null,
-            error: "Invalid tableName",
-            statusCode: 400,
-        });
-    }
+        if (!validateTable(tableName)) {
+            console.error(`[gRPC] create - Invalid table: ${tableName}`);
+            return callback(null, {
+                data: null,
+                error: "Invalid tableName",
+                statusCode: 400,
+            });
+        }
 
-    try {
-        const dataObj = JSON.parse(data);
-        const keys = Object.keys(dataObj);
-        const values = Object.values(dataObj);
+        try {
+            const dataObj = JSON.parse(data);
+            const keys = Object.keys(dataObj);
+            const values = Object.values(dataObj);
 
-        const placeholders = keys.map((_, i) => `$${i + 1}`).join(", ");
-        const query = `INSERT INTO ${tableName} (${keys.join(", ")})
-                       VALUES (${placeholders}) RETURNING *`;
+            const placeholders = keys.map((_, i) => `$${i + 1}`).join(", ");
+            const query = `INSERT INTO ${tableName} (${keys.join(", ")})
+                           VALUES (${placeholders}) RETURNING *`;
 
-        const {rows} = await pool.query(query, values);
-        console.log(`[gRPC] create - Success: Created record in ${tableName}`);
-        callback(null, {
-            data: JSON.stringify(rows[0]),
-            statusCode: 201,
-        });
-    } catch (e) {
+            const {rows} = await pool.query(query, values);
+            console.log(`[gRPC] create - Success: Created record in ${tableName}`);
+            callback(null, {
+                data: JSON.stringify(rows[0]),
+                statusCode: 201,
+            });
+        } catch (e) {
+            console.error("Create error:", e);
+            callback(null, {
+                data: null,
+                error: e.message,
+                statusCode: e.code === "23505" ? 409 : 500, // Handle unique constraint violation
+            });
+        }
+    })().catch(e => {
         console.error("Create error:", e);
         callback(null, {
             data: null,
             error: e.message,
-            statusCode: e.code === "23505" ? 409 : 500, // Handle unique constraint violation
+            statusCode: e.code === "23505" ? 409 : 500,
         });
-    }
+    });
 }
 
 // Update - Update existing record
-async function update(call, callback) {
-    const {tableName, id, data} = call.request;
-    console.log(`[gRPC] update - table: ${tableName}, id: ${id}, data: ${data}`);
+function update(call, callback) {
+    (async () => {
+        const {tableName, id, data} = call.request;
+        console.log(`[gRPC] update - table: ${tableName}, id: ${id}, data: ${data}`);
 
-    if (!validateTable(tableName)) {
-        console.error(`[gRPC] update - Invalid table: ${tableName}`);
-        return callback(null, {
-            data: null,
-            error: "Invalid tableName",
-            statusCode: 400,
-        });
-    }
-
-    try {
-        const dataObj = JSON.parse(data);
-        const keys = Object.keys(dataObj);
-
-        let paramIndex = 1;
-        const setClauses = keys
-            .map((key) => `${key} = $${paramIndex++}`)
-            .join(", ");
-        const values = Object.values(dataObj);
-
-        const {where, params: pkParams} = buildPKWhere(tableName, id);
-
-        // Adjust WHERE clause parameter indices
-        const adjustedWhere = where.replace(
-            /\$(\d+)/g,
-            (_, num) => `$${paramIndex++}`
-        );
-
-        const query = `UPDATE ${tableName}
-                       SET ${setClauses}
-                       WHERE ${adjustedWhere} RETURNING *`;
-        const allParams = [...values, ...pkParams];
-
-        const {rows} = await pool.query(query, allParams);
-        if (rows.length === 0) {
+        if (!validateTable(tableName)) {
+            console.error(`[gRPC] update - Invalid table: ${tableName}`);
             return callback(null, {
                 data: null,
-                error: "Not found",
-                statusCode: 404,
+                error: "Invalid tableName",
+                statusCode: 400,
             });
         }
 
-        console.log(`[gRPC] update - Success: Updated record in ${tableName}`);
-        callback(null, {
-            data: JSON.stringify(rows[0]),
-            statusCode: 200,
-        });
-    } catch (e) {
+        try {
+            const dataObj = JSON.parse(data);
+            const keys = Object.keys(dataObj);
+
+            let paramIndex = 1;
+            const setClauses = keys
+                .map((key) => `${key} = $${paramIndex++}`)
+                .join(", ");
+            const values = Object.values(dataObj);
+
+            const {where, params: pkParams} = buildPKWhere(tableName, id);
+
+            // Adjust WHERE clause parameter indices
+            const adjustedWhere = where.replaceAll(
+                /\$(\d+)/g,
+                () => `$${paramIndex++}`
+            );
+
+            const query = `UPDATE ${tableName}
+                           SET ${setClauses}
+                           WHERE ${adjustedWhere} RETURNING *`;
+            const allParams = [...values, ...pkParams];
+
+            const {rows} = await pool.query(query, allParams);
+            if (rows.length === 0) {
+                return callback(null, {
+                    data: null,
+                    error: "Not found",
+                    statusCode: 404,
+                });
+            }
+
+            console.log(`[gRPC] update - Success: Updated record in ${tableName}`);
+            callback(null, {
+                data: JSON.stringify(rows[0]),
+                statusCode: 200,
+            });
+        } catch (e) {
+            console.error("Update error:", e);
+            callback(null, {
+                data: null,
+                error: e.message,
+                statusCode: 500,
+            });
+        }
+    })().catch(e => {
         console.error("Update error:", e);
         callback(null, {
             data: null,
             error: e.message,
             statusCode: 500,
         });
-    }
+    });
 }
 
 // Delete - Remove record
-async function deleteRecord(call, callback) {
-    const {tableName, id} = call.request;
-    console.log(`[gRPC] delete - table: ${tableName}, id: ${id}`);
+function deleteRecord(call, callback) {
+    (async () => {
+        const {tableName, id} = call.request;
+        console.log(`[gRPC] delete - table: ${tableName}, id: ${id}`);
 
-    if (!validateTable(tableName)) {
-        console.error(`[gRPC] delete - Invalid table: ${tableName}`);
-        return callback(null, {
-            data: null,
-            error: "Invalid tableName",
-            statusCode: 400,
-        });
-    }
-
-    try {
-        const {where, params} = buildPKWhere(tableName, id);
-        const query = `DELETE
-                       FROM ${tableName}
-                       WHERE ${where} RETURNING *`;
-
-        const {rows} = await pool.query(query, params);
-        if (rows.length === 0) {
+        if (!validateTable(tableName)) {
+            console.error(`[gRPC] delete - Invalid table: ${tableName}`);
             return callback(null, {
                 data: null,
-                error: "Not found",
-                statusCode: 404,
+                error: "Invalid tableName",
+                statusCode: 400,
             });
         }
 
-        console.log(`[gRPC] delete - Success: Deleted record from ${tableName}`);
-        callback(null, {
-            data: JSON.stringify(rows[0]),
-            statusCode: 200,
-        });
-    } catch (e) {
+        try {
+            const {where, params} = buildPKWhere(tableName, id);
+            const query = `DELETE
+                           FROM ${tableName}
+                           WHERE ${where} RETURNING *`;
+
+            const {rows} = await pool.query(query, params);
+            if (rows.length === 0) {
+                return callback(null, {
+                    data: null,
+                    error: "Not found",
+                    statusCode: 404,
+                });
+            }
+
+            console.log(`[gRPC] delete - Success: Deleted record from ${tableName}`);
+            callback(null, {
+                data: JSON.stringify(rows[0]),
+                statusCode: 200,
+            });
+        } catch (e) {
+            console.error("Delete error:", e);
+            callback(null, {
+                data: null,
+                error: e.message,
+                statusCode: 500,
+            });
+        }
+    })().catch(e => {
         console.error("Delete error:", e);
         callback(null, {
             data: null,
             error: e.message,
             statusCode: 500,
         });
-    }
+    });
 }
 
 // GetWithRelations - Complex query with related data
-async function getWithRelations(call, callback) {
-    const {tableName, id, relations} = call.request;
-    console.log(
-        `[gRPC] getWithRelations - table: ${tableName}, id: ${id}, relations: ${
-            relations ? relations.join(", ") : "none"
-        }`
-    );
+function getWithRelations(call, callback) {
+    (async () => {
+        const {tableName, id, relations} = call.request;
+        console.log(
+            `[gRPC] getWithRelations - table: ${tableName}, id: ${id}, relations: ${
+                relations ? relations.join(", ") : "none"
+            }`
+        );
 
-    if (!validateTable(tableName)) {
-        console.error(`[gRPC] getWithRelations - Invalid table: ${tableName}`);
-        return callback(null, {
-            data: null,
-            error: "Invalid tableName",
-            statusCode: 400,
-        });
-    }
-
-    try {
-        // Get main entity
-        const {where, params} = buildPKWhere(tableName, id);
-        const query = `SELECT *
-                       FROM ${tableName}
-                       WHERE ${where}`;
-        const {rows} = await pool.query(query, params);
-
-        if (rows.length === 0) {
+        if (!validateTable(tableName)) {
+            console.error(`[gRPC] getWithRelations - Invalid table: ${tableName}`);
             return callback(null, {
                 data: null,
-                error: "Not found",
-                statusCode: 404,
+                error: "Invalid tableName",
+                statusCode: 400,
             });
         }
 
-        const mainEntity = rows[0];
-        const result = {...mainEntity};
+        try {
+            // Get main entity
+            const {where, params} = buildPKWhere(tableName, id);
+            const query = `SELECT *
+                           FROM ${tableName}
+                           WHERE ${where}`;
+            const {rows} = await pool.query(query, params);
 
-        // Fetch relations based on table and requested relations
-        if (relations && relations.length > 0) {
-            for (const relation of relations) {
-                result[relation] = await fetchRelation(tableName, mainEntity, relation);
+            if (rows.length === 0) {
+                return callback(null, {
+                    data: null,
+                    error: "Not found",
+                    statusCode: 404,
+                });
             }
-        }
 
-        console.log(
-            `[gRPC] getWithRelations - Success: Retrieved ${tableName} with ${
-                relations ? relations.length : 0
-            } relations`
-        );
-        callback(null, {
-            data: JSON.stringify(result),
-            statusCode: 200,
-        });
-    } catch (e) {
+            const mainEntity = rows[0];
+            const result = {...mainEntity};
+
+            // Fetch relations based on table and requested relations
+            if (relations && relations.length > 0) {
+                for (const relation of relations) {
+                    result[relation] = await fetchRelation(tableName, mainEntity, relation);
+                }
+            }
+
+            console.log(
+                `[gRPC] getWithRelations - Success: Retrieved ${tableName} with ${
+                    relations ? relations.length : 0
+                } relations`
+            );
+            callback(null, {
+                data: JSON.stringify(result),
+                statusCode: 200,
+            });
+        } catch (e) {
+            console.error("GetWithRelations error:", e);
+            callback(null, {
+                data: null,
+                error: e.message,
+                statusCode: 500,
+            });
+        }
+    })().catch(e => {
         console.error("GetWithRelations error:", e);
         callback(null, {
             data: null,
             error: e.message,
             statusCode: 500,
         });
-    }
+    });
 }
 
 // Helper to fetch related data
@@ -413,7 +467,7 @@ async function fetchRelation(tableName, entity, relation) {
         },
     };
 
-    if (!relationMap[tableName] || !relationMap[tableName][relation]) {
+    if (!relationMap[tableName]?.[relation]) {
         return null;
     }
 
@@ -439,105 +493,114 @@ async function fetchRelation(tableName, entity, relation) {
 }
 
 // ExecuteCustomQuery - Predefined complex queries
-async function executeCustomQuery(call, callback) {
-    const {queryName, params} = call.request;
-    console.log(
-        `[gRPC] executeCustomQuery - queryName: ${queryName}, params: ${
-            params || "none"
-        }`
-    );
-
-    try {
-        const paramObj = params ? JSON.parse(params) : {};
-        let query,
-            queryParams = [];
-
-        // Define custom queries
-        switch (queryName) {
-            case "areasWithDepartamento":
-                query = `
-                    SELECT ac.id_area,
-                           ac.nome,
-                           ac.sigla,
-                           ac.ativo,
-                           ac.id_dep,
-                           d.nome as nome_departamento
-                    FROM area_cientifica ac
-                             JOIN departamento d ON ac.id_dep = d.id_dep
-                    ORDER BY ac.nome
-                `;
-                break;
-
-            case "docentesWithFullDetails":
-                query = `
-                    SELECT d.*,
-                           ac.nome   as area_nome,
-                           ac.sigla  as area_sigla,
-                           dep.nome  as departamento_nome,
-                           dep.sigla as departamento_sigla
-                    FROM docente d
-                             LEFT JOIN area_cientifica ac ON d.id_area = ac.id_area
-                             LEFT JOIN departamento dep ON ac.id_dep = dep.id_dep
-                    WHERE d.ativo = COALESCE($1, d.ativo)
-                    ORDER BY d.nome
-                `;
-                queryParams = [paramObj.ativo !== undefined ? paramObj.ativo : null];
-                break;
-
-            case "cursosWithAreaAndUCs":
-                query = `
-                    SELECT c.*,
-                           ac.nome         as area_nome,
-                           COUNT(uc.id_uc) as num_ucs
-                    FROM curso c
-                             LEFT JOIN area_cientifica ac ON c.id_area = ac.id_area
-                             LEFT JOIN uc ON c.id_curso = uc.id_curso
-                    WHERE c.ativo = COALESCE($1, c.ativo)
-                    GROUP BY c.id_curso, ac.nome
-                    ORDER BY c.nome
-                `;
-                queryParams = [paramObj.ativo !== undefined ? paramObj.ativo : null];
-                break;
-
-            case "departamentosWithStats":
-                query = `
-                    SELECT dep.*,
-                           COUNT(DISTINCT ac.id_area) as num_areas,
-                           COUNT(DISTINCT d.id_doc)   as num_docentes,
-                           COUNT(DISTINCT c.id_curso) as num_cursos
-                    FROM departamento dep
-                             LEFT JOIN area_cientifica ac ON dep.id_dep = ac.id_dep
-                             LEFT JOIN docente d ON ac.id_area = d.id_area
-                             LEFT JOIN curso c ON ac.id_area = c.id_area
-                    GROUP BY dep.id_dep
-                    ORDER BY dep.nome
-                `;
-                break;
-
-            default:
-                return callback(null, {
-                    data: null,
-                    error: "Unknown query name",
-                    statusCode: 400,
-                });
-        }
-
-        const {rows} = await pool.query(query, queryParams);
+function executeCustomQuery(call, callback) {
+    (async () => {
+        const {queryName, params} = call.request;
         console.log(
-            `[gRPC] executeCustomQuery - Success: Query '${queryName}' returned ${rows.length} rows`
+            `[gRPC] executeCustomQuery - queryName: ${queryName}, params: ${
+                params || "none"
+            }`
         );
-        callback(null, {
-            data: JSON.stringify(rows),
-            statusCode: 200,
-        });
-    } catch (e) {
+
+        try {
+            const paramObj = params ? JSON.parse(params) : {};
+            let query,
+                queryParams = [];
+
+            // Define custom queries
+            switch (queryName) {
+                case "areasWithDepartamento":
+                    query = `
+                        SELECT ac.id_area,
+                               ac.nome,
+                               ac.sigla,
+                               ac.ativo,
+                               ac.id_dep,
+                               d.nome as nome_departamento
+                        FROM area_cientifica ac
+                                 JOIN departamento d ON ac.id_dep = d.id_dep
+                        ORDER BY ac.nome
+                    `;
+                    break;
+
+                case "docentesWithFullDetails":
+                    query = `
+                        SELECT d.*,
+                               ac.nome   as area_nome,
+                               ac.sigla  as area_sigla,
+                               dep.nome  as departamento_nome,
+                               dep.sigla as departamento_sigla
+                        FROM docente d
+                                 LEFT JOIN area_cientifica ac ON d.id_area = ac.id_area
+                                 LEFT JOIN departamento dep ON ac.id_dep = dep.id_dep
+                        WHERE d.ativo = COALESCE($1, d.ativo)
+                        ORDER BY d.nome
+                    `;
+                    queryParams = [paramObj.ativo === undefined ? null : paramObj.ativo];
+                    break;
+
+                case "cursosWithAreaAndUCs":
+                    query = `
+                        SELECT c.*,
+                               ac.nome         as area_nome,
+                               COUNT(uc.id_uc) as num_ucs
+                        FROM curso c
+                                 LEFT JOIN area_cientifica ac ON c.id_area = ac.id_area
+                                 LEFT JOIN uc ON c.id_curso = uc.id_curso
+                        WHERE c.ativo = COALESCE($1, c.ativo)
+                        GROUP BY c.id_curso, ac.nome
+                        ORDER BY c.nome
+                    `;
+                    queryParams = [paramObj.ativo === undefined ? null : paramObj.ativo];
+                    break;
+
+                case "departamentosWithStats":
+                    query = `
+                        SELECT dep.*,
+                               COUNT(DISTINCT ac.id_area) as num_areas,
+                               COUNT(DISTINCT d.id_doc)   as num_docentes,
+                               COUNT(DISTINCT c.id_curso) as num_cursos
+                        FROM departamento dep
+                                 LEFT JOIN area_cientifica ac ON dep.id_dep = ac.id_dep
+                                 LEFT JOIN docente d ON ac.id_area = d.id_area
+                                 LEFT JOIN curso c ON ac.id_area = c.id_area
+                        GROUP BY dep.id_dep
+                        ORDER BY dep.nome
+                    `;
+                    break;
+
+                default:
+                    return callback(null, {
+                        data: null,
+                        error: "Unknown query name",
+                        statusCode: 400,
+                    });
+            }
+
+            const {rows} = await pool.query(query, queryParams);
+            console.log(
+                `[gRPC] executeCustomQuery - Success: Query '${queryName}' returned ${rows.length} rows`
+            );
+            callback(null, {
+                data: JSON.stringify(rows),
+                statusCode: 200,
+            });
+        } catch (e) {
+            console.error("ExecuteCustomQuery error:", e);
+            callback(null, {
+                data: null,
+                error: e.message,
+                statusCode: 500,
+            });
+        }
+    })().catch(e => {
         console.error("ExecuteCustomQuery error:", e);
         callback(null, {
             data: null,
             error: e.message,
             statusCode: 500,
         });
-    }
+    });
 }
 
 function main() {

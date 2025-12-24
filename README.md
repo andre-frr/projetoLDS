@@ -23,35 +23,35 @@ e gRPC, e inclui um sistema completo de autenticação JWT.
 
 - **`pages/api/`**: API REST (Next.js) - Operações CRUD simples via gRPC
 
-  - `auth/`: Autenticação (login, register, logout, refresh)
-  - `departamento/`: Gestão de departamentos
-  - `area_cientifica/`: Gestão de áreas científicas
-  - `curso/`: Gestão de cursos
-  - `uc/`: Gestão de unidades curriculares
-  - `docente/`: Gestão de docentes
-  - `graus/`: Gestão de graus académicos
-  - `docente_grau/`: Gestão de graus de docentes
-  - `historico_cv_docente/`: Gestão de histórico de CVs
-  - `uc_horas_contacto/`: Gestão de horas de contacto
+    - `auth/`: Autenticação (login, register, logout, refresh)
+    - `departamento/`: Gestão de departamentos
+    - `area_cientifica/`: Gestão de áreas científicas
+    - `curso/`: Gestão de cursos
+    - `uc/`: Gestão de unidades curriculares
+    - `docente/`: Gestão de docentes
+    - `graus/`: Gestão de graus académicos
+    - `docente_grau/`: Gestão de graus de docentes
+    - `historico_cv_docente/`: Gestão de histórico de CVs
+    - `uc_horas_contacto/`: Gestão de horas de contacto
 
 - **`graphql/`**: Serviço GraphQL - Queries complexas e aninhadas
 
-  - `grpc-helper.js`: Cliente gRPC para GraphQL
-  - `resolvers/`: Resolvers para queries complexas
-  - `types/`: Definições de tipos GraphQL (sem mutations CRUD)
+    - `grpc-helper.js`: Cliente gRPC para GraphQL
+    - `resolvers/`: Resolvers para queries complexas
+    - `types/`: Definições de tipos GraphQL (sem mutations CRUD)
 
 - **`grpc/service-a/`**: Microserviço gRPC - Única fonte de acesso a dados
 
-  - `server.js`: Implementação completa de CRUD + queries complexas
-  - `protos/data.proto`: Definições Protocol Buffers
+    - `server.js`: Implementação completa de CRUD + queries complexas
+    - `protos/data.proto`: Definições Protocol Buffers
 
 - **`lib/`**: Bibliotecas partilhadas
 
-  - `grpc-client.js`: Cliente gRPC para Next.js
-  - `auth.js`: Autenticação e verificação de tokens
-  - `middleware.js`: Middleware de autenticação
-  - `cors.js`: Configuração CORS
-  - `audit.js`: Sistema de auditoria
+    - `grpc-client.js`: Cliente gRPC para Next.js
+    - `auth.js`: Autenticação e verificação de tokens
+    - `middleware.js`: Middleware de autenticação
+    - `cors.js`: Configuração CORS
+    - `audit.js`: Sistema de auditoria
 
 - **`mobile/`**: Aplicação Flutter Web (cliente)
 
@@ -59,7 +59,7 @@ e gRPC, e inclui um sistema completo de autenticação JWT.
 
 - **`db/`**: Scripts de base de dados
 
-  - `init.sql`: Schema completo e dados iniciais
+    - `init.sql`: Schema completo e dados iniciais
 
 - **`certs/`**: Certificados SSL para desenvolvimento local (não incluído no repositório)
 
@@ -151,11 +151,11 @@ Isto criará `localhost+1.pem` e `localhost+1-key.pem` na pasta `certs/`.
 
    **⚠️ IMPORTANTE**:
 
-   - Os secrets JWT são usados pelo servidor para assinar e verificar tokens de todos os utilizadores
-   - Use secrets **diferentes** para desenvolvimento e produção
-   - Se alterar estes valores depois, todas as sessões de utilizadores serão invalidadas
-   - Nunca commit o ficheiro `.env` no repositório!
-   - O ficheiro `.env` já está incluído no `.gitignore`
+    - Os secrets JWT são usados pelo servidor para assinar e verificar tokens de todos os utilizadores
+    - Use secrets **diferentes** para desenvolvimento e produção
+    - Se alterar estes valores depois, todas as sessões de utilizadores serão invalidadas
+    - Nunca commit o ficheiro `.env` no repositório!
+    - O ficheiro `.env` já está incluído no `.gitignore`
 
 5. **Construa e inicie todos os serviços:**
 
@@ -170,8 +170,8 @@ Isto criará `localhost+1.pem` e `localhost+1-key.pem` na pasta `certs/`.
    ```
 
 7. **Aguarde alguns segundos para os serviços iniciarem** e aceda:
-   - **REST API**: `https://localhost:3000/api`
-   - **GraphQL Playground**: `http://localhost:4000/graphql`
+    - **REST API**: `https://localhost:3000/api`
+    - **GraphQL Playground**: `http://localhost:4000/graphql`
 
 ### Comandos Úteis
 
@@ -216,7 +216,7 @@ docker-compose up --build -d
 ### Portas dos Serviços
 
 | Serviço             | Porta | URL                           |
-| ------------------- | ----- | ----------------------------- |
+|---------------------|-------|-------------------------------|
 | **Next.js Gateway** | 3000  | https://localhost:3000        |
 | **GraphQL**         | 4000  | http://localhost:4000/graphql |
 | **gRPC Service**    | 50051 | localhost:50051 (interno)     |
@@ -316,7 +316,7 @@ Todos os endpoints seguem operações CRUD completas. **Base URL:** `https://loc
 A API segue um padrão consistente para respostas de erro:
 
 | Código  | Mensagem                    | Quando Usar                               |
-| ------- | --------------------------- | ----------------------------------------- |
+|---------|-----------------------------|-------------------------------------------|
 | **400** | `"Dados mal formatados."`   | Campos obrigatórios em falta ou inválidos |
 | **401** | `"Token required"`          | Autenticação necessária                   |
 | **403** | `"Forbidden"`               | Permissões insuficientes                  |
@@ -397,7 +397,7 @@ Todas as referências a outras entidades são validadas:
 ## Detalhes dos Serviços
 
 | Serviço             | Tecnologia      | Porta | Responsabilidade                            |
-| ------------------- | --------------- | ----- | ------------------------------------------- |
+|---------------------|-----------------|-------|---------------------------------------------|
 | **Next.js Gateway** | Next.js 16      | 3000  | REST API (CRUD) + Proxy GraphQL, via gRPC   |
 | **GraphQL Service** | Node.js, Apollo | 4000  | Queries complexas aninhadas, via gRPC       |
 | **gRPC Service**    | Node.js, gRPC   | 50051 | Fonte única de dados, todas operações de BD |
@@ -583,14 +583,14 @@ Aceda ao GraphQL Playground em `http://localhost:4000/graphql` e teste queries:
 ```graphql
 # Exemplo: Obter todos os departamentos com estatísticas
 query {
-  departamentosWithStats {
-    id_dep
-    nome
-    sigla
-    num_areas
-    num_docentes
-    num_cursos
-  }
+    departamentosWithStats {
+        id_dep
+        nome
+        sigla
+        num_areas
+        num_docentes
+        num_cursos
+    }
 }
 ```
 
@@ -666,7 +666,8 @@ docker-compose restart nextjs
 
 ## Sobre o Projeto
 
-Este é um **projeto académico** desenvolvido no âmbito da disciplina de Laboratório de Desenvolvimento de Software (LDS).
+Este é um **projeto académico** desenvolvido no âmbito da disciplina de Laboratório de Desenvolvimento de Software (
+LDS).
 
 ### Objetivos do Projeto
 
