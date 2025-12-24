@@ -18,16 +18,16 @@ FROM node:20-alpine
 WORKDIR /app
 COPY pages/package.json ./package.json
 RUN npm install --omit=dev
-COPY server.js .
+COPY pages/server.js ./server.js
 COPY lib ./lib
 COPY grpc/protos ./grpc/protos
 COPY certs ./certs
-COPY pages/jsconfig.json ./pages/jsconfig.json
-COPY pages/next.config.js ./pages/next.config.js
+COPY pages/jsconfig.json ./jsconfig.json
+COPY pages/next.config.js ./next.config.js
 # Create pages directory and copy api into it
-RUN mkdir -p pages/pages
-COPY pages/api ./pages/pages/api
-COPY --from=builder /build/.next ./pages/.next
+RUN mkdir -p pages/api
+COPY pages/api ./pages/api
+COPY --from=builder /build/.next ./.next
 
 EXPOSE 3000
 CMD ["node", "server.js"]
