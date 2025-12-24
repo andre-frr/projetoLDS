@@ -38,6 +38,6 @@ app.use("/graphql", cors(), bodyParser.json(), expressMiddleware(server));
 
 const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => {
-    console.log(`[GraphQL] ✅ Server ready at http://localhost:${PORT}/graphql`);
+    console.log(`[GraphQL] Server ready at http://localhost:${PORT}/graphql`);
     console.log("[GraphQL] GraphQL Playground available");
 });

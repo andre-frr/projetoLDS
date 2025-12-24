@@ -67,10 +67,7 @@ async function handlePost(req, res) {
             ativo: true,
         });
 
-        return res.status(201).json({
-            message: "UC criada com sucesso",
-            uc: result,
-        });
+        return res.status(201).json(result);
     } catch (error) {
         return handleError(error, res);
     }

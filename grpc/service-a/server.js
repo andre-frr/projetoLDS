@@ -623,7 +623,7 @@ function main() {
                 console.error(`Server error: ${err.message}`);
                 return;
             }
-            console.log(`🚀 gRPC Server running at 0.0.0.0:${port}`);
+            console.log(`gRPC Server running at 0.0.0.0:${port}`);
         }
     );
 }

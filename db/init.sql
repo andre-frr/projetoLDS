@@ -1,3 +1,15 @@
+-- noinspection SqlResolveForFile
+
+-- noinspection SqlResolveForFile
+
+-- noinspection SqlResolveForFile
+
+-- noinspection SqlResolveForFile
+
+-- noinspection SqlResolveForFile
+
+-- noinspection SqlResolveForFile
+
 -- =========================
 --   Tipos e tabelas lookup
 -- =========================
@@ -252,7 +264,7 @@ CREATE TABLE IF NOT EXISTS api_keys
     created_at  TIMESTAMPTZ DEFAULT NOW()
 );
 
--- Tabela de auditoria para rastrear ações dos usuários
+-- Tabela de auditoria para rastrear ações dos utilizadores
 CREATE TABLE IF NOT EXISTS audit_logs
 (
     id         SERIAL PRIMARY KEY,

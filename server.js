@@ -24,6 +24,6 @@ createServer(httpsOptions, (req, res) => {
         console.error("[Server] Failed to start:", err);
         throw err;
     }
-    console.log("[Server] ✅ HTTPS server ready on https://localhost:3000");
+    console.log("[Server] HTTPS server ready on https://localhost:3000");
     console.log("[Server] Environment:", dev ? "development" : "production");
 });

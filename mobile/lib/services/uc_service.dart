@@ -1,8 +1,8 @@
 import 'package:dio/dio.dart';
 import 'package:logger/logger.dart';
 
-import '../models/uc_model.dart';
 import '../models/uc_horas_model.dart';
+import '../models/uc_model.dart';
 import 'dio_service.dart';
 
 class UCService {
@@ -57,7 +57,7 @@ class UCService {
       final response = await _dio.post('/uc', data: uc.toJson());
 
       if (response.statusCode == 201) {
-        return UCModel.fromJson(response.data['uc']);
+        return UCModel.fromJson(response.data);
       }
 
       throw Exception('Failed to create UC');

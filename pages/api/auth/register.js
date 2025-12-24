@@ -1,9 +1,12 @@
 import argon2 from 'argon2';
+import jwt from 'jsonwebtoken';
 import pool from '@/lib/db.js';
+import {randomUUID} from 'node:crypto';
 import {applyCors} from '@/lib/cors.js';
 import {auditLog} from '@/lib/audit.js';
 
 const VALID_ROLES = ['Administrador', 'Coordenador', 'Docente', 'Convidado'];
+const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
 
 export default async function handler(req, res) {
     await applyCors(req, res);
@@ -56,10 +59,41 @@ export default async function handler(req, res) {
 
         const newUser = result.rows[0];
 
+        // Create session and tokens (same as login)
+        const sessionFamilyId = randomUUID();
+        const sessionExpiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
+
+        const sessionResult = await pool.query(
+            'INSERT INTO sessions (user_id, family_id, expires_at) VALUES ($1, $2, $3) RETURNING id',
+            [newUser.id, sessionFamilyId, sessionExpiresAt]
+        );
+        const sessionId = sessionResult.rows[0].id;
+
+        const refreshTokenExpiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
+        const refreshToken = randomUUID();
+        const refreshTokenHash = await argon2.hash(refreshToken);
+
+        await pool.query(
+            'INSERT INTO refresh_tokens (session_id, token_hash, expires_at) VALUES ($1, $2, $3)',
+            [sessionId, refreshTokenHash, refreshTokenExpiresAt]
+        );
+
+        const accessToken = jwt.sign(
+            {
+                sub: newUser.id,
+                sid: sessionId,
+                tv: 1, // Initial token version
+                role: newUser.role,
+            },
+            JWT_SECRET,
+            {expiresIn: '15m'}
+        );
+
         await auditLog('register_success', newUser.id, {email, role});
 
         res.status(201).json({
-            message: 'User registered successfully',
+            accessToken,
+            refreshToken,
             user: {
                 id: newUser.id,
                 email: newUser.email,

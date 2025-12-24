@@ -1,6 +1,6 @@
 import GrpcClient from "@/lib/grpc-client.js";
-import pool from "@/lib/db.js";
 import {applyCors} from "@/lib/cors.js";
+import {requireRole} from "@/lib/middleware.js";
 
 function handleError(error, res) {
     console.error(error);
