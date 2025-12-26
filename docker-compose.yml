@@ -1,6 +1,6 @@
 services:
   db:
-    image: postgres:15
+    image: postgres:17-alpine
     container_name: postgresql
     env_file:
       - ./.env
@@ -11,6 +11,12 @@ services:
       - db_data:/var/lib/postgresql/data
     networks:
       - app-network
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
 
   # gRPC Microservice - Handles all database operations
   grpc-service:
@@ -25,9 +31,17 @@ services:
     environment:
       - DATABASE_URL=${DATABASE_URL}
     depends_on:
-      - db
+      db:
+        condition: service_healthy
     networks:
       - app-network
+    healthcheck:
+      test: [ "CMD-SHELL", "node -e 'process.exit(0)'" ]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+    restart: unless-stopped
 
   # GraphQL Gateway - Handles complex nested queries via gRPC
   graphql:
@@ -42,9 +56,17 @@ services:
     environment:
       - GRPC_SERVICE_ADDRESS=service-a:50051
     depends_on:
-      - grpc-service
+      grpc-service:
+        condition: service_healthy
     networks:
       - app-network
+    healthcheck:
+      test: [ "CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:4000/graphql || exit 1" ]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+    restart: unless-stopped
 
   # Next.js Gateway - Handles REST + GraphQL, communicates via gRPC
   nextjs:
@@ -59,11 +81,15 @@ services:
     environment:
       - GRPC_SERVICE_ADDRESS=service-a:50051
       - GRAPHQL_URL=http://graphql:4000/graphql
+      - NODE_ENV=production
     depends_on:
-      - graphql
-      - grpc-service
+      graphql:
+        condition: service_healthy
+      grpc-service:
+        condition: service_healthy
     networks:
       - app-network
+    restart: unless-stopped
 
 networks:
   app-network:

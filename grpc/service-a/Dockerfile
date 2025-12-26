@@ -1,16 +1,31 @@
 # Stage 1: dependencies
-FROM node:20-alpine AS deps
+FROM node:22-alpine AS deps
 WORKDIR /usr/src/app
+
+# Install dependencies
 COPY grpc/service-a/package*.json ./
-RUN npm install --omit=dev
+RUN npm ci --only=production && npm cache clean --force
 
 # Stage 2: production
-FROM node:20-alpine
+FROM node:22-alpine
 WORKDIR /usr/src/app
-COPY --from=deps /usr/src/app/node_modules ./node_modules
-COPY grpc/protos ./protos
-COPY grpc/service-a/server.js .
-COPY grpc/service-a/package*.json ./
+
+# Add security updates and create non-root user
+RUN apk update && apk upgrade && \
+    addgroup -g 1001 -S nodejs && \
+    adduser -S grpc -u 1001
+
+# Copy dependencies
+COPY --from=deps --chown=grpc:nodejs /usr/src/app/node_modules ./node_modules
+
+# Copy application files
+COPY --chown=grpc:nodejs grpc/protos ./protos
+COPY --chown=grpc:nodejs grpc/service-a/server.js .
+COPY --chown=grpc:nodejs grpc/service-a/package*.json ./
+
+# Switch to non-root user
+USER grpc
 
 EXPOSE 50051
-CMD [ "node", "server.js" ]
+
+CMD ["node", "server.js"]
