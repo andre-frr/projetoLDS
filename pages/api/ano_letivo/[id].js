@@ -46,7 +46,14 @@ async function handlePut(id, req, res) {
     }
 
     try {
-        await GrpcClient.getById("ano_letivo", id);
+        const current = await GrpcClient.getById("ano_letivo", id);
+
+        // Check if year is archived
+        if (current.arquivado) {
+            return res.status(403).json({
+                message: "Não é possível editar um ano letivo arquivado. Anos arquivados são apenas para consulta histórica.",
+            });
+        }
 
         const uniqueError = await checkYearUniqueness(anoInicio, anoFim, id, res);
         if (uniqueError) return uniqueError;
@@ -73,6 +80,15 @@ async function checkAssociatedData(id) {
 
 async function handleDelete(id, res) {
     try {
+        const current = await GrpcClient.getById("ano_letivo", id);
+
+        // Check if year is archived
+        if (current.arquivado) {
+            return res.status(403).json({
+                message: "Não é possível eliminar um ano letivo arquivado. Anos arquivados devem ser preservados para histórico.",
+            });
+        }
+
         const hasData = await checkAssociatedData(id);
 
         if (hasData) {

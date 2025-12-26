@@ -70,7 +70,17 @@ export const anoLetivoResolvers = {
 
             validateYearRange(ano_inicio, ano_fim);
 
-            await getById("ano_letivo", id);
+            const existing = await getById("ano_letivo", id);
+            if (!existing) {
+                throw new Error("Ano letivo não encontrado.");
+            }
+
+            // Check if year is archived
+            if (existing.arquivado) {
+                throw new Error(
+                    "Não é possível editar um ano letivo arquivado. Anos arquivados são apenas para consulta histórica."
+                );
+            }
 
             const allYears = await getAll("ano_letivo");
             checkDuplicate(allYears, ano_inicio, ano_fim, id);
@@ -79,7 +89,17 @@ export const anoLetivoResolvers = {
         },
 
         eliminarAnoLetivo: async (_, {id}) => {
-            await getById("ano_letivo", id);
+            const existing = await getById("ano_letivo", id);
+            if (!existing) {
+                throw new Error("Ano letivo não encontrado.");
+            }
+
+            // Check if year is archived
+            if (existing.arquivado) {
+                throw new Error(
+                    "Não é possível eliminar um ano letivo arquivado. Anos arquivados devem ser preservados para histórico."
+                );
+            }
 
             const result = await executeCustomQuery("checkAnoLetivoAssociations", {
                 id_ano: id,

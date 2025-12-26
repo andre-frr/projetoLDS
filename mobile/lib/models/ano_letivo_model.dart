@@ -2,12 +2,14 @@ class AnoLetivoModel {
   final int id;
   final int anoInicio;
   final int anoFim;
+  final bool arquivado;
   final bool? isCurrent;
 
   AnoLetivoModel({
     required this.id,
     required this.anoInicio,
     required this.anoFim,
+    required this.arquivado,
     this.isCurrent,
   });
 
@@ -16,6 +18,7 @@ class AnoLetivoModel {
       id: json['id_ano'] as int,
       anoInicio: json['ano_inicio'] as int,
       anoFim: json['ano_fim'] as int,
+      arquivado: json['arquivado'] as bool? ?? false,
       isCurrent: json['is_current'] as bool?,
     );
   }
@@ -25,6 +28,7 @@ class AnoLetivoModel {
       'id_ano': id,
       'ano_inicio': anoInicio,
       'ano_fim': anoFim,
+      'arquivado': arquivado,
       if (isCurrent != null) 'is_current': isCurrent,
     };
   }

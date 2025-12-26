@@ -122,6 +122,7 @@ class _AnosLetivosScreenState extends State<AnosLetivosScreen> {
                 id: 0,
                 anoInicio: anoInicio,
                 anoFim: anoFim,
+                arquivado: false,
               );
 
               final success = await provider.create(
@@ -163,6 +164,20 @@ class _AnosLetivosScreenState extends State<AnosLetivosScreen> {
   }
 
   void _showEditDialog(AnoLetivoModel anoLetivo) {
+    // Prevent editing archived years
+    if (anoLetivo.arquivado) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Não é possível editar um ano letivo arquivado. Anos arquivados são apenas para consulta histórica.',
+          ),
+          backgroundColor: Colors.orange,
+          duration: Duration(seconds: 4),
+        ),
+      );
+      return;
+    }
+
     final anoInicioController = TextEditingController(
       text: anoLetivo.anoInicio.toString(),
     );
@@ -238,6 +253,7 @@ class _AnosLetivosScreenState extends State<AnosLetivosScreen> {
                 id: anoLetivo.id,
                 anoInicio: anoInicio,
                 anoFim: anoFim,
+                arquivado: anoLetivo.arquivado,
               );
 
               final success = await provider.update(updated);
@@ -269,6 +285,20 @@ class _AnosLetivosScreenState extends State<AnosLetivosScreen> {
   }
 
   void _showDeleteDialog(AnoLetivoModel anoLetivo) {
+    // Prevent deleting archived years
+    if (anoLetivo.arquivado) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Não é possível eliminar um ano letivo arquivado. Anos arquivados devem ser preservados para histórico.',
+          ),
+          backgroundColor: Colors.orange,
+          duration: Duration(seconds: 4),
+        ),
+      );
+      return;
+    }
+
     final provider = context.read<AnoLetivoProvider>();
     final navigator = Navigator.of(context);
     final messenger = ScaffoldMessenger.of(context);
@@ -418,6 +448,7 @@ class _AnosLetivosScreenState extends State<AnosLetivosScreen> {
                   itemBuilder: (context, index) {
                     final item = provider.items[index];
                     final isCurrent = provider.currentYear?.id == item.id;
+                    final isArchived = item.arquivado;
 
                     return Card(
                       margin: const EdgeInsets.symmetric(
@@ -425,36 +456,97 @@ class _AnosLetivosScreenState extends State<AnosLetivosScreen> {
                         vertical: 4,
                       ),
                       elevation: isCurrent ? 4 : 1,
-                      color: isCurrent ? Colors.green[50] : null,
+                      color: isCurrent
+                          ? Colors.green[50]
+                          : isArchived
+                          ? Colors.grey[100]
+                          : null,
                       child: ListTile(
                         leading: Icon(
-                          isCurrent ? Icons.star : Icons.calendar_today,
-                          color: isCurrent ? Colors.green : null,
+                          isCurrent
+                              ? Icons.star
+                              : isArchived
+                              ? Icons.archive
+                              : Icons.calendar_today,
+                          color: isCurrent
+                              ? Colors.green
+                              : isArchived
+                              ? Colors.grey
+                              : null,
                         ),
-                        title: Text(
-                          item.displayName,
-                          style: TextStyle(
-                            fontWeight: isCurrent
-                                ? FontWeight.bold
-                                : FontWeight.normal,
-                          ),
+                        title: Row(
+                          children: [
+                            Text(
+                              item.displayName,
+                              style: TextStyle(
+                                fontWeight: isCurrent
+                                    ? FontWeight.bold
+                                    : FontWeight.normal,
+                                color: isArchived ? Colors.grey[700] : null,
+                              ),
+                            ),
+                            if (isArchived) ...[
+                              const SizedBox(width: 8),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 2,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Colors.grey[300],
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: const Text(
+                                  'Arquivado',
+                                  style: TextStyle(
+                                    fontSize: 10,
+                                    color: Colors.black54,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ],
                         ),
                         subtitle: Text(
-                          isCurrent ? 'Ano Atual' : 'Ano Histórico',
+                          isCurrent
+                              ? 'Ano Atual'
+                              : isArchived
+                              ? 'Ano Histórico (Bloqueado)'
+                              : 'Ano Histórico',
                           style: TextStyle(
-                            color: isCurrent ? Colors.green : Colors.grey,
+                            color: isCurrent
+                                ? Colors.green
+                                : isArchived
+                                ? Colors.grey
+                                : Colors.grey,
                           ),
                         ),
                         trailing: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             IconButton(
-                              icon: const Icon(Icons.edit),
-                              onPressed: () => _showEditDialog(item),
+                              icon: Icon(
+                                Icons.edit,
+                                color: isArchived ? Colors.grey[400] : null,
+                              ),
+                              onPressed: isArchived
+                                  ? null
+                                  : () => _showEditDialog(item),
+                              tooltip: isArchived
+                                  ? 'Anos arquivados não podem ser editados'
+                                  : 'Editar',
                             ),
                             IconButton(
-                              icon: const Icon(Icons.delete),
-                              onPressed: () => _showDeleteDialog(item),
+                              icon: Icon(
+                                Icons.delete,
+                                color: isArchived ? Colors.grey[400] : null,
+                              ),
+                              onPressed: isArchived
+                                  ? null
+                                  : () => _showDeleteDialog(item),
+                              tooltip: isArchived
+                                  ? 'Anos arquivados não podem ser eliminados'
+                                  : 'Eliminar',
                             ),
                           ],
                         ),

@@ -57,9 +57,11 @@ CREATE TABLE IF NOT EXISTS grau
 
 CREATE TABLE IF NOT EXISTS ano_letivo
 (
-    id_ano    SERIAL PRIMARY KEY, -- 1
-    anoInicio INTEGER NOT NULL,   -- 2024
-    anoFim    INTEGER NOT NULL    -- 2025
+    id_ano     SERIAL PRIMARY KEY,             -- 1
+    ano_inicio INTEGER NOT NULL,               -- ex.: 2024
+    ano_fim    INTEGER NOT NULL,               -- ex.: 2025
+    arquivado  BOOLEAN NOT NULL DEFAULT FALSE, -- Locked from editing
+    CONSTRAINT uq_ano_letivo UNIQUE (ano_inicio, ano_fim)
 );
 
 CREATE TABLE IF NOT EXISTS departamento
@@ -278,3 +280,35 @@ CREATE TABLE IF NOT EXISTS audit_logs
 CREATE INDEX IF NOT EXISTS idx_audit_logs_user_id ON audit_logs (user_id);
 CREATE INDEX IF NOT EXISTS idx_audit_logs_created_at ON audit_logs (created_at);
 CREATE INDEX IF NOT EXISTS idx_audit_logs_action ON audit_logs (action);
+
+-- ==================================
+--   Trigger para Arquivar Anos Letivos Antigos
+-- ==================================
+
+-- Função para arquivar anos letivos anteriores quando um novo é criado
+CREATE OR REPLACE FUNCTION archive_previous_anos_letivos()
+    RETURNS TRIGGER AS
+$$
+BEGIN
+    -- Se o novo ano não está arquivado (é um ano ativo)
+    IF NEW.arquivado = FALSE THEN
+        -- Arquiva todos os anos anteriores que não estão arquivados
+        UPDATE ano_letivo
+        SET arquivado = TRUE
+        WHERE id_ano != NEW.id_ano
+          AND arquivado = FALSE
+          AND ano_inicio < NEW.ano_inicio;
+    END IF;
+
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Trigger que executa após inserir um novo ano letivo
+DROP TRIGGER IF EXISTS trg_archive_anos_letivos ON ano_letivo;
+CREATE TRIGGER trg_archive_anos_letivos
+    AFTER INSERT
+    ON ano_letivo
+    FOR EACH ROW
+EXECUTE FUNCTION archive_previous_anos_letivos();
+
