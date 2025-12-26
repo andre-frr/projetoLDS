@@ -8,6 +8,7 @@ import '../screens/cursos_screen.dart';
 import '../screens/departamentos_screen.dart';
 import '../screens/docentes_screen.dart';
 import '../screens/ucs_screen.dart';
+import 'theme_settings_dialog.dart';
 
 class AppNavigationDrawer extends StatelessWidget {
   final String currentRoute;
@@ -115,10 +116,14 @@ class AppNavigationDrawer extends StatelessWidget {
           ),
           const Divider(),
           ListTile(
-            leading: const Icon(Icons.settings),
-            title: const Text('Settings'),
+            leading: const Icon(Icons.brightness_6),
+            title: const Text('Tema'),
             onTap: () {
               Navigator.pop(context);
+              showDialog(
+                context: context,
+                builder: (context) => const ThemeSettingsDialog(),
+              );
             },
           ),
         ],
