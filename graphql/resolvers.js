@@ -6,6 +6,7 @@ import {ucResolvers} from "./resolvers/uc.js";
 import {docenteGrauResolvers} from "./resolvers/docente_grau.js";
 import {historicoCVDocenteResolvers} from "./resolvers/historico_cv_docente.js";
 import {ucHorasContactoResolvers} from "./resolvers/uc_horas_contacto.js";
+import {anoLetivoResolvers} from "./resolvers/ano_letivo.js";
 import merge from 'lodash.merge';
 
 export const resolvers = merge(
@@ -16,5 +17,6 @@ export const resolvers = merge(
     ucResolvers,
     docenteGrauResolvers,
     historicoCVDocenteResolvers,
-    ucHorasContactoResolvers
+    ucHorasContactoResolvers,
+    anoLetivoResolvers
 );

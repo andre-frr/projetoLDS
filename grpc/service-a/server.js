@@ -27,6 +27,7 @@ const primaryKeys = {
     docente_grau: "id_dg",
     historico_cv_docente: "id_hcd",
     uc_horas_contacto: ["id_uc", "tipo"],
+    ano_letivo: "id_ano",
 };
 
 const allowedTables = Object.keys(primaryKeys);
@@ -567,6 +568,23 @@ function executeCustomQuery(call, callback) {
                         GROUP BY dep.id_dep
                         ORDER BY dep.nome
                     `;
+                    break;
+
+                case "checkAnoLetivoAssociations":
+                    query = `
+                        SELECT EXISTS(SELECT 1
+                                      FROM uc_turma
+                                      WHERE ano_letivo = $1
+                                      UNION
+                                      SELECT 1
+                                      FROM historico_contrato_docente
+                                      WHERE id_ano = $1
+                                      UNION
+                                      SELECT 1
+                                      FROM DSD
+                                      WHERE id_ano = $1) as has_data
+                    `;
+                    queryParams = [paramObj.id_ano];
                     break;
 
                 default:

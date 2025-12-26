@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../providers/auth_provider.dart';
+import 'anos_letivos_screen.dart';
 import 'areas_cientificas_screen.dart';
 import 'cursos_screen.dart';
 import 'departamentos_screen.dart';
@@ -148,6 +149,20 @@ class HomeScreen extends StatelessWidget {
                 Navigator.push(
                   context,
                   MaterialPageRoute(builder: (context) => const UCsScreen()),
+                );
+              },
+            ),
+            const Divider(),
+            ListTile(
+              leading: const Icon(Icons.calendar_today),
+              title: const Text('Anos Letivos'),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const AnosLetivosScreen(),
+                  ),
                 );
               },
             ),

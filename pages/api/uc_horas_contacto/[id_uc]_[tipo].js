@@ -1,4 +1,5 @@
 import GrpcClient from '@/lib/grpc-client.js';
+import {applyCors} from '@/lib/cors.js';
 
 function handleError(error, res, notFoundMessage = 'Horas de contacto inexistentes.') {
     const statusCode = error.statusCode || 500;
@@ -40,7 +41,7 @@ async function handleDelete(compositeKey, res) {
     }
 }
 
-export default async function handler(req, res) {
+async function handler(req, res) {
     const {id_uc, tipo} = req.query;
     const compositeKey = {id_uc: Number.parseInt(id_uc), tipo};
 
@@ -56,3 +57,9 @@ export default async function handler(req, res) {
             return res.status(405).end(`Method ${req.method} Not Allowed`);
     }
 }
+
+export default async function handlerWithCors(req, res) {
+    await applyCors(req, res);
+    return handler(req, res);
+}
+

@@ -26,6 +26,9 @@ const getWithRelationsAsync = promisify(client.getWithRelations.bind(client));
 const getAllAsync = promisify(client.getAll.bind(client));
 const getByIdAsync = promisify(client.getById.bind(client));
 const executeCustomQueryAsync = promisify(client.executeCustomQuery.bind(client));
+const createAsync = promisify(client.create.bind(client));
+const updateAsync = promisify(client.update.bind(client));
+const deleteAsync = promisify(client.delete.bind(client));
 
 function handleResponse(response) {
     if (response.error) {
@@ -69,9 +72,37 @@ async function executeCustomQuery(queryName, params = {}) {
     return handleResponse(response);
 }
 
+async function create(tableName, data) {
+    const response = await createAsync({
+        tableName,
+        data: JSON.stringify(data)
+    });
+    return handleResponse(response);
+}
+
+async function update(tableName, id, data) {
+    const response = await updateAsync({
+        tableName,
+        id: String(id),
+        data: JSON.stringify(data)
+    });
+    return handleResponse(response);
+}
+
+async function deleteRecord(tableName, id) {
+    const response = await deleteAsync({
+        tableName,
+        id: String(id)
+    });
+    return handleResponse(response);
+}
+
 export {
     getWithRelations,
     getAll,
     getById,
-    executeCustomQuery
+    executeCustomQuery,
+    create,
+    update,
+    deleteRecord
 };

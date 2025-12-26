@@ -1,4 +1,5 @@
 import pool from '@/lib/db.js';
+import {applyCors} from '@/lib/cors.js';
 
 async function handleGet(id, res) {
     try {
@@ -72,7 +73,7 @@ async function handleDelete(id, res) {
     }
 }
 
-export default async function handler(req, res) {
+async function handler(req, res) {
     const {id} = req.query;
 
     switch (req.method) {
@@ -87,3 +88,9 @@ export default async function handler(req, res) {
             return res.status(405).end(`Method ${req.method} Not Allowed`);
     }
 }
+
+export default async function handlerWithCors(req, res) {
+    await applyCors(req, res);
+    return handler(req, res);
+}
+

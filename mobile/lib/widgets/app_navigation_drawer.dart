@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../providers/auth_provider.dart';
+import '../screens/anos_letivos_screen.dart';
 import '../screens/areas_cientificas_screen.dart';
 import '../screens/cursos_screen.dart';
 import '../screens/departamentos_screen.dart';
@@ -11,7 +12,7 @@ import '../screens/ucs_screen.dart';
 class AppNavigationDrawer extends StatelessWidget {
   final String currentRoute;
 
-  const AppNavigationDrawer({super.key, required this.currentRoute});
+  const AppNavigationDrawer({super.key, this.currentRoute = ''});
 
   @override
   Widget build(BuildContext context) {
@@ -100,6 +101,16 @@ class AppNavigationDrawer extends StatelessWidget {
             route: 'ucs',
             onTap: () {
               _navigateTo(context, const UCsScreen());
+            },
+          ),
+          const Divider(),
+          _buildDrawerItem(
+            context,
+            icon: Icons.calendar_today,
+            title: 'Anos Letivos',
+            route: 'anos_letivos',
+            onTap: () {
+              _navigateTo(context, const AnosLetivosScreen());
             },
           ),
           const Divider(),

@@ -1,4 +1,5 @@
 import GrpcClient from '@/lib/grpc-client.js';
+import {applyCors} from '@/lib/cors.js';
 
 function handleError(error, res, notFoundMessage = 'Grau inexistente.') {
     const statusCode = error.statusCode || 500;
@@ -39,7 +40,7 @@ async function handleDelete(id, res) {
     }
 }
 
-export default async function handler(req, res) {
+async function handler(req, res) {
     const {id} = req.query;
 
     switch (req.method) {
@@ -54,3 +55,9 @@ export default async function handler(req, res) {
             return res.status(405).end(`Method ${req.method} Not Allowed`);
     }
 }
+
+export default async function handlerWithCors(req, res) {
+    await applyCors(req, res);
+    return handler(req, res);
+}
+

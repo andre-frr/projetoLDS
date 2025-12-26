@@ -6,6 +6,7 @@ import {ucTypeDefs} from "./types/uc.js";
 import {docenteGrauTypeDefs} from "./types/docente_grau.js";
 import {historicoCVDocenteTypeDefs} from "./types/historico_cv_docente.js";
 import {ucHorasContactoTypeDefs} from "./types/uc_horas_contacto.js";
+import {anoLetivoTypeDefs} from "./types/ano_letivo.js";
 
 export const typeDefs = [
     departamentoTypeDefs,
@@ -15,5 +16,6 @@ export const typeDefs = [
     ucTypeDefs,
     docenteGrauTypeDefs,
     historicoCVDocenteTypeDefs,
-    ucHorasContactoTypeDefs
+    ucHorasContactoTypeDefs,
+    anoLetivoTypeDefs
 ];
