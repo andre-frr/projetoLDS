@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../models/docente_model.dart';
+import '../providers/area_cientifica_provider.dart';
 import '../providers/docente_provider.dart';
 import '../widgets/app_navigation_drawer.dart';
 
@@ -26,13 +27,19 @@ class _DocentesScreenState extends State<DocentesScreen> {
   void _showCreateDialog() {
     final nomeController = TextEditingController();
     final emailController = TextEditingController();
-    final idAreaController = TextEditingController();
+    int? selectedAreaId;
     bool convidado = false;
 
     // Capture provider and UI services from State context before showing dialog
     final provider = context.read<DocenteProvider>();
+    final areaProvider = context.read<AreaCientificaProvider>();
     final navigator = Navigator.of(context);
     final messenger = ScaffoldMessenger.of(context);
+
+    // Load areas if not already loaded
+    if (areaProvider.areas.isEmpty) {
+      areaProvider.loadAll(incluirInativos: false);
+    }
 
     showDialog(
       context: context,
@@ -61,47 +68,46 @@ class _DocentesScreenState extends State<DocentesScreen> {
                 ),
               ),
               const SizedBox(height: 16),
-              TextField(
-                controller: idAreaController,
-                textInputAction: TextInputAction.done,
-                keyboardType: TextInputType.number,
-                onSubmitted: (_) async {
-                  final provider = context.read<DocenteProvider>();
-                  final navigator = Navigator.of(context);
-                  final messenger = ScaffoldMessenger.of(context);
-
-                  final docente = DocenteModel(
-                    id: 0,
-                    nome: nomeController.text,
-                    email: emailController.text,
-                    idArea: int.tryParse(idAreaController.text) ?? 0,
-                    ativo: true,
-                    convidado: convidado,
-                  );
-
-                  final success = await provider.create(docente);
-
-                  if (success) {
-                    navigator.pop();
-                    messenger.showSnackBar(
-                      const SnackBar(
-                        content: Text('Docente criado com sucesso'),
-                        backgroundColor: Colors.green,
-                      ),
-                    );
-                  } else if (provider.error != null) {
-                    messenger.showSnackBar(
-                      SnackBar(
-                        content: Text(provider.error!),
-                        backgroundColor: Colors.red,
+              Consumer<AreaCientificaProvider>(
+                builder: (context, areaProvider, child) {
+                  if (areaProvider.isLoading) {
+                    return const Center(
+                      child: Padding(
+                        padding: EdgeInsets.all(16.0),
+                        child: CircularProgressIndicator(),
                       ),
                     );
                   }
+
+                  final activeAreas = areaProvider.areas
+                      .where((area) => area.ativo)
+                      .toList();
+
+                  return InputDecorator(
+                    decoration: const InputDecoration(
+                      labelText: 'Área Científica',
+                      border: OutlineInputBorder(),
+                    ),
+                    child: DropdownButtonHideUnderline(
+                      child: DropdownButton<int>(
+                        value: selectedAreaId,
+                        isExpanded: true,
+                        hint: const Text('Selecione uma área'),
+                        items: activeAreas.map((area) {
+                          return DropdownMenuItem<int>(
+                            value: area.id,
+                            child: Text('${area.nome} (${area.sigla})'),
+                          );
+                        }).toList(),
+                        onChanged: (value) {
+                          setState(() {
+                            selectedAreaId = value;
+                          });
+                        },
+                      ),
+                    ),
+                  );
                 },
-                decoration: const InputDecoration(
-                  labelText: 'ID Área Científica',
-                  border: OutlineInputBorder(),
-                ),
               ),
               const SizedBox(height: 16),
               CheckboxListTile(
@@ -122,11 +128,21 @@ class _DocentesScreenState extends State<DocentesScreen> {
             ),
             ElevatedButton(
               onPressed: () async {
+                if (selectedAreaId == null) {
+                  messenger.showSnackBar(
+                    const SnackBar(
+                      content: Text('Selecione uma área científica'),
+                      backgroundColor: Colors.orange,
+                    ),
+                  );
+                  return;
+                }
+
                 final docente = DocenteModel(
                   id: 0,
                   nome: nomeController.text,
                   email: emailController.text,
-                  idArea: int.tryParse(idAreaController.text) ?? 0,
+                  idArea: selectedAreaId!,
                   ativo: true,
                   convidado: convidado,
                 );
@@ -344,13 +360,18 @@ class _DocentesScreenState extends State<DocentesScreen> {
                         final emailController = TextEditingController(
                           text: docente.email,
                         );
-                        final idAreaController = TextEditingController(
-                          text: docente.idArea.toString(),
-                        );
+                        int? selectedAreaId = docente.idArea;
                         bool convidado = docente.convidado;
 
                         final provider = context.read<DocenteProvider>();
+                        final areaProvider = context
+                            .read<AreaCientificaProvider>();
                         final messenger = ScaffoldMessenger.of(context);
+
+                        // Load areas if not already loaded
+                        if (areaProvider.areas.isEmpty) {
+                          areaProvider.loadAll(incluirInativos: false);
+                        }
 
                         final result = await showDialog<bool>(
                           context: context,
@@ -379,16 +400,50 @@ class _DocentesScreenState extends State<DocentesScreen> {
                                     ),
                                   ),
                                   const SizedBox(height: 16),
-                                  TextField(
-                                    controller: idAreaController,
-                                    textInputAction: TextInputAction.done,
-                                    keyboardType: TextInputType.number,
-                                    onSubmitted: (_) =>
-                                        Navigator.pop(context, true),
-                                    decoration: const InputDecoration(
-                                      labelText: 'ID Área Científica',
-                                      border: OutlineInputBorder(),
-                                    ),
+                                  Consumer<AreaCientificaProvider>(
+                                    builder: (context, areaProvider, child) {
+                                      if (areaProvider.isLoading) {
+                                        return const Center(
+                                          child: Padding(
+                                            padding: EdgeInsets.all(16.0),
+                                            child: CircularProgressIndicator(),
+                                          ),
+                                        );
+                                      }
+
+                                      final activeAreas = areaProvider.areas
+                                          .where((area) => area.ativo)
+                                          .toList();
+
+                                      return InputDecorator(
+                                        decoration: const InputDecoration(
+                                          labelText: 'Área Científica',
+                                          border: OutlineInputBorder(),
+                                        ),
+                                        child: DropdownButtonHideUnderline(
+                                          child: DropdownButton<int>(
+                                            value: selectedAreaId,
+                                            isExpanded: true,
+                                            hint: const Text(
+                                              'Selecione uma área',
+                                            ),
+                                            items: activeAreas.map((area) {
+                                              return DropdownMenuItem<int>(
+                                                value: area.id,
+                                                child: Text(
+                                                  '${area.nome} (${area.sigla})',
+                                                ),
+                                              );
+                                            }).toList(),
+                                            onChanged: (value) {
+                                              setState(() {
+                                                selectedAreaId = value;
+                                              });
+                                            },
+                                          ),
+                                        ),
+                                      );
+                                    },
                                   ),
                                   const SizedBox(height: 16),
                                   CheckboxListTile(
@@ -418,11 +473,21 @@ class _DocentesScreenState extends State<DocentesScreen> {
                         );
 
                         if (result == true && mounted) {
+                          if (selectedAreaId == null) {
+                            messenger.showSnackBar(
+                              const SnackBar(
+                                content: Text('Selecione uma área científica'),
+                                backgroundColor: Colors.orange,
+                              ),
+                            );
+                            return;
+                          }
+
                           final updatedDocente = DocenteModel(
                             id: docente.id,
                             nome: nomeController.text,
                             email: emailController.text,
-                            idArea: int.tryParse(idAreaController.text) ?? 0,
+                            idArea: selectedAreaId!,
                             ativo: docente.ativo,
                             convidado: convidado,
                           );

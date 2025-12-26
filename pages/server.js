@@ -10,7 +10,7 @@ const __dirname = path.dirname(__filename);
 const dev = process.env.NODE_ENV !== "production";
 // In Docker, __dirname is /app, pages API is at /app/pages/api
 // In local dev, __dirname is pages/, API is at ./api
-const nextDir = fs.existsSync(path.join(__dirname, "pages")) ? __dirname : __dirname;
+const nextDir = fs.existsSync(path.join(__dirname, "pages")) ? path.join(__dirname, "pages") : __dirname;
 const app = next({dev, dir: nextDir});
 const handle = app.getRequestHandler();
 

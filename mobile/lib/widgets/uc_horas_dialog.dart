@@ -20,6 +20,9 @@ class _UCHorasDialogState extends State<UCHorasDialog> {
     'PL': TextEditingController(text: '0'),
     'OT': TextEditingController(text: '0'),
   };
+  final TextEditingController _horasPerCreditController = TextEditingController(
+    text: '28',
+  );
 
   @override
   void initState() {
@@ -32,6 +35,7 @@ class _UCHorasDialogState extends State<UCHorasDialog> {
     for (var controller in _controllers.values) {
       controller.dispose();
     }
+    _horasPerCreditController.dispose();
     super.dispose();
   }
 
@@ -51,7 +55,10 @@ class _UCHorasDialogState extends State<UCHorasDialog> {
     });
   }
 
-  int get _totalHoras => (widget.uc.ects * 28).round();
+  int get _totalHoras {
+    final horasPerCredit = int.tryParse(_horasPerCreditController.text.trim());
+    return (widget.uc.ects * (horasPerCredit ?? 28)).round();
+  }
 
   int get _contactHoras {
     int total = 0;
@@ -179,6 +186,31 @@ class _UCHorasDialogState extends State<UCHorasDialog> {
                       ),
                     ),
                     const SizedBox(height: 24),
+                    // Hours per credit input
+                    TextField(
+                      controller: _horasPerCreditController,
+                      keyboardType: TextInputType.number,
+                      decoration: const InputDecoration(
+                        labelText: 'Horas de trabalho por ECTS',
+                        hintText: '28 (padrão)',
+                        border: OutlineInputBorder(),
+                        helperText:
+                            'Deixe vazio para usar 28 horas por defeito',
+                        helperMaxLines: 2,
+                      ),
+                      onChanged: (_) => setState(() {}),
+                    ),
+                    const SizedBox(height: 24),
+                    const Divider(),
+                    const SizedBox(height: 16),
+                    const Text(
+                      'Horas de Contacto',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
                     // Inputs
                     for (var entry in _controllers.entries)
                       Padding(
