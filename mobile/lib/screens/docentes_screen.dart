@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../models/docente_model.dart';
 import '../providers/area_cientifica_provider.dart';
 import '../providers/docente_provider.dart';
+import '../utils/constants.dart';
 import '../widgets/app_navigation_drawer.dart';
 
 class DocentesScreen extends StatefulWidget {
@@ -29,6 +30,46 @@ class _DocentesScreenState extends State<DocentesScreen> {
     final emailController = TextEditingController();
     int? selectedAreaId;
     bool convidado = false;
+    bool autoGenerateEmail = true;
+
+    // Function to generate email from name
+    String generateEmailFromName(String name) {
+      if (name.trim().isEmpty) return '';
+
+      // Remove accents and special characters
+      String normalized = name
+          .toLowerCase()
+          .replaceAll(RegExp(r'[àáâãäå]'), 'a')
+          .replaceAll(RegExp(r'[èéêë]'), 'e')
+          .replaceAll(RegExp(r'[ìíîï]'), 'i')
+          .replaceAll(RegExp(r'[òóôõö]'), 'o')
+          .replaceAll(RegExp(r'[ùúûü]'), 'u')
+          .replaceAll(RegExp(r'[ç]'), 'c')
+          .replaceAll(RegExp(r'[ñ]'), 'n')
+          .replaceAll(
+            RegExp(r'[^a-z\s]'),
+            '',
+          ) // Remove non-letters and non-spaces
+          .trim();
+
+      // Split by spaces and join with dots
+      List<String> parts = normalized.split(RegExp(r'\s+'));
+      if (parts.isEmpty || (parts.length == 1 && parts[0].isEmpty)) {
+        return '';
+      }
+
+      return parts.join('.');
+    }
+
+    // Listen to name changes to auto-generate email
+    nomeController.addListener(() {
+      if (autoGenerateEmail) {
+        final username = generateEmailFromName(nomeController.text);
+        emailController.text = username.isNotEmpty
+            ? '$username${AppConstants.emailDomain}'
+            : '';
+      }
+    });
 
     // Capture provider and UI services from State context before showing dialog
     final provider = context.read<DocenteProvider>();
@@ -54,6 +95,7 @@ class _DocentesScreenState extends State<DocentesScreen> {
                 textInputAction: TextInputAction.next,
                 decoration: const InputDecoration(
                   labelText: 'Nome',
+                  hintText: 'André Ferreira',
                   border: OutlineInputBorder(),
                 ),
               ),
@@ -62,10 +104,35 @@ class _DocentesScreenState extends State<DocentesScreen> {
                 controller: emailController,
                 textInputAction: TextInputAction.next,
                 keyboardType: TextInputType.emailAddress,
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   labelText: 'Email',
-                  border: OutlineInputBorder(),
+                  helperText: autoGenerateEmail
+                      ? 'Gerado automaticamente a partir do nome'
+                      : 'Digite manualmente',
+                  border: const OutlineInputBorder(),
+                  suffixIcon: IconButton(
+                    icon: Icon(autoGenerateEmail ? Icons.lock : Icons.edit),
+                    tooltip: autoGenerateEmail
+                        ? 'Editar manualmente'
+                        : 'Gerar automaticamente',
+                    onPressed: () {
+                      setState(() {
+                        autoGenerateEmail = !autoGenerateEmail;
+                        if (autoGenerateEmail) {
+                          // Regenerate email when switching back to auto
+                          final username = generateEmailFromName(
+                            nomeController.text,
+                          );
+                          emailController.text = username.isNotEmpty
+                              ? '$username${AppConstants.emailDomain}'
+                              : '';
+                        }
+                      });
+                    },
+                  ),
                 ),
+                readOnly: autoGenerateEmail,
+                enabled: !autoGenerateEmail,
               ),
               const SizedBox(height: 16),
               Consumer<AreaCientificaProvider>(
@@ -242,18 +309,31 @@ class _DocentesScreenState extends State<DocentesScreen> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.person_outline, size: 64, color: Colors.grey[400]),
+                  Icon(
+                    Icons.person_outline,
+                    size: 64,
+                    color: Theme.of(context).disabledColor,
+                  ),
                   const SizedBox(height: 16),
                   Text(
                     _showInactive
                         ? 'Nenhum docente encontrado'
                         : 'Nenhum docente ativo encontrado',
-                    style: TextStyle(fontSize: 18, color: Colors.grey[600]),
+                    style: TextStyle(
+                      fontSize: 18,
+                      color: Theme.of(
+                        context,
+                      ).textTheme.bodyMedium?.color?.withValues(alpha: 0.6),
+                    ),
                   ),
                   const SizedBox(height: 8),
                   Text(
                     'Clique no botão + para adicionar',
-                    style: TextStyle(color: Colors.grey[500]),
+                    style: TextStyle(
+                      color: Theme.of(
+                        context,
+                      ).textTheme.bodySmall?.color?.withValues(alpha: 0.5),
+                    ),
                   ),
                 ],
               ),
@@ -272,12 +352,10 @@ class _DocentesScreenState extends State<DocentesScreen> {
                     backgroundColor: docente.ativo
                         ? Theme.of(itemContext).primaryColor
                         : Colors.grey,
+                    foregroundColor: Colors.white,
                     child: Text(
                       docente.nome.substring(0, 1).toUpperCase(),
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                      ),
+                      style: const TextStyle(fontWeight: FontWeight.bold),
                     ),
                   ),
                   title: Text(
@@ -362,6 +440,33 @@ class _DocentesScreenState extends State<DocentesScreen> {
                         );
                         int? selectedAreaId = docente.idArea;
                         bool convidado = docente.convidado;
+                        bool autoGenerateEmail =
+                            false; // Start with manual for existing
+
+                        // Function to generate email from name
+                        String generateEmailFromName(String name) {
+                          if (name.trim().isEmpty) return '';
+
+                          String normalized = name
+                              .toLowerCase()
+                              .replaceAll(RegExp(r'[àáâãäå]'), 'a')
+                              .replaceAll(RegExp(r'[èéêë]'), 'e')
+                              .replaceAll(RegExp(r'[ìíîï]'), 'i')
+                              .replaceAll(RegExp(r'[òóôõö]'), 'o')
+                              .replaceAll(RegExp(r'[ùúûü]'), 'u')
+                              .replaceAll(RegExp(r'[ç]'), 'c')
+                              .replaceAll(RegExp(r'[ñ]'), 'n')
+                              .replaceAll(RegExp(r'[^a-z\s]'), '')
+                              .trim();
+
+                          List<String> parts = normalized.split(RegExp(r'\s+'));
+                          if (parts.isEmpty ||
+                              (parts.length == 1 && parts[0].isEmpty)) {
+                            return '';
+                          }
+
+                          return parts.join('.');
+                        }
 
                         final provider = context.read<DocenteProvider>();
                         final areaProvider = context
@@ -372,6 +477,18 @@ class _DocentesScreenState extends State<DocentesScreen> {
                         if (areaProvider.areas.isEmpty) {
                           areaProvider.loadAll(incluirInativos: false);
                         }
+
+                        // Add listener for auto-generation (but start disabled for edit)
+                        nomeController.addListener(() {
+                          if (autoGenerateEmail) {
+                            final username = generateEmailFromName(
+                              nomeController.text,
+                            );
+                            emailController.text = username.isNotEmpty
+                                ? '$username${AppConstants.emailDomain}'
+                                : '';
+                          }
+                        });
 
                         final result = await showDialog<bool>(
                           context: context,
@@ -386,6 +503,7 @@ class _DocentesScreenState extends State<DocentesScreen> {
                                     textInputAction: TextInputAction.next,
                                     decoration: const InputDecoration(
                                       labelText: 'Nome',
+                                      hintText: 'André Ferreira',
                                       border: OutlineInputBorder(),
                                     ),
                                   ),
@@ -394,10 +512,41 @@ class _DocentesScreenState extends State<DocentesScreen> {
                                     controller: emailController,
                                     textInputAction: TextInputAction.next,
                                     keyboardType: TextInputType.emailAddress,
-                                    decoration: const InputDecoration(
+                                    decoration: InputDecoration(
                                       labelText: 'Email',
-                                      border: OutlineInputBorder(),
+                                      helperText: autoGenerateEmail
+                                          ? 'Gerado automaticamente a partir do nome'
+                                          : 'Digite manualmente',
+                                      border: const OutlineInputBorder(),
+                                      suffixIcon: IconButton(
+                                        icon: Icon(
+                                          autoGenerateEmail
+                                              ? Icons.lock
+                                              : Icons.edit,
+                                        ),
+                                        tooltip: autoGenerateEmail
+                                            ? 'Editar manualmente'
+                                            : 'Gerar automaticamente',
+                                        onPressed: () {
+                                          setState(() {
+                                            autoGenerateEmail =
+                                                !autoGenerateEmail;
+                                            if (autoGenerateEmail) {
+                                              final username =
+                                                  generateEmailFromName(
+                                                    nomeController.text,
+                                                  );
+                                              emailController.text =
+                                                  username.isNotEmpty
+                                                  ? '$username${AppConstants.emailDomain}'
+                                                  : '';
+                                            }
+                                          });
+                                        },
+                                      ),
                                     ),
+                                    readOnly: autoGenerateEmail,
+                                    enabled: !autoGenerateEmail,
                                   ),
                                   const SizedBox(height: 16),
                                   Consumer<AreaCientificaProvider>(

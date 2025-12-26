@@ -198,14 +198,19 @@ class _DepartamentosScreenState extends State<DepartamentosScreen> {
                   Icon(
                     Icons.business_outlined,
                     size: 64,
-                    color: Colors.grey[400],
+                    color: Theme.of(context).disabledColor,
                   ),
                   const SizedBox(height: 16),
                   Text(
                     _showInactive
                         ? 'Nenhum departamento encontrado'
                         : 'Nenhum departamento ativo encontrado',
-                    style: TextStyle(fontSize: 16, color: Colors.grey[600]),
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: Theme.of(
+                        context,
+                      ).textTheme.bodyMedium?.color?.withValues(alpha: 0.6),
+                    ),
                   ),
                   const SizedBox(height: 16),
                   ElevatedButton.icon(
@@ -230,12 +235,10 @@ class _DepartamentosScreenState extends State<DepartamentosScreen> {
                     backgroundColor: dept.ativo
                         ? Theme.of(itemContext).primaryColor
                         : Colors.grey,
+                    foregroundColor: Colors.white,
                     child: Text(
                       dept.sigla,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                      ),
+                      style: const TextStyle(fontWeight: FontWeight.bold),
                     ),
                   ),
                   title: Text(

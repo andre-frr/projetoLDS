@@ -542,7 +542,17 @@ class _UCsScreenState extends State<UCsScreen> {
           // Filter Bar
           Container(
             padding: const EdgeInsets.all(8),
-            color: Colors.grey[100],
+            decoration: BoxDecoration(
+              color: Theme.of(context).brightness == Brightness.dark
+                  ? Theme.of(context).colorScheme.surface
+                  : Colors.grey[100],
+              border: Border(
+                bottom: BorderSide(
+                  color: Theme.of(context).dividerColor,
+                  width: 1,
+                ),
+              ),
+            ),
             child: Row(
               children: [
                 // Curso filter
@@ -751,7 +761,7 @@ class _UCsScreenState extends State<UCsScreen> {
                         Icon(
                           Icons.menu_book_outlined,
                           size: 64,
-                          color: Colors.grey[400],
+                          color: Theme.of(context).disabledColor,
                         ),
                         const SizedBox(height: 16),
                         Text(
@@ -760,13 +770,17 @@ class _UCsScreenState extends State<UCsScreen> {
                               : 'Nenhuma UC ativa encontrada',
                           style: TextStyle(
                             fontSize: 18,
-                            color: Colors.grey[600],
+                            color: Theme.of(context).textTheme.bodyMedium?.color
+                                ?.withValues(alpha: 0.6),
                           ),
                         ),
                         const SizedBox(height: 8),
                         Text(
                           'Clique no botão + para adicionar',
-                          style: TextStyle(color: Colors.grey[500]),
+                          style: TextStyle(
+                            color: Theme.of(context).textTheme.bodySmall?.color
+                                ?.withValues(alpha: 0.5),
+                          ),
                         ),
                       ],
                     ),
@@ -801,12 +815,10 @@ class _UCsScreenState extends State<UCsScreen> {
                           backgroundColor: uc.ativo
                               ? Theme.of(itemContext).primaryColor
                               : Colors.grey,
+                          foregroundColor: Colors.white,
                           child: Text(
                             uc.nome.substring(0, 1).toUpperCase(),
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                            ),
+                            style: const TextStyle(fontWeight: FontWeight.bold),
                           ),
                         ),
                         title: Text(
@@ -821,7 +833,9 @@ class _UCsScreenState extends State<UCsScreen> {
                           'Curso: ${curso.sigla} • Ano ${uc.anoCurso} • Sem ${uc.semCurso} • ${uc.ects} ECTS',
                           style: TextStyle(
                             fontSize: 12,
-                            color: Colors.grey[600],
+                            color: Theme.of(
+                              itemContext,
+                            ).textTheme.bodySmall?.color,
                           ),
                         ),
                         trailing: PopupMenuButton(

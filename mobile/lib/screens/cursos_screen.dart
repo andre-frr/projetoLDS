@@ -205,19 +205,28 @@ class _CursosScreenState extends State<CursosScreen> {
                   Icon(
                     Icons.school_outlined,
                     size: 64,
-                    color: Colors.grey[400],
+                    color: Theme.of(context).disabledColor,
                   ),
                   const SizedBox(height: 16),
                   Text(
                     _showInactive
                         ? 'Nenhum curso encontrado'
                         : 'Nenhum curso ativo encontrado',
-                    style: TextStyle(fontSize: 18, color: Colors.grey[600]),
+                    style: TextStyle(
+                      fontSize: 18,
+                      color: Theme.of(
+                        context,
+                      ).textTheme.bodyMedium?.color?.withValues(alpha: 0.6),
+                    ),
                   ),
                   const SizedBox(height: 8),
                   Text(
                     'Clique no botão + para adicionar',
-                    style: TextStyle(color: Colors.grey[500]),
+                    style: TextStyle(
+                      color: Theme.of(
+                        context,
+                      ).textTheme.bodySmall?.color?.withValues(alpha: 0.5),
+                    ),
                   ),
                 ],
               ),
@@ -236,10 +245,10 @@ class _CursosScreenState extends State<CursosScreen> {
                     backgroundColor: curso.ativo
                         ? Theme.of(itemContext).primaryColor
                         : Colors.grey,
+                    foregroundColor: Colors.white,
                     child: Text(
                       curso.sigla,
                       style: const TextStyle(
-                        color: Colors.white,
                         fontWeight: FontWeight.bold,
                         fontSize: 12,
                       ),

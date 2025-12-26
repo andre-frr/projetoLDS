@@ -228,19 +228,28 @@ class _AreasCientificasScreenState extends State<AreasCientificasScreen> {
                   Icon(
                     Icons.science_outlined,
                     size: 64,
-                    color: Colors.grey[400],
+                    color: Theme.of(context).disabledColor,
                   ),
                   const SizedBox(height: 16),
                   Text(
                     _showInactive
                         ? 'Nenhuma área científica encontrada'
                         : 'Nenhuma área científica ativa encontrada',
-                    style: TextStyle(fontSize: 18, color: Colors.grey[600]),
+                    style: TextStyle(
+                      fontSize: 18,
+                      color: Theme.of(
+                        context,
+                      ).textTheme.bodyMedium?.color?.withValues(alpha: 0.6),
+                    ),
                   ),
                   const SizedBox(height: 8),
                   Text(
                     'Clique no botão + para adicionar',
-                    style: TextStyle(color: Colors.grey[500]),
+                    style: TextStyle(
+                      color: Theme.of(
+                        context,
+                      ).textTheme.bodySmall?.color?.withValues(alpha: 0.5),
+                    ),
                   ),
                 ],
               ),
@@ -259,12 +268,10 @@ class _AreasCientificasScreenState extends State<AreasCientificasScreen> {
                     backgroundColor: area.ativo
                         ? Theme.of(itemContext).primaryColor
                         : Colors.grey,
+                    foregroundColor: Colors.white,
                     child: Text(
                       area.sigla,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                      ),
+                      style: const TextStyle(fontWeight: FontWeight.bold),
                     ),
                   ),
                   title: Text(

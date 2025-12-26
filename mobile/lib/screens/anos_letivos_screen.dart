@@ -387,16 +387,30 @@ class _AnosLetivosScreenState extends State<AnosLetivosScreen> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.calendar_today, size: 64, color: Colors.grey[400]),
+                  Icon(
+                    Icons.calendar_today,
+                    size: 64,
+                    color: Theme.of(context).disabledColor,
+                  ),
                   const SizedBox(height: 16),
                   Text(
                     'Nenhum ano letivo encontrado',
-                    style: TextStyle(fontSize: 18, color: Colors.grey[600]),
+                    style: TextStyle(
+                      fontSize: 18,
+                      color: Theme.of(
+                        context,
+                      ).textTheme.bodyMedium?.color?.withValues(alpha: 0.6),
+                    ),
                   ),
                   const SizedBox(height: 8),
                   Text(
                     'Crie um novo ano letivo para começar',
-                    style: TextStyle(fontSize: 14, color: Colors.grey[500]),
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Theme.of(
+                        context,
+                      ).textTheme.bodySmall?.color?.withValues(alpha: 0.5),
+                    ),
                   ),
                 ],
               ),
@@ -409,7 +423,17 @@ class _AnosLetivosScreenState extends State<AnosLetivosScreen> {
                 Container(
                   width: double.infinity,
                   padding: const EdgeInsets.all(16),
-                  color: Colors.green[50],
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).brightness == Brightness.dark
+                        ? Colors.green[900]!.withValues(alpha: 0.3)
+                        : Colors.green[50],
+                    border: Border(
+                      bottom: BorderSide(
+                        color: Colors.green.withValues(alpha: 0.3),
+                        width: 1,
+                      ),
+                    ),
+                  ),
                   child: Row(
                     children: [
                       const Icon(Icons.check_circle, color: Colors.green),
@@ -452,9 +476,13 @@ class _AnosLetivosScreenState extends State<AnosLetivosScreen> {
                       ),
                       elevation: isCurrent ? 4 : 1,
                       color: isCurrent
-                          ? Colors.green[50]
+                          ? (Theme.of(context).brightness == Brightness.dark
+                                ? Colors.green[900]!.withValues(alpha: 0.3)
+                                : Colors.green[50])
                           : isArchived
-                          ? Colors.grey[100]
+                          ? (Theme.of(context).brightness == Brightness.dark
+                                ? Colors.grey[850]
+                                : Colors.grey[100])
                           : null,
                       child: ListTile(
                         leading: Icon(
@@ -488,14 +516,22 @@ class _AnosLetivosScreenState extends State<AnosLetivosScreen> {
                                   vertical: 2,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: Colors.grey[300],
+                                  color:
+                                      Theme.of(context).brightness ==
+                                          Brightness.dark
+                                      ? Colors.grey[700]
+                                      : Colors.grey[300],
                                   borderRadius: BorderRadius.circular(12),
                                 ),
-                                child: const Text(
+                                child: Text(
                                   'Arquivado',
                                   style: TextStyle(
                                     fontSize: 10,
-                                    color: Colors.black54,
+                                    color:
+                                        Theme.of(context).brightness ==
+                                            Brightness.dark
+                                        ? Colors.grey[300]
+                                        : Colors.black54,
                                   ),
                                 ),
                               ),
