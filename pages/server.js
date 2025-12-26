@@ -8,10 +8,12 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const dev = process.env.NODE_ENV !== "production";
-// In Docker, __dirname is /app, pages API is at /app/pages/api
-// In local dev, __dirname is pages/, API is at ./api
-const nextDir = fs.existsSync(path.join(__dirname, "pages")) ? path.join(__dirname, "pages") : __dirname;
-const app = next({dev, dir: nextDir});
+
+// Next.js needs to run from the directory that contains 'pages' folder
+// In Docker: server.js is at /app/server.js, and pages is at /app/pages
+// In local: server.js is at pages/server.js, and pages/api is at ./api
+// So we need to use /app as the dir in both cases since that's where pages/ lives
+const app = next({dev, dir: __dirname});
 const handle = app.getRequestHandler();
 
 const certsDir = fs.existsSync(path.join(__dirname, "certs"))
@@ -22,6 +24,10 @@ const httpsOptions = {
     key: fs.readFileSync(path.join(certsDir, "certs/localhost+1-key.pem")),
     cert: fs.readFileSync(path.join(certsDir, "certs/localhost+1.pem")),
 };
+
+console.log("[Server] Starting Next.js from directory:", __dirname);
+console.log("[Server] Checking for pages directory at:", path.join(__dirname, "pages"));
+console.log("[Server] Pages directory exists:", fs.existsSync(path.join(__dirname, "pages")));
 
 await app.prepare();
 
