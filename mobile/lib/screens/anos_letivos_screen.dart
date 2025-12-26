@@ -25,19 +25,7 @@ class _AnosLetivosScreenState extends State<AnosLetivosScreen> {
   void _showCreateDialog({bool isNewYear = false}) {
     final anoInicioController = TextEditingController();
     final anoFimController = TextEditingController();
-
-    // Pre-fill with next year if creating a new school year
-    if (isNewYear) {
-      final provider = context.read<AnoLetivoProvider>();
-      if (provider.currentYear != null) {
-        anoInicioController.text = (provider.currentYear!.anoFim).toString();
-        anoFimController.text = (provider.currentYear!.anoFim + 1).toString();
-      } else {
-        final currentYear = DateTime.now().year;
-        anoInicioController.text = currentYear.toString();
-        anoFimController.text = (currentYear + 1).toString();
-      }
-    }
+    bool createNewYear = isNewYear;
 
     final provider = context.read<AnoLetivoProvider>();
     final navigator = Navigator.of(context);
@@ -45,120 +33,141 @@ class _AnosLetivosScreenState extends State<AnosLetivosScreen> {
 
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text(
-          isNewYear ? 'Novo Ano Letivo (Limpar Dados)' : 'Adicionar Ano Letivo',
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (isNewYear) ...[
-              const Icon(Icons.warning, color: Colors.orange, size: 48),
-              const SizedBox(height: 16),
-              const Text(
-                'Criar um novo ano letivo irá iniciar um novo ciclo. '
-                'Os dados do ano anterior serão preservados para consulta histórica.',
-                style: TextStyle(fontSize: 14),
-                textAlign: TextAlign.center,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) {
+          // Pre-fill with next year if creating a new school year
+          if (createNewYear && anoInicioController.text.isEmpty) {
+            if (provider.currentYear != null) {
+              anoInicioController.text = (provider.currentYear!.anoFim)
+                  .toString();
+              anoFimController.text = (provider.currentYear!.anoFim + 1)
+                  .toString();
+            } else {
+              final currentYear = DateTime.now().year;
+              anoInicioController.text = currentYear.toString();
+              anoFimController.text = (currentYear + 1).toString();
+            }
+          }
+
+          return AlertDialog(
+            title: const Text('Adicionar Ano Letivo'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: anoInicioController,
+                  keyboardType: TextInputType.number,
+                  textInputAction: TextInputAction.next,
+                  decoration: const InputDecoration(
+                    labelText: 'Ano de Início',
+                    border: OutlineInputBorder(),
+                    hintText: '2024',
+                  ),
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: anoFimController,
+                  keyboardType: TextInputType.number,
+                  textInputAction: TextInputAction.done,
+                  decoration: const InputDecoration(
+                    labelText: 'Ano de Fim',
+                    border: OutlineInputBorder(),
+                    hintText: '2025',
+                  ),
+                ),
+                const SizedBox(height: 16),
+                CheckboxListTile(
+                  title: const Text('Novo Ano Letivo'),
+                  subtitle: const Text(
+                    'Criar um novo ciclo e arquivar anos anteriores',
+                    style: TextStyle(fontSize: 12),
+                  ),
+                  value: createNewYear,
+                  onChanged: (value) {
+                    setState(() {
+                      createNewYear = value ?? false;
+                    });
+                  },
+                  contentPadding: EdgeInsets.zero,
+                  controlAffinity: ListTileControlAffinity.leading,
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Cancelar'),
               ),
-              const SizedBox(height: 24),
+              ElevatedButton(
+                onPressed: () async {
+                  final anoInicio = int.tryParse(anoInicioController.text);
+                  final anoFim = int.tryParse(anoFimController.text);
+
+                  if (anoInicio == null || anoFim == null) {
+                    messenger.showSnackBar(
+                      const SnackBar(
+                        content: Text('Por favor, insira anos válidos'),
+                        backgroundColor: Colors.red,
+                      ),
+                    );
+                    return;
+                  }
+
+                  if (anoFim <= anoInicio) {
+                    messenger.showSnackBar(
+                      const SnackBar(
+                        content: Text(
+                          'O ano de fim deve ser posterior ao ano de início',
+                        ),
+                        backgroundColor: Colors.red,
+                      ),
+                    );
+                    return;
+                  }
+
+                  final anoLetivo = AnoLetivoModel(
+                    id: 0,
+                    anoInicio: anoInicio,
+                    anoFim: anoFim,
+                    arquivado: false,
+                  );
+
+                  final success = await provider.create(
+                    anoLetivo,
+                    createNewYear: createNewYear,
+                  );
+
+                  if (!mounted) return;
+
+                  if (success) {
+                    navigator.pop();
+                    messenger.showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          createNewYear
+                              ? 'Novo ano letivo criado com sucesso. Sistema pronto para novos dados.'
+                              : 'Ano letivo adicionado com sucesso',
+                        ),
+                        backgroundColor: Colors.green,
+                      ),
+                    );
+                  } else if (provider.errorMessage != null) {
+                    messenger.showSnackBar(
+                      SnackBar(
+                        content: Text(provider.errorMessage!),
+                        backgroundColor: Colors.red,
+                      ),
+                    );
+                  }
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: createNewYear ? Colors.orange : null,
+                ),
+                child: Text(createNewYear ? 'Criar Novo Ano' : 'Adicionar'),
+              ),
             ],
-            TextField(
-              controller: anoInicioController,
-              keyboardType: TextInputType.number,
-              textInputAction: TextInputAction.next,
-              decoration: const InputDecoration(
-                labelText: 'Ano de Início',
-                border: OutlineInputBorder(),
-                hintText: '2024',
-              ),
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: anoFimController,
-              keyboardType: TextInputType.number,
-              textInputAction: TextInputAction.done,
-              decoration: const InputDecoration(
-                labelText: 'Ano de Fim',
-                border: OutlineInputBorder(),
-                hintText: '2025',
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancelar'),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              final anoInicio = int.tryParse(anoInicioController.text);
-              final anoFim = int.tryParse(anoFimController.text);
-
-              if (anoInicio == null || anoFim == null) {
-                messenger.showSnackBar(
-                  const SnackBar(
-                    content: Text('Por favor, insira anos válidos'),
-                    backgroundColor: Colors.red,
-                  ),
-                );
-                return;
-              }
-
-              if (anoFim <= anoInicio) {
-                messenger.showSnackBar(
-                  const SnackBar(
-                    content: Text(
-                      'O ano de fim deve ser posterior ao ano de início',
-                    ),
-                    backgroundColor: Colors.red,
-                  ),
-                );
-                return;
-              }
-
-              final anoLetivo = AnoLetivoModel(
-                id: 0,
-                anoInicio: anoInicio,
-                anoFim: anoFim,
-                arquivado: false,
-              );
-
-              final success = await provider.create(
-                anoLetivo,
-                createNewYear: isNewYear,
-              );
-
-              if (!mounted) return;
-
-              if (success) {
-                navigator.pop();
-                messenger.showSnackBar(
-                  SnackBar(
-                    content: Text(
-                      isNewYear
-                          ? 'Novo ano letivo criado com sucesso. Sistema pronto para novos dados.'
-                          : 'Ano letivo adicionado com sucesso',
-                    ),
-                    backgroundColor: Colors.green,
-                  ),
-                );
-              } else if (provider.errorMessage != null) {
-                messenger.showSnackBar(
-                  SnackBar(
-                    content: Text(provider.errorMessage!),
-                    backgroundColor: Colors.red,
-                  ),
-                );
-              }
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: isNewYear ? Colors.orange : null,
-            ),
-            child: Text(isNewYear ? 'Criar Novo Ano' : 'Adicionar'),
-          ),
-        ],
+          );
+        },
       ),
     );
   }
@@ -363,23 +372,9 @@ class _AnosLetivosScreenState extends State<AnosLetivosScreen> {
         ],
       ),
       drawer: const AppNavigationDrawer(currentRoute: 'anos_letivos'),
-      floatingActionButton: Column(
-        mainAxisAlignment: MainAxisAlignment.end,
-        children: [
-          FloatingActionButton.extended(
-            heroTag: 'newYear',
-            onPressed: () => _showCreateDialog(isNewYear: true),
-            backgroundColor: Colors.orange,
-            icon: const Icon(Icons.auto_awesome),
-            label: const Text('Novo Ano'),
-          ),
-          const SizedBox(height: 8),
-          FloatingActionButton(
-            heroTag: 'addYear',
-            onPressed: () => _showCreateDialog(isNewYear: false),
-            child: const Icon(Icons.add),
-          ),
-        ],
+      floatingActionButton: FloatingActionButton(
+        onPressed: () => _showCreateDialog(isNewYear: false),
+        child: const Icon(Icons.add),
       ),
       body: Consumer<AnoLetivoProvider>(
         builder: (context, provider, child) {

@@ -7,8 +7,8 @@ import '../screens/areas_cientificas_screen.dart';
 import '../screens/cursos_screen.dart';
 import '../screens/departamentos_screen.dart';
 import '../screens/docentes_screen.dart';
+import '../screens/settings_screen.dart';
 import '../screens/ucs_screen.dart';
-import 'theme_settings_dialog.dart';
 
 class AppNavigationDrawer extends StatelessWidget {
   final String currentRoute;
@@ -115,15 +115,13 @@ class AppNavigationDrawer extends StatelessWidget {
             },
           ),
           const Divider(),
-          ListTile(
-            leading: const Icon(Icons.brightness_6),
-            title: const Text('Tema'),
+          _buildDrawerItem(
+            context,
+            icon: Icons.settings,
+            title: 'Definições',
+            route: 'settings',
             onTap: () {
-              Navigator.pop(context);
-              showDialog(
-                context: context,
-                builder: (context) => const ThemeSettingsDialog(),
-              );
+              _navigateTo(context, const SettingsScreen());
             },
           ),
         ],

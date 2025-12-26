@@ -7,6 +7,7 @@ import 'areas_cientificas_screen.dart';
 import 'cursos_screen.dart';
 import 'departamentos_screen.dart';
 import 'docentes_screen.dart';
+import 'settings_screen.dart';
 import 'ucs_screen.dart';
 
 class HomeScreen extends StatelessWidget {
@@ -169,10 +170,15 @@ class HomeScreen extends StatelessWidget {
             const Divider(),
             ListTile(
               leading: const Icon(Icons.settings),
-              title: const Text('Settings'),
+              title: const Text('Definições'),
               onTap: () {
-                // TODO: Navigate to settings
                 Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const SettingsScreen(),
+                  ),
+                );
               },
             ),
           ],
