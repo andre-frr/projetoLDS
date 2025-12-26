@@ -4,7 +4,7 @@ WORKDIR /app
 
 # Install dependencies for better caching
 COPY pages/package.json pages/package-lock.json* ./
-RUN npm ci --only=production=false
+RUN npm ci && npm cache clean --force
 
 # Copy configuration files
 COPY pages/jsconfig.json ./jsconfig.json
@@ -30,8 +30,8 @@ RUN apk update && apk upgrade && \
     adduser -S nextjs -u 1001
 
 # Install production dependencies only
-COPY pages/package.json ./package.json
-RUN npm ci --only=production && npm cache clean --force
+COPY pages/package.json pages/package-lock.json* ./
+RUN npm ci --omit=dev && npm cache clean --force
 
 # Copy application files
 COPY --chown=nextjs:nodejs pages/server.js ./server.js

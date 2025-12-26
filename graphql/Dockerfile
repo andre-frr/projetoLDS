@@ -4,7 +4,7 @@ WORKDIR /app
 
 # Install dependencies
 COPY graphql/package*.json ./
-RUN npm ci --only=production && npm cache clean --force
+RUN npm ci --omit=dev && npm cache clean --force
 
 # Stage 2: production
 FROM node:22-alpine
