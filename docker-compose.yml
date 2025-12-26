@@ -1,7 +1,7 @@
 services:
-  db:
+  postgres:
     image: postgres:17-alpine
-    container_name: postgresql
+    container_name: postgres
     env_file:
       - ./.env
     ports:
@@ -11,19 +11,12 @@ services:
       - db_data:/var/lib/postgresql/data
     networks:
       - app-network
-    healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}" ]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 10s
 
-  # gRPC Microservice - Handles all database operations
-  grpc-service:
+  grpc:
     build:
       context: .
       dockerfile: ./grpc/service-a/Dockerfile
-    container_name: service-a
+    container_name: grpc
     ports:
       - "50051:50051"
     env_file:
@@ -31,19 +24,11 @@ services:
     environment:
       - DATABASE_URL=${DATABASE_URL}
     depends_on:
-      db:
-        condition: service_healthy
+      - postgres
     networks:
       - app-network
-    healthcheck:
-      test: [ "CMD-SHELL", "node -e 'process.exit(0)'" ]
-      interval: 10s
-      timeout: 5s
-      retries: 3
-      start_period: 20s
     restart: unless-stopped
 
-  # GraphQL Gateway - Handles complex nested queries via gRPC
   graphql:
     build:
       context: .
@@ -54,39 +39,27 @@ services:
     env_file:
       - ./.env
     environment:
-      - GRPC_SERVICE_ADDRESS=service-a:50051
+      - GRPC_SERVICE_ADDRESS=grpc:50051
     depends_on:
-      grpc-service:
-        condition: service_healthy
+      - grpc
     networks:
       - app-network
-    healthcheck:
-      test: [ "CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:4000/graphql || exit 1" ]
-      interval: 10s
-      timeout: 5s
-      retries: 3
-      start_period: 20s
     restart: unless-stopped
 
-  # Next.js Gateway - Handles REST + GraphQL, communicates via gRPC
-  nextjs:
+  rest-api:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: nextjs
+    container_name: rest-api
     ports:
       - "3000:3000"
     env_file:
       - ./.env
     environment:
-      - GRPC_SERVICE_ADDRESS=service-a:50051
-      - GRAPHQL_URL=http://graphql:4000/graphql
+      - GRPC_SERVICE_ADDRESS=grpc:50051
       - NODE_ENV=production
     depends_on:
-      graphql:
-        condition: service_healthy
-      grpc-service:
-        condition: service_healthy
+      - grpc
     networks:
       - app-network
     restart: unless-stopped

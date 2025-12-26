@@ -11,6 +11,9 @@ coverage
 mobile/build/*
 !mobile/build/web/
 !mobile/build/web/**
+mobile/.dart_tool
+mobile/.flutter-plugins-dependencies
+mobile/.metadata
 
 .next
 out
@@ -21,6 +24,8 @@ next-env.d.ts
 certs
 .DS_Store
 *.pem
+*.log
+*.tmp
 
 # Environment Variables
 .env
