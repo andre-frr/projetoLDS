@@ -50,4 +50,3 @@ class ThemeProvider extends ChangeNotifier {
         Brightness.dark;
   }
 }
-

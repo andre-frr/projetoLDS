@@ -23,5 +23,6 @@ class ApiConstants {
 
 class AppConstants {
   static const String appName = 'LDS Project';
+  static const String emailDomain = '@projetolds.com';
   static const Duration tokenRefreshBuffer = Duration(minutes: 5);
 }

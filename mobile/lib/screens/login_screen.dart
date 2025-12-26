@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../providers/auth_provider.dart';
-import '../utils/validators.dart';
+import '../utils/constants.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -13,20 +13,23 @@ class LoginScreen extends StatefulWidget {
 
 class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _emailController = TextEditingController();
+  final _usernameController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
 
   @override
   void dispose() {
-    _emailController.dispose();
+    _usernameController.dispose();
     _passwordController.dispose();
     super.dispose();
   }
 
   void _handleLogin() async {
     if (_formKey.currentState!.validate()) {
-      final email = _emailController.text;
+      final username = _usernameController.text.trim();
+      final email = username.contains('@')
+          ? username
+          : '$username${AppConstants.emailDomain}';
       final password = _passwordController.text;
 
       final authProvider = context.read<AuthProvider>();
@@ -80,18 +83,33 @@ class _LoginScreenState extends State<LoginScreen> {
                             ),
                             const SizedBox(height: 32),
 
-                            // Email field
+                            // Username field (email prefix)
                             TextFormField(
-                              controller: _emailController,
+                              controller: _usernameController,
                               enabled: !authProvider.isLoading,
-                              keyboardType: TextInputType.emailAddress,
+                              keyboardType: TextInputType.text,
                               textInputAction: TextInputAction.next,
-                              decoration: const InputDecoration(
-                                labelText: 'Email',
-                                prefixIcon: Icon(Icons.email),
-                                border: OutlineInputBorder(),
+                              decoration: InputDecoration(
+                                labelText: 'Username',
+                                hintText: 'username',
+                                helperText:
+                                    'Email: username${AppConstants.emailDomain}',
+                                prefixIcon: const Icon(Icons.person),
+                                suffixText: AppConstants.emailDomain,
+                                border: const OutlineInputBorder(),
                               ),
-                              validator: Validators.validateEmail,
+                              validator: (value) {
+                                if (value == null || value.isEmpty) {
+                                  return 'Please enter your username';
+                                }
+                                if (value.contains('@')) {
+                                  return 'Just enter username (without @domain)';
+                                }
+                                if (value.contains(' ')) {
+                                  return 'Username cannot contain spaces';
+                                }
+                                return null;
+                              },
                             ),
                             const SizedBox(height: 16),
 

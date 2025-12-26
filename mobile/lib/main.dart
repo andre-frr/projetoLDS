@@ -68,36 +68,85 @@ class MyApp extends StatelessWidget {
                 brightness: Brightness.light,
               ),
               useMaterial3: true,
+              scaffoldBackgroundColor: Colors.grey[50],
+              appBarTheme: const AppBarTheme(
+                backgroundColor: Colors.blue,
+                foregroundColor: Colors.white,
+                elevation: 2,
+              ),
+              cardTheme: CardThemeData(
+                elevation: 2,
+                color: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
               inputDecorationTheme: InputDecorationTheme(
                 filled: true,
                 fillColor: Colors.grey[100],
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
               ),
               elevatedButtonTheme: ElevatedButtonThemeData(
                 style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.blue,
+                  foregroundColor: Colors.white,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(8),
                   ),
                 ),
               ),
+              iconTheme: const IconThemeData(color: Colors.black87),
             ),
             darkTheme: ThemeData(
               colorScheme: ColorScheme.fromSeed(
                 seedColor: Colors.blue,
                 brightness: Brightness.dark,
+                surface: Color(0xFF1E1E1E),
+                onSurface: Colors.white,
               ),
               useMaterial3: true,
+              scaffoldBackgroundColor: const Color(0xFF121212),
+              appBarTheme: const AppBarTheme(
+                backgroundColor: Color(0xFF1E1E1E),
+                foregroundColor: Colors.white,
+                elevation: 2,
+              ),
+              cardTheme: CardThemeData(
+                elevation: 4,
+                color: const Color(0xFF1E1E1E),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
               inputDecorationTheme: InputDecorationTheme(
                 filled: true,
-                fillColor: Colors.grey[900],
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                fillColor: const Color(0xFF2C2C2C),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: BorderSide(color: Colors.grey[700]!),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: BorderSide(color: Colors.grey[700]!),
+                ),
               ),
               elevatedButtonTheme: ElevatedButtonThemeData(
                 style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.blue[700],
+                  foregroundColor: Colors.white,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(8),
                   ),
                 ),
+              ),
+              iconTheme: const IconThemeData(color: Colors.white),
+              textTheme: const TextTheme(
+                bodyLarge: TextStyle(color: Colors.white),
+                bodyMedium: TextStyle(color: Colors.white),
+                titleLarge: TextStyle(color: Colors.white),
+                titleMedium: TextStyle(color: Colors.white),
               ),
             ),
             home: const AuthWrapper(),

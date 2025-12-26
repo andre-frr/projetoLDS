@@ -69,5 +69,3 @@ class ThemeSettingsDialog extends StatelessWidget {
     );
   }
 }
-
-
