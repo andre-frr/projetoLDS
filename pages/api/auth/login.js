@@ -39,6 +39,17 @@ export default async function handler(req, res) {
             return res.status(401).json({message: 'Invalid credentials'});
         }
 
+        // Check if user needs to set up password (first-time login)
+        if (user.password_hash === null || user.password_hash === undefined) {
+            await auditLog('login_failed', user.id, {email, reason: 'Password not set'});
+            return res.status(403).json({
+                message: 'Password setup required. Please set up your password before logging in.',
+                requiresPasswordSetup: true,
+                email: user.email
+            });
+        }
+
+        // Verify password - at this point password_hash is guaranteed to exist
         const passwordMatch = await argon2.verify(user.password_hash, password);
 
         if (!passwordMatch) {

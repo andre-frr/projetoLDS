@@ -227,10 +227,26 @@ CREATE TABLE IF NOT EXISTS users
 (
     id            SERIAL PRIMARY KEY,
     email         TEXT      NOT NULL UNIQUE,
-    password_hash TEXT      NOT NULL,
+    password_hash TEXT      NULL, -- NULL for users created without password (requires first-time setup)
     role          user_role NOT NULL,
     token_version INTEGER   NOT NULL DEFAULT 1,
     ativo         BOOLEAN   NOT NULL DEFAULT TRUE
+);
+
+-- Coordinator assignments to departments
+CREATE TABLE IF NOT EXISTS coordenador_departamento
+(
+    id_user INTEGER NOT NULL REFERENCES users (id) ON DELETE CASCADE,
+    id_dep  INTEGER NOT NULL REFERENCES departamento (id_dep) ON DELETE CASCADE,
+    PRIMARY KEY (id_user, id_dep)
+);
+
+-- Coordinator assignments to courses
+CREATE TABLE IF NOT EXISTS coordenador_curso
+(
+    id_user  INTEGER NOT NULL REFERENCES users (id) ON DELETE CASCADE,
+    id_curso INTEGER NOT NULL REFERENCES curso (id_curso) ON DELETE CASCADE,
+    PRIMARY KEY (id_user, id_curso)
 );
 
 CREATE TABLE IF NOT EXISTS sessions
@@ -256,6 +272,10 @@ CREATE TABLE IF NOT EXISTS refresh_tokens
 -- Índices para otimização de queries
 CREATE INDEX IF NOT EXISTS idx_sessions_user_id ON sessions (user_id);
 CREATE INDEX IF NOT EXISTS idx_refresh_tokens_session_id ON refresh_tokens (session_id);
+CREATE INDEX IF NOT EXISTS idx_coordenador_dep_user ON coordenador_departamento (id_user);
+CREATE INDEX IF NOT EXISTS idx_coordenador_dep_dep ON coordenador_departamento (id_dep);
+CREATE INDEX IF NOT EXISTS idx_coordenador_curso_user ON coordenador_curso (id_user);
+CREATE INDEX IF NOT EXISTS idx_coordenador_curso_curso ON coordenador_curso (id_curso);
 
 -- Adicionar coluna para API Key
 CREATE TABLE IF NOT EXISTS api_keys

@@ -1,57 +1,60 @@
 import pool from "@/lib/db.js";
 import {applyCors} from "@/lib/cors.js";
+import {ACTIONS, requirePermission, RESOURCES} from "@/lib/authorize.js";
 
 async function handler(req, res) {
     const {id} = req.query;
 
+    const hoursContext = (req) => ({ucId: id});
+
     if (req.method === "GET") {
-        try {
-            // First check if UC exists
-            const ucExists = await pool.query("SELECT 1 FROM uc WHERE id_uc = $1", [
-                id,
-            ]);
-            if (ucExists.rowCount === 0) {
-                return res.status(404).json({message: "UC inexistente."});
-            }
+        return requirePermission(ACTIONS.READ, RESOURCES.HOURS, hoursContext)(async (req, res) => {
+            try {
+                // First check if UC exists
+                const ucExists = await pool.query("SELECT 1 FROM uc WHERE id_uc = $1", [id]);
+                if (ucExists.rowCount === 0) {
+                    return res.status(404).json({message: "UC inexistente."});
+                }
 
-            // Then get hours (may be empty if not set yet)
-            const result = await pool.query(
-                "SELECT tipo, horas FROM uc_horas_contacto WHERE id_uc=$1",
-                [id]
-            );
-            return res.status(200).json(result.rows); // Returns empty array if no hours
-        } catch (error) {
-            console.error(error);
-            return res.status(500).json({message: "Internal Server Error"});
-        }
+                // Then get hours (may be empty if not set yet)
+                const result = await pool.query(
+                    "SELECT tipo, horas FROM uc_horas_contacto WHERE id_uc=$1",
+                    [id]
+                );
+                return res.status(200).json(result.rows); // Returns empty array if no hours
+            } catch (error) {
+                console.error(error);
+                return res.status(500).json({message: "Internal Server Error"});
+            }
+        })(req, res);
     } else if (req.method === "POST") {
-        const {tipo, horas} = req.body;
+        return requirePermission(ACTIONS.UPDATE, RESOURCES.HOURS, hoursContext)(async (req, res) => {
+            const {tipo, horas} = req.body;
 
-        if (!tipo || horas === undefined) {
-            return res.status(400).json({message: "Dados mal formatados."});
-        }
-
-        try {
-            const ucExists = await pool.query("SELECT 1 FROM uc WHERE id_uc = $1", [
-                id,
-            ]);
-            if (ucExists.rowCount === 0) {
-                return res.status(404).json({message: "UC inexistente."});
+            if (!tipo || horas === undefined) {
+                return res.status(400).json({message: "Dados mal formatados."});
             }
 
-            const result = await pool.query(
-                `INSERT INTO uc_horas_contacto (id_uc, tipo, horas)
-                 VALUES ($1, $2, $3) ON CONFLICT (id_uc, tipo)
-                 DO
-                UPDATE SET horas = $3
-                    RETURNING *`,
-                [id, tipo, horas]
-            );
-            return res.status(201).json(result.rows[0]);
-        } catch (error) {
-            console.error(error);
-            return res.status(500).json({message: "Internal Server Error"});
-        }
+            try {
+                const ucExists = await pool.query("SELECT 1 FROM uc WHERE id_uc = $1", [id]);
+                if (ucExists.rowCount === 0) {
+                    return res.status(404).json({message: "UC inexistente."});
+                }
+
+                const result = await pool.query(
+                    `INSERT INTO uc_horas_contacto (id_uc, tipo, horas)
+                     VALUES ($1, $2, $3) ON CONFLICT (id_uc, tipo)
+                     DO
+                    UPDATE SET horas = $3
+                        RETURNING *`,
+                    [id, tipo, horas]
+                );
+                return res.status(201).json(result.rows[0]);
+            } catch (error) {
+                console.error(error);
+                return res.status(500).json({message: "Internal Server Error"});
+            }
+        })(req, res);
     } else {
         res.setHeader("Allow", ["GET", "POST"]);
         return res.status(405).end(`Method ${req.method} Not Allowed`);

@@ -1,5 +1,6 @@
 import pool from '@/lib/db.js';
 import {applyCors} from '@/lib/cors.js';
+import {ACTIONS, requirePermission, RESOURCES} from '@/lib/authorize.js';
 
 async function handleGet(id, res) {
     try {
@@ -76,13 +77,23 @@ async function handleDelete(id, res) {
 async function handler(req, res) {
     const {id} = req.query;
 
+    const gradeContext = (req) => ({
+        professorId: req.body?.id_doc
+    });
+
     switch (req.method) {
         case 'GET':
-            return handleGet(id, res);
+            return requirePermission(ACTIONS.READ, RESOURCES.GRADES, gradeContext)(
+                handleGet.bind(null, id)
+            )(req, res);
         case 'PUT':
-            return handlePut(id, req, res);
+            return requirePermission(ACTIONS.UPDATE, RESOURCES.GRADES, gradeContext)(
+                handlePut.bind(null, id)
+            )(req, res);
         case 'DELETE':
-            return handleDelete(id, res);
+            return requirePermission(ACTIONS.DELETE, RESOURCES.GRADES, gradeContext)(
+                handleDelete.bind(null, id)
+            )(req, res);
         default:
             res.setHeader('Allow', ['GET', 'PUT', 'DELETE']);
             return res.status(405).end(`Method ${req.method} Not Allowed`);
@@ -93,4 +104,3 @@ export default async function handlerWithCors(req, res) {
     await applyCors(req, res);
     return handler(req, res);
 }
-

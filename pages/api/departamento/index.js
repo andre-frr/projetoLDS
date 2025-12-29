@@ -1,6 +1,6 @@
 import GrpcClient from "@/lib/grpc-client.js";
 import {applyCors} from "@/lib/cors.js";
-import {requireRole} from "@/lib/middleware.js";
+import {ACTIONS, requirePermission, RESOURCES} from "@/lib/authorize.js";
 
 function handleError(error, res) {
     console.error(error);
@@ -29,7 +29,7 @@ async function checkDuplicates(nome, sigla, res) {
 }
 
 const postHandler = async (req, res) => {
-    const {nome, sigla} = req.body;
+    const {nome, sigla, coordenadores} = req.body;
     if (!nome || !sigla) {
         return res.status(400).json({message: "Dados mal formatados."});
     }
@@ -43,6 +43,14 @@ const postHandler = async (req, res) => {
             sigla,
             ativo: true,
         });
+
+        // Assign coordinators if provided
+        if (coordenadores && Array.isArray(coordenadores) && coordenadores.length > 0) {
+            const {assignCoordenadorToDepartment} = await import('@/lib/permissions.js');
+            for (const userId of coordenadores) {
+                await assignCoordenadorToDepartment(userId, result.id_dep);
+            }
+        }
 
         return res.status(201).json(result);
     } catch (error) {
@@ -62,9 +70,9 @@ async function handleGet(res) {
 async function handler(req, res) {
     switch (req.method) {
         case "GET":
-            return handleGet(res);
+            return requirePermission(ACTIONS.READ, RESOURCES.DEPARTMENTS)(handleGet)(req, res);
         case "POST":
-            return requireRole("Administrador")(postHandler)(req, res);
+            return requirePermission(ACTIONS.CREATE, RESOURCES.DEPARTMENTS)(postHandler)(req, res);
         default:
             res.setHeader("Allow", ["GET", "POST"]);
             return res.status(405).end(`Method ${req.method} Not Allowed`);

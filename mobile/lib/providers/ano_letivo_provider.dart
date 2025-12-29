@@ -13,8 +13,11 @@ class AnoLetivoProvider with ChangeNotifier {
   String? _errorMessage;
 
   List<AnoLetivoModel> get items => _items;
+
   AnoLetivoModel? get currentYear => _currentYear;
+
   bool get isLoading => _isLoading;
+
   String? get errorMessage => _errorMessage;
 
   Future<void> loadAll() async {

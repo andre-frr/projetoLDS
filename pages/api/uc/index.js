@@ -1,5 +1,6 @@
 import GrpcClient from "@/lib/grpc-client.js";
 import {applyCors} from "@/lib/cors.js";
+import {ACTIONS, requirePermission, RESOURCES, ucContext} from "@/lib/authorize.js";
 
 function handleError(error, res) {
     const statusCode = error.statusCode || 500;
@@ -77,9 +78,9 @@ async function handlePost(req, res) {
 async function handler(req, res) {
     switch (req.method) {
         case "GET":
-            return handleGet(res);
+            return requirePermission(ACTIONS.READ, RESOURCES.UCS)(handleGet)(req, res);
         case "POST":
-            return handlePost(req, res);
+            return requirePermission(ACTIONS.CREATE, RESOURCES.UCS, ucContext)(handlePost)(req, res);
         default:
             res.setHeader("Allow", ["GET", "POST"]);
             return res.status(405).end(`Method ${req.method} Not Allowed`);

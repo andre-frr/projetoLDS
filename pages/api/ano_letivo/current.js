@@ -59,4 +59,3 @@ export default async function handlerWithCors(req, res) {
     await applyCors(req, res);
     return handler(req, res);
 }
-

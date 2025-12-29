@@ -1,5 +1,6 @@
 import GrpcClient from "@/lib/grpc-client.js";
 import {applyCors} from "@/lib/cors.js";
+import {ACTIONS, departmentContext, requirePermission, RESOURCES} from "@/lib/authorize.js";
 
 function handleError(error, res) {
     console.error(error);
@@ -89,11 +90,17 @@ async function handler(req, res) {
 
     switch (req.method) {
         case "GET":
-            return handleGet(id, res);
+            return requirePermission(ACTIONS.READ, RESOURCES.DEPARTMENTS, departmentContext)(
+                handleGet.bind(null, id)
+            )(req, res);
         case "PUT":
-            return handlePut(id, req, res);
+            return requirePermission(ACTIONS.UPDATE, RESOURCES.DEPARTMENTS, departmentContext)(
+                handlePut.bind(null, id)
+            )(req, res);
         case "DELETE":
-            return handleDelete(id, res);
+            return requirePermission(ACTIONS.DELETE, RESOURCES.DEPARTMENTS, departmentContext)(
+                handleDelete.bind(null, id)
+            )(req, res);
         default:
             res.setHeader("Allow", ["GET", "PUT", "DELETE"]);
             return res.status(405).end(`Method ${req.method} Not Allowed`);

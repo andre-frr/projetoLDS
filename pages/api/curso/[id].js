@@ -1,5 +1,6 @@
 import GrpcClient from "@/lib/grpc-client.js";
 import {applyCors} from "@/lib/cors.js";
+import {ACTIONS, courseContext, requirePermission, RESOURCES} from "@/lib/authorize.js";
 
 function handleError(error, res, notFoundMessage = "Curso inexistente.") {
     const statusCode = error.statusCode || 500;
@@ -80,11 +81,17 @@ async function handler(req, res) {
 
     switch (req.method) {
         case "GET":
-            return handleGet(id, res);
+            return requirePermission(ACTIONS.READ, RESOURCES.COURSES, courseContext)(
+                handleGet.bind(null, id)
+            )(req, res);
         case "PUT":
-            return handlePut(id, req, res);
+            return requirePermission(ACTIONS.UPDATE, RESOURCES.COURSES, courseContext)(
+                handlePut.bind(null, id)
+            )(req, res);
         case "DELETE":
-            return handleDelete(id, res);
+            return requirePermission(ACTIONS.DELETE, RESOURCES.COURSES, courseContext)(
+                handleDelete.bind(null, id)
+            )(req, res);
         default:
             res.setHeader("Allow", ["GET", "PUT", "DELETE"]);
             return res.status(405).end(`Method ${req.method} Not Allowed`);

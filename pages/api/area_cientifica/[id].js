@@ -1,5 +1,6 @@
 import GrpcClient from "@/lib/grpc-client.js";
 import {applyCors} from "@/lib/cors.js";
+import {ACTIONS, areaContext, requirePermission, RESOURCES} from "@/lib/authorize.js";
 
 function handleError(error, res, notFoundMessage = "Área científica inexistente.") {
     const statusCode = error.statusCode || 500;
@@ -94,11 +95,17 @@ async function handler(req, res) {
 
     switch (req.method) {
         case "GET":
-            return handleGet(id, res);
+            return requirePermission(ACTIONS.READ, RESOURCES.AREAS, areaContext)(
+                handleGet.bind(null, id)
+            )(req, res);
         case "PUT":
-            return handlePut(id, req, res);
+            return requirePermission(ACTIONS.UPDATE, RESOURCES.AREAS, areaContext)(
+                handlePut.bind(null, id)
+            )(req, res);
         case "DELETE":
-            return handleDelete(id, res);
+            return requirePermission(ACTIONS.DELETE, RESOURCES.AREAS, areaContext)(
+                handleDelete.bind(null, id)
+            )(req, res);
         default:
             res.setHeader("Allow", ["GET", "PUT", "DELETE"]);
             return res.status(405).end(`Method ${req.method} Not Allowed`);

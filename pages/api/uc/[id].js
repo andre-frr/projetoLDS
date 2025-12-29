@@ -1,5 +1,6 @@
 import GrpcClient from "@/lib/grpc-client.js";
 import {applyCors} from "@/lib/cors.js";
+import {ACTIONS, requirePermission, RESOURCES, ucContext} from "@/lib/authorize.js";
 
 function handleError(error, res, notFoundMessage = "UC inexistente.") {
     const statusCode = error.statusCode || 500;
@@ -100,11 +101,17 @@ async function handler(req, res) {
 
     switch (req.method) {
         case "GET":
-            return handleGet(id, res);
+            return requirePermission(ACTIONS.READ, RESOURCES.UCS, ucContext)(
+                handleGet.bind(null, id)
+            )(req, res);
         case "PUT":
-            return handlePut(id, req, res);
+            return requirePermission(ACTIONS.UPDATE, RESOURCES.UCS, ucContext)(
+                handlePut.bind(null, id)
+            )(req, res);
         case "DELETE":
-            return handleDelete(id, res);
+            return requirePermission(ACTIONS.DELETE, RESOURCES.UCS, ucContext)(
+                handleDelete.bind(null, id)
+            )(req, res);
         default:
             res.setHeader("Allow", ["GET", "PUT", "DELETE"]);
             return res.status(405).end(`Method ${req.method} Not Allowed`);

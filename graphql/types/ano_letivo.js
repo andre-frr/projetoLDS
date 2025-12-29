@@ -24,4 +24,3 @@ type Mutation {
     eliminarAnoLetivo(id: Int!): Boolean!
 }
 `;
-

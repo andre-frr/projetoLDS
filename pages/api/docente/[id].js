@@ -1,5 +1,6 @@
 import GrpcClient from "@/lib/grpc-client.js";
 import {applyCors} from "@/lib/cors.js";
+import {ACTIONS, requirePermission, RESOURCES} from "@/lib/authorize.js";
 
 function handleError(error, res, notFoundMessage = "Docente inexistente.") {
     const statusCode = error.statusCode || 500;
@@ -92,13 +93,25 @@ async function handleDelete(id, res) {
 async function handler(req, res) {
     const {id} = req.query;
 
+    // Context extractor for professor permissions
+    const professorContext = (req) => ({
+        professorId: id,
+        areaId: req.body?.id_area
+    });
+
     switch (req.method) {
         case "GET":
-            return handleGet(id, res);
+            return requirePermission(ACTIONS.READ, RESOURCES.PROFESSORS, professorContext)(
+                handleGet.bind(null, id)
+            )(req, res);
         case "PUT":
-            return handlePut(id, req, res);
+            return requirePermission(ACTIONS.UPDATE, RESOURCES.PROFESSORS, professorContext)(
+                handlePut.bind(null, id)
+            )(req, res);
         case "DELETE":
-            return handleDelete(id, res);
+            return requirePermission(ACTIONS.DELETE, RESOURCES.PROFESSORS, professorContext)(
+                handleDelete.bind(null, id)
+            )(req, res);
         default:
             res.setHeader("Allow", ["GET", "PUT", "DELETE"]);
             return res.status(405).end(`Method ${req.method} Not Allowed`);
