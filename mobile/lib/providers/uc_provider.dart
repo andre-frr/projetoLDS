@@ -159,4 +159,22 @@ class UCProvider with ChangeNotifier {
       return false;
     }
   }
+
+  // Update Hours Per ECTS
+  Future<bool> updateHorasPorEcts(int ucId, int horasPorEcts) async {
+    try {
+      await _ucService.updateHorasPorEcts(ucId, horasPorEcts);
+      // Update the local UC model
+      final index = _ucs.indexWhere((u) => u.id == ucId);
+      if (index != -1) {
+        _ucs[index] = _ucs[index].copyWith(horasPorEcts: horasPorEcts);
+        notifyListeners();
+      }
+      return true;
+    } catch (e) {
+      _errorMessage = e.toString().replaceAll('Exception: ', '');
+      notifyListeners();
+      return false;
+    }
+  }
 }

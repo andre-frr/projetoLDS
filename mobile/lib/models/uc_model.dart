@@ -6,6 +6,7 @@ class UCModel {
   final int anoCurso;
   final int semCurso;
   final double ects;
+  final int horasPorEcts;
   final bool ativo;
 
   UCModel({
@@ -16,6 +17,7 @@ class UCModel {
     required this.anoCurso,
     required this.semCurso,
     required this.ects,
+    this.horasPorEcts = 28,
     required this.ativo,
   });
 
@@ -30,6 +32,7 @@ class UCModel {
       ects: json['ects'] is String
           ? double.parse(json['ects'])
           : (json['ects'] as num).toDouble(),
+      horasPorEcts: json['horas_por_ects'] ?? 28,
       ativo: json['ativo'],
     );
   }
@@ -43,6 +46,7 @@ class UCModel {
       'ano_curso': anoCurso,
       'sem_curso': semCurso,
       'ects': ects,
+      'horas_por_ects': horasPorEcts,
       'ativo': ativo,
     };
   }
@@ -55,6 +59,7 @@ class UCModel {
     int? anoCurso,
     int? semCurso,
     double? ects,
+    int? horasPorEcts,
     bool? ativo,
   }) {
     return UCModel(
@@ -65,6 +70,7 @@ class UCModel {
       anoCurso: anoCurso ?? this.anoCurso,
       semCurso: semCurso ?? this.semCurso,
       ects: ects ?? this.ects,
+      horasPorEcts: horasPorEcts ?? this.horasPorEcts,
       ativo: ativo ?? this.ativo,
     );
   }

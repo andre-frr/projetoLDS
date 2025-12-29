@@ -20,13 +20,14 @@ class _UCHorasDialogState extends State<UCHorasDialog> {
     'PL': TextEditingController(text: '0'),
     'OT': TextEditingController(text: '0'),
   };
-  final TextEditingController _horasPerCreditController = TextEditingController(
-    text: '28',
-  );
+  late final TextEditingController _horasPerCreditController;
 
   @override
   void initState() {
     super.initState();
+    _horasPerCreditController = TextEditingController(
+      text: widget.uc.horasPorEcts.toString(),
+    );
     _loadHoras();
   }
 
@@ -76,6 +77,16 @@ class _UCHorasDialogState extends State<UCHorasDialog> {
     final provider = context.read<UCProvider>();
     bool success = true;
 
+    // Update hours per ECTS if changed
+    final newHorasPorEcts = int.tryParse(_horasPerCreditController.text) ?? 28;
+    if (newHorasPorEcts != widget.uc.horasPorEcts) {
+      final result = await provider.updateHorasPorEcts(
+        widget.uc.id,
+        newHorasPorEcts,
+      );
+      if (!result) success = false;
+    }
+
     // Update all hour types (including 0 values) to ensure database is in sync
     for (var entry in _controllers.entries) {
       final horas = int.tryParse(entry.value.text) ?? 0;
@@ -118,25 +129,26 @@ class _UCHorasDialogState extends State<UCHorasDialog> {
         ? (_contactHoras / _totalHoras).clamp(0.0, 1.0)
         : 0.0;
 
-    return SizedBox(
-      width: 500,
-      child: AlertDialog(
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Gerir Horas - ${widget.uc.nome}',
-              overflow: TextOverflow.ellipsis,
-              maxLines: 2,
-            ),
-            Text(
-              '${widget.uc.ects} ECTS = $_totalHoras Horas Totais',
-              style: Theme.of(context).textTheme.bodySmall,
-            ),
-          ],
-        ),
-        content: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 400),
+    return Dialog(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 500),
+        child: AlertDialog(
+          title: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Gerir Horas - ${widget.uc.nome}',
+                overflow: TextOverflow.ellipsis,
+                maxLines: 2,
+              ),
+              Text(
+                '${widget.uc.ects} ECTS = $_totalHoras Horas Totais',
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+            ],
+          ),
+          content: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 400),
           child: _isLoading
               ? const Center(child: CircularProgressIndicator())
               : SingleChildScrollView(
@@ -273,6 +285,7 @@ class _UCHorasDialogState extends State<UCHorasDialog> {
             child: const Text('Guardar'),
           ),
         ],
+        ),
       ),
     );
   }

@@ -42,7 +42,7 @@ async function validateArea(id_area, res) {
 }
 
 async function handlePost(req, res) {
-    const {nome, id_curso, id_area, ano_curso, sem_curso, ects} = req.body;
+    const {nome, id_curso, id_area, ano_curso, sem_curso, ects, horas_por_ects} = req.body;
 
     if (!nome || !id_curso || !id_area || !ano_curso || !sem_curso || ects == null) {
         return res.status(400).json({
@@ -64,6 +64,7 @@ async function handlePost(req, res) {
             ano_curso,
             sem_curso,
             ects,
+            horas_por_ects: horas_por_ects || 28,
             ativo: true,
         });
 

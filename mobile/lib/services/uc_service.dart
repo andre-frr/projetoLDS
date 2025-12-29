@@ -126,6 +126,17 @@ class UCService {
     }
   }
 
+  // Update hours per ECTS for a specific UC
+  Future<void> updateHorasPorEcts(int ucId, int horasPorEcts) async {
+    try {
+      await _dio.patch('/uc/$ucId/horas-por-ects', data: {'horas_por_ects': horasPorEcts});
+      _logger.i('Hours per ECTS updated successfully for UC: $ucId');
+    } on DioException catch (e) {
+      _logger.e('Failed to update hours per ECTS: ${e.message}');
+      throw Exception('Erro ao atualizar horas por ECTS');
+    }
+  }
+
   // Deactivate UC
   Future<void> deactivate(int id) async {
     try {

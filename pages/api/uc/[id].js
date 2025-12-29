@@ -53,7 +53,7 @@ async function validateAreaExists(id_area, res) {
 }
 
 async function handlePut(id, req, res) {
-    const {nome, id_curso, id_area, ano_curso, sem_curso, ects, ativo} = req.body;
+    const {nome, id_curso, id_area, ano_curso, sem_curso, ects, horas_por_ects, ativo} = req.body;
 
     try {
         const current = await GrpcClient.getById("uc", id);
@@ -75,6 +75,7 @@ async function handlePut(id, req, res) {
             ano_curso: ano_curso ?? current.ano_curso,
             sem_curso: sem_curso ?? current.sem_curso,
             ects: ects ?? current.ects,
+            horas_por_ects: horas_por_ects ?? current.horas_por_ects,
             ativo: ativo ?? current.ativo,
         };
 

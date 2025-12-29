@@ -111,16 +111,17 @@ CREATE TABLE IF NOT EXISTS curso
 
 CREATE TABLE IF NOT EXISTS uc
 (
-    id_uc     SERIAL PRIMARY KEY,
-    nome      TEXT          NOT NULL,
-    id_curso  INTEGER       NOT NULL REFERENCES curso (id_curso)
+    id_uc          SERIAL PRIMARY KEY,
+    nome           TEXT          NOT NULL,
+    id_curso       INTEGER       NOT NULL REFERENCES curso (id_curso)
         ON UPDATE CASCADE ON DELETE RESTRICT,
-    id_area   INTEGER       NOT NULL REFERENCES area_cientifica (id_area)
+    id_area        INTEGER       NOT NULL REFERENCES area_cientifica (id_area)
         ON UPDATE CASCADE ON DELETE RESTRICT,
-    ano_curso SMALLINT      NOT NULL CHECK (ano_curso BETWEEN 1 AND 10),
-    sem_curso SMALLINT      NOT NULL CHECK (sem_curso IN (1, 2)),
-    ects      NUMERIC(4, 1) NOT NULL CHECK (ects >= 0),
-    ativo     BOOLEAN       NOT NULL DEFAULT TRUE
+    ano_curso      SMALLINT      NOT NULL CHECK (ano_curso BETWEEN 1 AND 10),
+    sem_curso      SMALLINT      NOT NULL CHECK (sem_curso IN (1, 2)),
+    ects           NUMERIC(4, 1) NOT NULL CHECK (ects >= 0),
+    horas_por_ects SMALLINT               DEFAULT 28 CHECK (horas_por_ects > 0),
+    ativo          BOOLEAN       NOT NULL DEFAULT TRUE
 );
 
 -- Turmas por UC
