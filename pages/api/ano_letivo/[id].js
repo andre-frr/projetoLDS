@@ -1,6 +1,6 @@
 import GrpcClient from "@/lib/grpc-client.js";
 import {applyCors} from "@/lib/cors.js";
-import {requireRole} from "@/lib/middleware.js";
+import {ACTIONS, requirePermission, RESOURCES} from "@/lib/authorize.js";
 
 function handleError(error, res, notFoundMessage = "Ano letivo não encontrado.") {
     console.error(error);
@@ -10,7 +10,7 @@ function handleError(error, res, notFoundMessage = "Ano letivo não encontrado."
     });
 }
 
-async function handleGet(id, res) {
+async function handleGet(id, req, res) {
     try {
         const result = await GrpcClient.getById("ano_letivo", id);
         return res.status(200).json(result);
@@ -78,7 +78,7 @@ async function checkAssociatedData(id) {
     return result[0]?.has_data || false;
 }
 
-async function handleDelete(id, res) {
+async function handleDelete(id, req, res) {
     try {
         const current = await GrpcClient.getById("ano_letivo", id);
 
@@ -110,11 +110,17 @@ async function handler(req, res) {
 
     switch (req.method) {
         case "GET":
-            return handleGet(id, res);
+            return requirePermission(ACTIONS.READ, RESOURCES.ACADEMIC_YEARS)(
+                handleGet.bind(null, id)
+            )(req, res);
         case "PUT":
-            return requireRole("Administrador")(handlePut)(id, req, res);
+            return requirePermission(ACTIONS.UPDATE, RESOURCES.ACADEMIC_YEARS)(
+                handlePut.bind(null, id)
+            )(req, res);
         case "DELETE":
-            return requireRole("Administrador")(handleDelete)(id, res);
+            return requirePermission(ACTIONS.DELETE, RESOURCES.ACADEMIC_YEARS)(
+                handleDelete.bind(null, id)
+            )(req, res);
         default:
             res.setHeader("Allow", ["GET", "PUT", "DELETE"]);
             return res.status(405).end(`Method ${req.method} Not Allowed`);

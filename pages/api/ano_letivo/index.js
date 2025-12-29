@@ -1,6 +1,6 @@
 import GrpcClient from "@/lib/grpc-client.js";
 import {applyCors} from "@/lib/cors.js";
-import {requireRole} from "@/lib/middleware.js";
+import {ACTIONS, requirePermission, RESOURCES} from "@/lib/authorize.js";
 
 function handleError(error, res) {
     console.error(error);
@@ -57,7 +57,7 @@ async function handlePost(req, res) {
     }
 }
 
-async function handleGet(res) {
+async function handleGet(req, res) {
     try {
         const result = await GrpcClient.getAll("ano_letivo", {
             orderBy: "ano_inicio DESC, ano_fim DESC",
@@ -71,9 +71,9 @@ async function handleGet(res) {
 async function handler(req, res) {
     switch (req.method) {
         case "GET":
-            return handleGet(res);
+            return requirePermission(ACTIONS.READ, RESOURCES.ACADEMIC_YEARS)(handleGet)(req, res);
         case "POST":
-            return requireRole("Administrador")(handlePost)(req, res);
+            return requirePermission(ACTIONS.CREATE, RESOURCES.ACADEMIC_YEARS)(handlePost)(req, res);
         default:
             res.setHeader("Allow", ["GET", "POST"]);
             return res.status(405).end(`Method ${req.method} Not Allowed`);

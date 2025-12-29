@@ -1,12 +1,13 @@
 import GrpcClient from '@/lib/grpc-client.js';
 import {applyCors} from '@/lib/cors.js';
+import {ACTIONS, requirePermission, RESOURCES} from '@/lib/authorize.js';
 
 function handleError(error, res) {
     const statusCode = error.statusCode || 500;
     return res.status(statusCode).json({message: error.message || 'Internal Server Error'});
 }
 
-async function handleGet(res) {
+async function handleGet(req, res) {
     try {
         const result = await GrpcClient.getAll('grau');
         return res.status(200).json(result);
@@ -32,9 +33,9 @@ async function handlePost(req, res) {
 async function handler(req, res) {
     switch (req.method) {
         case 'GET':
-            return handleGet(res);
+            return requirePermission(ACTIONS.READ, RESOURCES.GRADES)(handleGet)(req, res);
         case 'POST':
-            return handlePost(req, res);
+            return requirePermission(ACTIONS.CREATE, RESOURCES.GRADES)(handlePost)(req, res);
         default:
             res.setHeader('Allow', ['GET', 'POST']);
             return res.status(405).end(`Method ${req.method} Not Allowed`);

@@ -1,12 +1,13 @@
 import GrpcClient from '@/lib/grpc-client.js';
 import {applyCors} from '@/lib/cors.js';
+import {ACTIONS, requirePermission, RESOURCES} from '@/lib/authorize.js';
 
 function handleError(error, res) {
     const statusCode = error.statusCode || 500;
     return res.status(statusCode).json({message: error.message || 'Internal Server Error'});
 }
 
-async function handleGet(res) {
+async function handleGet(req, res) {
     try {
         const result = await GrpcClient.getAll('docente_grau');
         return res.status(200).json(result);
@@ -49,6 +50,19 @@ async function handlePost(req, res) {
     }
 
     try {
+        // Validate that docentes can only create grades for themselves
+        if (req.user.role === 'Docente') {
+            const pool = (await import('@/lib/db.js')).default;
+            const docenteResult = await pool.query(
+                'SELECT id_user FROM docente WHERE id_doc = $1',
+                [id_doc]
+            );
+
+            if (docenteResult.rows.length === 0 || docenteResult.rows[0].id_user !== req.user.id) {
+                return res.status(403).json({message: 'You can only create grades for yourself'});
+            }
+        }
+
         const docenteError = await validateDocente(id_doc, res);
         if (docenteError) return docenteError;
 
@@ -69,11 +83,16 @@ async function handlePost(req, res) {
 }
 
 async function handler(req, res) {
+    // Context for professor grades
+    const professorContext = (req) => ({
+        professorId: req.body?.id_doc
+    });
+
     switch (req.method) {
         case 'GET':
-            return handleGet(res);
+            return requirePermission(ACTIONS.READ, RESOURCES.PROFESSORS)(handleGet)(req, res);
         case 'POST':
-            return handlePost(req, res);
+            return requirePermission(ACTIONS.CREATE, RESOURCES.PROFESSORS, professorContext)(handlePost)(req, res);
         default:
             res.setHeader('Allow', ['GET', 'POST']);
             return res.status(405).end(`Method ${req.method} Not Allowed`);

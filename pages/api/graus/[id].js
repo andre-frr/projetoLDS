@@ -1,5 +1,6 @@
 import GrpcClient from '@/lib/grpc-client.js';
 import {applyCors} from '@/lib/cors.js';
+import {ACTIONS, requirePermission, RESOURCES} from '@/lib/authorize.js';
 
 function handleError(error, res, notFoundMessage = 'Grau inexistente.') {
     const statusCode = error.statusCode || 500;
@@ -8,7 +9,7 @@ function handleError(error, res, notFoundMessage = 'Grau inexistente.') {
     });
 }
 
-async function handleGet(id, res) {
+async function handleGet(id, req, res) {
     try {
         const result = await GrpcClient.getById('grau', id);
         return res.status(200).json(result);
@@ -31,7 +32,7 @@ async function handlePut(id, req, res) {
     }
 }
 
-async function handleDelete(id, res) {
+async function handleDelete(id, req, res) {
     try {
         await GrpcClient.delete('grau', id);
         return res.status(204).end();
@@ -45,11 +46,11 @@ async function handler(req, res) {
 
     switch (req.method) {
         case 'GET':
-            return handleGet(id, res);
+            return requirePermission(ACTIONS.READ, RESOURCES.GRADES)(handleGet.bind(null, id))(req, res);
         case 'PUT':
-            return handlePut(id, req, res);
+            return requirePermission(ACTIONS.UPDATE, RESOURCES.GRADES)(handlePut.bind(null, id))(req, res);
         case 'DELETE':
-            return handleDelete(id, res);
+            return requirePermission(ACTIONS.DELETE, RESOURCES.GRADES)(handleDelete.bind(null, id))(req, res);
         default:
             res.setHeader('Allow', ['GET', 'PUT', 'DELETE']);
             return res.status(405).end(`Method ${req.method} Not Allowed`);
@@ -60,3 +61,4 @@ export default async function handlerWithCors(req, res) {
     await applyCors(req, res);
     return handler(req, res);
 }
+
