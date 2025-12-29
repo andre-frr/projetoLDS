@@ -10,16 +10,15 @@ function handleError(error, res) {
 }
 
 function findCurrentYear(years) {
-    const currentYear = new Date().getFullYear();
+    // With the database trigger, only one year can be active (arquivado = false) at a time
+    // So we simply return the non-archived year
+    const activeYear = years.find((year) => !year.arquivado);
 
-    const current = years.find(
-        (year) => year.ano_inicio <= currentYear && year.ano_fim >= currentYear
-    );
-
-    if (current) {
-        return {...current, is_current: true};
+    if (activeYear) {
+        return {...activeYear, is_current: true};
     }
 
+    // Fallback: if all years are archived, return the most recent one
     if (years.length > 0) {
         return {...years[0], is_current: false};
     }

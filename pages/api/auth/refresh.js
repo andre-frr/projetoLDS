@@ -5,7 +5,17 @@ import {randomUUID} from "node:crypto";
 import {applyCors} from "@/lib/cors.js";
 import {auditLog} from "@/lib/audit.js";
 
-const JWT_SECRET = process.env.JWT_SECRET || "your-secret-key";
+const JWT_SECRET = process.env.JWT_SECRET;
+
+// SECURITY: Fail fast if JWT_SECRET is not configured in production
+if (!JWT_SECRET) {
+    if (process.env.NODE_ENV === 'production') {
+        throw new Error('FATAL: JWT_SECRET must be set in production environment');
+    }
+    console.warn('WARNING: JWT_SECRET not set! Using insecure default. DO NOT use in production!');
+}
+
+const SECRET_TO_USE = JWT_SECRET || 'your-secret-key-INSECURE-DEV-ONLY';
 
 export default async function handler(req, res) {
     await applyCors(req, res);
@@ -87,7 +97,7 @@ export default async function handler(req, res) {
                 tv: user.token_version,
                 role: user.role,
             },
-            JWT_SECRET,
+            SECRET_TO_USE,
             {expiresIn: "15m"}
         );
 

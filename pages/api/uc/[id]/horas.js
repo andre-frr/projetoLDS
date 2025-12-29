@@ -6,14 +6,20 @@ async function handler(req, res) {
 
     if (req.method === "GET") {
         try {
+            // First check if UC exists
+            const ucExists = await pool.query("SELECT 1 FROM uc WHERE id_uc = $1", [
+                id,
+            ]);
+            if (ucExists.rowCount === 0) {
+                return res.status(404).json({message: "UC inexistente."});
+            }
+
+            // Then get hours (may be empty if not set yet)
             const result = await pool.query(
                 "SELECT tipo, horas FROM uc_horas_contacto WHERE id_uc=$1",
                 [id]
             );
-            if (result.rowCount === 0) {
-                return res.status(404).json({message: "UC inexistente."});
-            }
-            return res.status(200).json(result.rows);
+            return res.status(200).json(result.rows); // Returns empty array if no hours
         } catch (error) {
             console.error(error);
             return res.status(500).json({message: "Internal Server Error"});

@@ -106,8 +106,13 @@ class UCProvider with ChangeNotifier {
 
   // Reactivate UC
   Future<bool> reactivate(int id) async {
-    final uc = _ucs.firstWhere((u) => u.id == id);
-    return update(id, uc.copyWith(ativo: true));
+    final index = _ucs.indexWhere((u) => u.id == id);
+    if (index == -1) {
+      _errorMessage = 'UC não encontrada';
+      notifyListeners();
+      return false;
+    }
+    return update(id, _ucs[index].copyWith(ativo: true));
   }
 
   // Delete UC

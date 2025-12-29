@@ -286,30 +286,31 @@ CREATE INDEX IF NOT EXISTS idx_audit_logs_action ON audit_logs (action);
 --   Trigger para Arquivar Anos Letivos Antigos
 -- ==================================
 
--- Função para arquivar anos letivos anteriores quando um novo é criado
+-- Função para arquivar anos letivos quando um novo ano ativo é criado
+-- Garante que apenas um ano letivo está ativo (não arquivado) de cada vez
 CREATE OR REPLACE FUNCTION archive_previous_anos_letivos()
     RETURNS TRIGGER AS
 $$
 BEGIN
     -- Se o novo ano não está arquivado (é um ano ativo)
     IF NEW.arquivado = FALSE THEN
-        -- Arquiva todos os anos anteriores que não estão arquivados
+        -- Arquiva TODOS os outros anos letivos (não apenas os anteriores)
+        -- Isso garante que apenas o ano mais recente permanece ativo
         UPDATE ano_letivo
         SET arquivado = TRUE
         WHERE id_ano != NEW.id_ano
-          AND arquivado = FALSE
-          AND ano_inicio < NEW.ano_inicio;
+          AND arquivado = FALSE;
     END IF;
 
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
 
--- Trigger que executa após inserir um novo ano letivo
+-- Trigger que executa após inserir ou atualizar um ano letivo
+-- Garante que apenas um ano pode estar ativo (não arquivado) de cada vez
 DROP TRIGGER IF EXISTS trg_archive_anos_letivos ON ano_letivo;
 CREATE TRIGGER trg_archive_anos_letivos
-    AFTER INSERT
+    AFTER INSERT OR UPDATE OF arquivado
     ON ano_letivo
     FOR EACH ROW
 EXECUTE FUNCTION archive_previous_anos_letivos();
-

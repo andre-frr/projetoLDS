@@ -90,11 +90,7 @@ class _UCHorasDialogState extends State<UCHorasDialog> {
     // Update all hour types (including 0 values) to ensure database is in sync
     for (var entry in _controllers.entries) {
       final horas = int.tryParse(entry.value.text) ?? 0;
-      final result = await provider.updateHoras(
-        widget.uc.id,
-        entry.key,
-        horas,
-      );
+      final result = await provider.updateHoras(widget.uc.id, entry.key, horas);
       if (!result) success = false;
     }
 
@@ -149,142 +145,150 @@ class _UCHorasDialogState extends State<UCHorasDialog> {
           ),
           content: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 400),
-          child: _isLoading
-              ? const Center(child: CircularProgressIndicator())
-              : SingleChildScrollView(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      // Dashboard
-                      Card(
-                        color: Colors.blue.shade50,
-                        child: Padding(
-                          padding: const EdgeInsets.all(16.0),
-                          child: Column(
-                            children: [
-                              Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
-                                children: [
-                                  _buildStat(
-                                    'Contacto',
-                                    '$_contactHoras h',
-                                    Colors.blue,
-                                  ),
-                                  _buildStat(
-                                    'Autónomo',
-                                    '$_autonomousHoras h',
-                                    Colors.green,
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 16),
-                              ClipRRect(
-                                borderRadius: BorderRadius.circular(8),
-                                child: SizedBox(
-                                  height: 12,
-                                  child: Row(
-                                    children: [
-                                      if (contactPercent > 0)
-                                        Expanded(
-                                          flex: (contactPercent * 100).toInt(),
-                                          child: Container(color: Colors.blue),
-                                        ),
-                                      if (autonomousPercent > 0)
-                                        Expanded(
-                                          flex: (autonomousPercent * 100)
-                                              .toInt(),
-                                          child: Container(color: Colors.green),
-                                        ),
-                                    ],
+            child: _isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : SingleChildScrollView(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        // Dashboard
+                        Card(
+                          color: Colors.blue.shade50,
+                          child: Padding(
+                            padding: const EdgeInsets.all(16.0),
+                            child: Column(
+                              children: [
+                                Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    _buildStat(
+                                      'Contacto',
+                                      '$_contactHoras h',
+                                      Colors.blue,
+                                    ),
+                                    _buildStat(
+                                      'Autónomo',
+                                      '$_autonomousHoras h',
+                                      Colors.green,
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 16),
+                                ClipRRect(
+                                  borderRadius: BorderRadius.circular(8),
+                                  child: SizedBox(
+                                    height: 12,
+                                    child: Row(
+                                      children: [
+                                        if (contactPercent > 0)
+                                          Expanded(
+                                            flex: (contactPercent * 100)
+                                                .toInt(),
+                                            child: Container(
+                                              color: Colors.blue,
+                                            ),
+                                          ),
+                                        if (autonomousPercent > 0)
+                                          Expanded(
+                                            flex: (autonomousPercent * 100)
+                                                .toInt(),
+                                            child: Container(
+                                              color: Colors.green,
+                                            ),
+                                          ),
+                                      ],
+                                    ),
                                   ),
                                 ),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
                         ),
-                      ),
-                      const SizedBox(height: 24),
-                      // Hours per credit input
-                      TextField(
-                        controller: _horasPerCreditController,
-                        keyboardType: TextInputType.number,
-                        decoration: const InputDecoration(
-                          labelText: 'Horas de trabalho por ECTS',
-                          hintText: '28 (padrão)',
-                          border: OutlineInputBorder(),
-                          helperText:
-                              'Deixe vazio para usar 28 horas por defeito',
-                          helperMaxLines: 2,
+                        const SizedBox(height: 24),
+                        // Hours per credit input
+                        TextField(
+                          controller: _horasPerCreditController,
+                          keyboardType: TextInputType.number,
+                          decoration: const InputDecoration(
+                            labelText: 'Horas de trabalho por ECTS',
+                            hintText: '28 (padrão)',
+                            border: OutlineInputBorder(),
+                            helperText:
+                                'Deixe vazio para usar 28 horas por defeito',
+                            helperMaxLines: 2,
+                          ),
+                          onChanged: (_) => setState(() {}),
                         ),
-                        onChanged: (_) => setState(() {}),
-                      ),
-                      const SizedBox(height: 24),
-                      const Divider(),
-                      const SizedBox(height: 16),
-                      const Text(
-                        'Horas de Contacto',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      // Inputs
-                      for (var entry in _controllers.entries)
-                        Padding(
-                          padding: const EdgeInsets.only(bottom: 16.0),
-                          child: Row(
-                            children: [
-                              SizedBox(
-                                width: 50,
-                                child: Text(
-                                  entry.key,
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 16,
-                                  ),
-                                ),
-                              ),
-                              Expanded(
-                                child: TextField(
-                                  controller: entry.value,
-                                  keyboardType: TextInputType.number,
-                                  decoration: const InputDecoration(
-                                    labelText: 'Horas',
-                                    border: OutlineInputBorder(),
-                                    isDense: true,
-                                  ),
-                                  onChanged: (value) {
-                                    // Prevent negative values
-                                    final parsed = int.tryParse(value);
-                                    if (parsed != null && parsed < 0) {
-                                      entry.value.text = '0';
-                                      entry.value.selection = TextSelection.fromPosition(
-                                        TextPosition(offset: entry.value.text.length),
-                                      );
-                                    }
-                                    setState(() {});
-                                  },
-                                ),
-                              ),
-                            ],
+                        const SizedBox(height: 24),
+                        const Divider(),
+                        const SizedBox(height: 16),
+                        const Text(
+                          'Horas de Contacto',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
                           ),
                         ),
-                    ],
+                        const SizedBox(height: 16),
+                        // Inputs
+                        for (var entry in _controllers.entries)
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 16.0),
+                            child: Row(
+                              children: [
+                                SizedBox(
+                                  width: 50,
+                                  child: Text(
+                                    entry.key,
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 16,
+                                    ),
+                                  ),
+                                ),
+                                Expanded(
+                                  child: TextField(
+                                    controller: entry.value,
+                                    keyboardType: TextInputType.number,
+                                    decoration: const InputDecoration(
+                                      labelText: 'Horas',
+                                      border: OutlineInputBorder(),
+                                      isDense: true,
+                                    ),
+                                    onChanged: (value) {
+                                      // Prevent negative values
+                                      final parsed = int.tryParse(value);
+                                      if (parsed != null && parsed < 0) {
+                                        entry.value.text = '0';
+                                        entry.value.selection =
+                                            TextSelection.fromPosition(
+                                              TextPosition(
+                                                offset: entry.value.text.length,
+                                              ),
+                                            );
+                                      }
+                                      setState(() {});
+                                    },
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                      ],
+                    ),
                   ),
-                ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Cancelar'),
           ),
-          ElevatedButton(
-            onPressed: _isLoading ? null : _save,
-            child: const Text('Guardar'),
-          ),
-        ],
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Cancelar'),
+            ),
+            ElevatedButton(
+              onPressed: _isLoading ? null : _save,
+              child: const Text('Guardar'),
+            ),
+          ],
         ),
       ),
     );
