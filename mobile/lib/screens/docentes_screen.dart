@@ -3,8 +3,10 @@ import 'package:provider/provider.dart';
 
 import '../models/docente_model.dart';
 import '../providers/area_cientifica_provider.dart';
+import '../providers/auth_provider.dart';
 import '../providers/docente_provider.dart';
 import '../utils/constants.dart';
+import '../utils/permission_helper.dart';
 import '../widgets/app_navigation_drawer.dart';
 
 class DocentesScreen extends StatefulWidget {
@@ -267,9 +269,15 @@ class _DocentesScreenState extends State<DocentesScreen> {
         ],
       ),
       drawer: const AppNavigationDrawer(currentRoute: 'docentes'),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _showCreateDialog,
-        child: const Icon(Icons.add),
+      floatingActionButton: Consumer<AuthProvider>(
+        builder: (context, authProvider, child) {
+          return authProvider.canCreate(PermissionHelper.menuProfessors)
+              ? FloatingActionButton(
+                  onPressed: _showCreateDialog,
+                  child: const Icon(Icons.add),
+                )
+              : const SizedBox.shrink();
+        },
       ),
       body: Consumer<DocenteProvider>(
         builder: (context, provider, child) {
@@ -379,386 +387,412 @@ class _DocentesScreenState extends State<DocentesScreen> {
                       ),
                     ],
                   ),
-                  trailing: PopupMenuButton(
-                    itemBuilder: (context) => [
-                      const PopupMenuItem(
-                        value: 'edit',
-                        child: Row(
-                          children: [
-                            Icon(Icons.edit),
-                            SizedBox(width: 8),
-                            Text('Editar'),
-                          ],
-                        ),
-                      ),
-                      if (docente.ativo)
-                        const PopupMenuItem(
-                          value: 'deactivate',
-                          child: Row(
-                            children: [
-                              Icon(Icons.block),
-                              SizedBox(width: 8),
-                              Text('Inativar'),
-                            ],
-                          ),
-                        )
-                      else
-                        const PopupMenuItem(
-                          value: 'reactivate',
-                          child: Row(
-                            children: [
-                              Icon(Icons.check_circle, color: Colors.green),
-                              SizedBox(width: 8),
-                              Text(
-                                'Reativar',
-                                style: TextStyle(color: Colors.green),
-                              ),
-                            ],
-                          ),
-                        ),
-                      const PopupMenuItem(
-                        value: 'delete',
-                        child: Row(
-                          children: [
-                            Icon(Icons.delete, color: Colors.red),
-                            SizedBox(width: 8),
-                            Text(
-                              'Excluir',
-                              style: TextStyle(color: Colors.red),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                    onSelected: (value) async {
-                      if (value == 'edit') {
-                        final nomeController = TextEditingController(
-                          text: docente.nome,
-                        );
-                        final emailController = TextEditingController(
-                          text: docente.email,
-                        );
-                        int? selectedAreaId = docente.idArea;
-                        bool convidado = docente.convidado;
-                        bool autoGenerateEmail =
-                            false; // Start with manual for existing
+                  trailing: Consumer<AuthProvider>(
+                    builder: (context, authProvider, child) {
+                      final canEdit = authProvider.canEdit(
+                        PermissionHelper.menuProfessors,
+                      );
+                      final canDelete = authProvider.canDelete(
+                        PermissionHelper.menuProfessors,
+                      );
 
-                        // Function to generate email from name
-                        String generateEmailFromName(String name) {
-                          if (name.trim().isEmpty) return '';
-
-                          String normalized = name
-                              .toLowerCase()
-                              .replaceAll(RegExp(r'[àáâãäå]'), 'a')
-                              .replaceAll(RegExp(r'[èéêë]'), 'e')
-                              .replaceAll(RegExp(r'[ìíîï]'), 'i')
-                              .replaceAll(RegExp(r'[òóôõö]'), 'o')
-                              .replaceAll(RegExp(r'[ùúûü]'), 'u')
-                              .replaceAll(RegExp(r'[ç]'), 'c')
-                              .replaceAll(RegExp(r'[ñ]'), 'n')
-                              .replaceAll(RegExp(r'[^a-z\s]'), '')
-                              .trim();
-
-                          List<String> parts = normalized.split(RegExp(r'\s+'));
-                          if (parts.isEmpty ||
-                              (parts.length == 1 && parts[0].isEmpty)) {
-                            return '';
-                          }
-
-                          return parts.join('.');
-                        }
-
-                        final provider = context.read<DocenteProvider>();
-                        final areaProvider = context
-                            .read<AreaCientificaProvider>();
-                        final messenger = ScaffoldMessenger.of(context);
-
-                        // Load areas if not already loaded
-                        if (areaProvider.areas.isEmpty) {
-                          areaProvider.loadAll(incluirInativos: false);
-                        }
-
-                        // Add listener for auto-generation (but start disabled for edit)
-                        nomeController.addListener(() {
-                          if (autoGenerateEmail) {
-                            final username = generateEmailFromName(
-                              nomeController.text,
-                            );
-                            emailController.text = username.isNotEmpty
-                                ? '$username${AppConstants.emailDomain}'
-                                : '';
-                          }
-                        });
-
-                        final result = await showDialog<bool>(
-                          context: context,
-                          builder: (context) => StatefulBuilder(
-                            builder: (context, setState) => AlertDialog(
-                              title: const Text('Editar Docente'),
-                              content: Column(
-                                mainAxisSize: MainAxisSize.min,
+                      return PopupMenuButton(
+                        itemBuilder: (context) => [
+                          if (canEdit)
+                            const PopupMenuItem(
+                              value: 'edit',
+                              child: Row(
                                 children: [
-                                  TextField(
-                                    controller: nomeController,
-                                    textInputAction: TextInputAction.next,
-                                    decoration: const InputDecoration(
-                                      labelText: 'Nome',
-                                      hintText: 'André Ferreira',
-                                      border: OutlineInputBorder(),
-                                    ),
+                                  Icon(Icons.edit),
+                                  SizedBox(width: 8),
+                                  Text('Editar'),
+                                ],
+                              ),
+                            ),
+                          if (canEdit && docente.ativo)
+                            const PopupMenuItem(
+                              value: 'deactivate',
+                              child: Row(
+                                children: [
+                                  Icon(Icons.block),
+                                  SizedBox(width: 8),
+                                  Text('Inativar'),
+                                ],
+                              ),
+                            ),
+                          if (canEdit && !docente.ativo)
+                            const PopupMenuItem(
+                              value: 'reactivate',
+                              child: Row(
+                                children: [
+                                  Icon(Icons.check_circle, color: Colors.green),
+                                  SizedBox(width: 8),
+                                  Text(
+                                    'Reativar',
+                                    style: TextStyle(color: Colors.green),
                                   ),
-                                  const SizedBox(height: 16),
-                                  TextField(
-                                    controller: emailController,
-                                    textInputAction: TextInputAction.next,
-                                    keyboardType: TextInputType.emailAddress,
-                                    decoration: InputDecoration(
-                                      labelText: 'Email',
-                                      helperText: autoGenerateEmail
-                                          ? 'Gerado automaticamente a partir do nome'
-                                          : 'Digite manualmente',
-                                      border: const OutlineInputBorder(),
-                                      suffixIcon: IconButton(
-                                        icon: Icon(
-                                          autoGenerateEmail
-                                              ? Icons.lock
-                                              : Icons.edit,
-                                        ),
-                                        tooltip: autoGenerateEmail
-                                            ? 'Editar manualmente'
-                                            : 'Gerar automaticamente',
-                                        onPressed: () {
-                                          setState(() {
-                                            autoGenerateEmail =
-                                                !autoGenerateEmail;
-                                            if (autoGenerateEmail) {
-                                              final username =
-                                                  generateEmailFromName(
-                                                    nomeController.text,
-                                                  );
-                                              emailController.text =
-                                                  username.isNotEmpty
-                                                  ? '$username${AppConstants.emailDomain}'
-                                                  : '';
-                                            }
-                                          });
-                                        },
-                                      ),
-                                    ),
-                                    readOnly: autoGenerateEmail,
-                                    enabled: !autoGenerateEmail,
+                                ],
+                              ),
+                            ),
+                          if (canDelete)
+                            const PopupMenuItem(
+                              value: 'delete',
+                              child: Row(
+                                children: [
+                                  Icon(Icons.delete, color: Colors.red),
+                                  SizedBox(width: 8),
+                                  Text(
+                                    'Excluir',
+                                    style: TextStyle(color: Colors.red),
                                   ),
-                                  const SizedBox(height: 16),
-                                  Consumer<AreaCientificaProvider>(
-                                    builder: (context, areaProvider, child) {
-                                      if (areaProvider.isLoading) {
-                                        return const Center(
-                                          child: Padding(
-                                            padding: EdgeInsets.all(16.0),
-                                            child: CircularProgressIndicator(),
-                                          ),
-                                        );
-                                      }
+                                ],
+                              ),
+                            ),
+                        ],
+                        onSelected: (value) async {
+                          if (value == 'edit') {
+                            final nomeController = TextEditingController(
+                              text: docente.nome,
+                            );
+                            final emailController = TextEditingController(
+                              text: docente.email,
+                            );
+                            int? selectedAreaId = docente.idArea;
+                            bool convidado = docente.convidado;
+                            bool autoGenerateEmail =
+                                false; // Start with manual for existing
 
-                                      final activeAreas = areaProvider.areas
-                                          .where((area) => area.ativo)
-                                          .toList();
+                            // Function to generate email from name
+                            String generateEmailFromName(String name) {
+                              if (name.trim().isEmpty) return '';
 
-                                      return InputDecorator(
+                              String normalized = name
+                                  .toLowerCase()
+                                  .replaceAll(RegExp(r'[àáâãäå]'), 'a')
+                                  .replaceAll(RegExp(r'[èéêë]'), 'e')
+                                  .replaceAll(RegExp(r'[ìíîï]'), 'i')
+                                  .replaceAll(RegExp(r'[òóôõö]'), 'o')
+                                  .replaceAll(RegExp(r'[ùúûü]'), 'u')
+                                  .replaceAll(RegExp(r'[ç]'), 'c')
+                                  .replaceAll(RegExp(r'[ñ]'), 'n')
+                                  .replaceAll(RegExp(r'[^a-z\s]'), '')
+                                  .trim();
+
+                              List<String> parts = normalized.split(
+                                RegExp(r'\s+'),
+                              );
+                              if (parts.isEmpty ||
+                                  (parts.length == 1 && parts[0].isEmpty)) {
+                                return '';
+                              }
+
+                              return parts.join('.');
+                            }
+
+                            final provider = context.read<DocenteProvider>();
+                            final areaProvider = context
+                                .read<AreaCientificaProvider>();
+                            final messenger = ScaffoldMessenger.of(context);
+
+                            // Load areas if not already loaded
+                            if (areaProvider.areas.isEmpty) {
+                              areaProvider.loadAll(incluirInativos: false);
+                            }
+
+                            // Add listener for auto-generation (but start disabled for edit)
+                            nomeController.addListener(() {
+                              if (autoGenerateEmail) {
+                                final username = generateEmailFromName(
+                                  nomeController.text,
+                                );
+                                emailController.text = username.isNotEmpty
+                                    ? '$username${AppConstants.emailDomain}'
+                                    : '';
+                              }
+                            });
+
+                            final result = await showDialog<bool>(
+                              context: context,
+                              builder: (context) => StatefulBuilder(
+                                builder: (context, setState) => AlertDialog(
+                                  title: const Text('Editar Docente'),
+                                  content: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      TextField(
+                                        controller: nomeController,
+                                        textInputAction: TextInputAction.next,
                                         decoration: const InputDecoration(
-                                          labelText: 'Área Científica',
+                                          labelText: 'Nome',
+                                          hintText: 'André Ferreira',
                                           border: OutlineInputBorder(),
                                         ),
-                                        child: DropdownButtonHideUnderline(
-                                          child: DropdownButton<int>(
-                                            value: selectedAreaId,
-                                            isExpanded: true,
-                                            hint: const Text(
-                                              'Selecione uma área',
+                                      ),
+                                      const SizedBox(height: 16),
+                                      TextField(
+                                        controller: emailController,
+                                        textInputAction: TextInputAction.next,
+                                        keyboardType:
+                                            TextInputType.emailAddress,
+                                        decoration: InputDecoration(
+                                          labelText: 'Email',
+                                          helperText: autoGenerateEmail
+                                              ? 'Gerado automaticamente a partir do nome'
+                                              : 'Digite manualmente',
+                                          border: const OutlineInputBorder(),
+                                          suffixIcon: IconButton(
+                                            icon: Icon(
+                                              autoGenerateEmail
+                                                  ? Icons.lock
+                                                  : Icons.edit,
                                             ),
-                                            items: activeAreas.map((area) {
-                                              return DropdownMenuItem<int>(
-                                                value: area.id,
-                                                child: Text(
-                                                  '${area.nome} (${area.sigla})',
-                                                ),
-                                              );
-                                            }).toList(),
-                                            onChanged: (value) {
+                                            tooltip: autoGenerateEmail
+                                                ? 'Editar manualmente'
+                                                : 'Gerar automaticamente',
+                                            onPressed: () {
                                               setState(() {
-                                                selectedAreaId = value;
+                                                autoGenerateEmail =
+                                                    !autoGenerateEmail;
+                                                if (autoGenerateEmail) {
+                                                  final username =
+                                                      generateEmailFromName(
+                                                        nomeController.text,
+                                                      );
+                                                  emailController.text =
+                                                      username.isNotEmpty
+                                                      ? '$username${AppConstants.emailDomain}'
+                                                      : '';
+                                                }
                                               });
                                             },
                                           ),
                                         ),
-                                      );
-                                    },
+                                        readOnly: autoGenerateEmail,
+                                        enabled: !autoGenerateEmail,
+                                      ),
+                                      const SizedBox(height: 16),
+                                      Consumer<AreaCientificaProvider>(
+                                        builder: (context, areaProvider, child) {
+                                          if (areaProvider.isLoading) {
+                                            return const Center(
+                                              child: Padding(
+                                                padding: EdgeInsets.all(16.0),
+                                                child:
+                                                    CircularProgressIndicator(),
+                                              ),
+                                            );
+                                          }
+
+                                          final activeAreas = areaProvider.areas
+                                              .where((area) => area.ativo)
+                                              .toList();
+
+                                          return InputDecorator(
+                                            decoration: const InputDecoration(
+                                              labelText: 'Área Científica',
+                                              border: OutlineInputBorder(),
+                                            ),
+                                            child: DropdownButtonHideUnderline(
+                                              child: DropdownButton<int>(
+                                                value: selectedAreaId,
+                                                isExpanded: true,
+                                                hint: const Text(
+                                                  'Selecione uma área',
+                                                ),
+                                                items: activeAreas.map((area) {
+                                                  return DropdownMenuItem<int>(
+                                                    value: area.id,
+                                                    child: Text(
+                                                      '${area.nome} (${area.sigla})',
+                                                    ),
+                                                  );
+                                                }).toList(),
+                                                onChanged: (value) {
+                                                  setState(() {
+                                                    selectedAreaId = value;
+                                                  });
+                                                },
+                                              ),
+                                            ),
+                                          );
+                                        },
+                                      ),
+                                      const SizedBox(height: 16),
+                                      CheckboxListTile(
+                                        title: const Text('Convidado'),
+                                        value: convidado,
+                                        onChanged: (value) {
+                                          setState(() {
+                                            convidado = value ?? false;
+                                          });
+                                        },
+                                      ),
+                                    ],
                                   ),
-                                  const SizedBox(height: 16),
-                                  CheckboxListTile(
-                                    title: const Text('Convidado'),
-                                    value: convidado,
-                                    onChanged: (value) {
-                                      setState(() {
-                                        convidado = value ?? false;
-                                      });
-                                    },
+                                  actions: [
+                                    TextButton(
+                                      onPressed: () =>
+                                          Navigator.pop(context, false),
+                                      child: const Text('Cancelar'),
+                                    ),
+                                    ElevatedButton(
+                                      onPressed: () =>
+                                          Navigator.pop(context, true),
+                                      child: const Text('Salvar'),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            );
+
+                            if (result == true && mounted) {
+                              if (selectedAreaId == null) {
+                                messenger.showSnackBar(
+                                  const SnackBar(
+                                    content: Text(
+                                      'Selecione uma área científica',
+                                    ),
+                                    backgroundColor: Colors.orange,
+                                  ),
+                                );
+                                return;
+                              }
+
+                              final updatedDocente = DocenteModel(
+                                id: docente.id,
+                                nome: nomeController.text,
+                                email: emailController.text,
+                                idArea: selectedAreaId!,
+                                ativo: docente.ativo,
+                                convidado: convidado,
+                              );
+
+                              final success = await provider.update(
+                                docente.id,
+                                updatedDocente,
+                              );
+                              if (!mounted) return;
+                              if (success) {
+                                messenger.showSnackBar(
+                                  const SnackBar(
+                                    content: Text('Docente atualizado'),
+                                    backgroundColor: Colors.green,
+                                  ),
+                                );
+                              } else if (provider.error != null) {
+                                messenger.showSnackBar(
+                                  SnackBar(
+                                    content: Text(provider.error!),
+                                    backgroundColor: Colors.red,
+                                  ),
+                                );
+                              }
+                            }
+                          } else if (value == 'deactivate') {
+                            final provider = context.read<DocenteProvider>();
+                            final messenger = ScaffoldMessenger.of(context);
+
+                            final success = await provider.deactivate(
+                              docente.id,
+                            );
+                            if (!mounted) return;
+                            if (success) {
+                              messenger.showSnackBar(
+                                const SnackBar(
+                                  content: Text('Docente inativado'),
+                                ),
+                              );
+                            } else if (provider.error != null) {
+                              messenger.showSnackBar(
+                                SnackBar(
+                                  content: Text(provider.error!),
+                                  backgroundColor: Colors.red,
+                                ),
+                              );
+                            }
+                          } else if (value == 'reactivate') {
+                            final provider = context.read<DocenteProvider>();
+                            final messenger = ScaffoldMessenger.of(context);
+
+                            final updatedDocente = DocenteModel(
+                              id: docente.id,
+                              nome: docente.nome,
+                              email: docente.email,
+                              idArea: docente.idArea,
+                              ativo: true,
+                              convidado: docente.convidado,
+                            );
+                            final success = await provider.update(
+                              docente.id,
+                              updatedDocente,
+                            );
+                            if (!mounted) return;
+                            if (success) {
+                              messenger.showSnackBar(
+                                const SnackBar(
+                                  content: Text('Docente reativado'),
+                                  backgroundColor: Colors.green,
+                                ),
+                              );
+                            } else if (provider.error != null) {
+                              messenger.showSnackBar(
+                                SnackBar(
+                                  content: Text(provider.error!),
+                                  backgroundColor: Colors.red,
+                                ),
+                              );
+                            }
+                          } else if (value == 'delete') {
+                            final provider = context.read<DocenteProvider>();
+                            final messenger = ScaffoldMessenger.of(context);
+
+                            final confirm = await showDialog<bool>(
+                              context: context,
+                              builder: (context) => AlertDialog(
+                                title: const Text('Confirmar exclusão'),
+                                content: Text(
+                                  'Deseja realmente excluir o docente "${docente.nome}"?',
+                                ),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () =>
+                                        Navigator.pop(context, false),
+                                    child: const Text('Cancelar'),
+                                  ),
+                                  ElevatedButton(
+                                    onPressed: () =>
+                                        Navigator.pop(context, true),
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: Colors.red,
+                                    ),
+                                    child: const Text('Excluir'),
                                   ),
                                 ],
                               ),
-                              actions: [
-                                TextButton(
-                                  onPressed: () =>
-                                      Navigator.pop(context, false),
-                                  child: const Text('Cancelar'),
-                                ),
-                                ElevatedButton(
-                                  onPressed: () => Navigator.pop(context, true),
-                                  child: const Text('Salvar'),
-                                ),
-                              ],
-                            ),
-                          ),
-                        );
-
-                        if (result == true && mounted) {
-                          if (selectedAreaId == null) {
-                            messenger.showSnackBar(
-                              const SnackBar(
-                                content: Text('Selecione uma área científica'),
-                                backgroundColor: Colors.orange,
-                              ),
                             );
-                            return;
+
+                            if (confirm == true && mounted) {
+                              final success = await provider.delete(docente.id);
+                              if (!mounted) return;
+                              if (success) {
+                                messenger.showSnackBar(
+                                  const SnackBar(
+                                    content: Text('Docente excluído'),
+                                    backgroundColor: Colors.red,
+                                  ),
+                                );
+                              } else if (provider.error != null) {
+                                messenger.showSnackBar(
+                                  SnackBar(
+                                    content: Text(provider.error!),
+                                    backgroundColor: Colors.red,
+                                  ),
+                                );
+                              }
+                            }
                           }
-
-                          final updatedDocente = DocenteModel(
-                            id: docente.id,
-                            nome: nomeController.text,
-                            email: emailController.text,
-                            idArea: selectedAreaId!,
-                            ativo: docente.ativo,
-                            convidado: convidado,
-                          );
-
-                          final success = await provider.update(
-                            docente.id,
-                            updatedDocente,
-                          );
-                          if (!mounted) return;
-                          if (success) {
-                            messenger.showSnackBar(
-                              const SnackBar(
-                                content: Text('Docente atualizado'),
-                                backgroundColor: Colors.green,
-                              ),
-                            );
-                          } else if (provider.error != null) {
-                            messenger.showSnackBar(
-                              SnackBar(
-                                content: Text(provider.error!),
-                                backgroundColor: Colors.red,
-                              ),
-                            );
-                          }
-                        }
-                      } else if (value == 'deactivate') {
-                        final provider = context.read<DocenteProvider>();
-                        final messenger = ScaffoldMessenger.of(context);
-
-                        final success = await provider.deactivate(docente.id);
-                        if (!mounted) return;
-                        if (success) {
-                          messenger.showSnackBar(
-                            const SnackBar(content: Text('Docente inativado')),
-                          );
-                        } else if (provider.error != null) {
-                          messenger.showSnackBar(
-                            SnackBar(
-                              content: Text(provider.error!),
-                              backgroundColor: Colors.red,
-                            ),
-                          );
-                        }
-                      } else if (value == 'reactivate') {
-                        final provider = context.read<DocenteProvider>();
-                        final messenger = ScaffoldMessenger.of(context);
-
-                        final updatedDocente = DocenteModel(
-                          id: docente.id,
-                          nome: docente.nome,
-                          email: docente.email,
-                          idArea: docente.idArea,
-                          ativo: true,
-                          convidado: docente.convidado,
-                        );
-                        final success = await provider.update(
-                          docente.id,
-                          updatedDocente,
-                        );
-                        if (!mounted) return;
-                        if (success) {
-                          messenger.showSnackBar(
-                            const SnackBar(
-                              content: Text('Docente reativado'),
-                              backgroundColor: Colors.green,
-                            ),
-                          );
-                        } else if (provider.error != null) {
-                          messenger.showSnackBar(
-                            SnackBar(
-                              content: Text(provider.error!),
-                              backgroundColor: Colors.red,
-                            ),
-                          );
-                        }
-                      } else if (value == 'delete') {
-                        final provider = context.read<DocenteProvider>();
-                        final messenger = ScaffoldMessenger.of(context);
-
-                        final confirm = await showDialog<bool>(
-                          context: context,
-                          builder: (context) => AlertDialog(
-                            title: const Text('Confirmar exclusão'),
-                            content: Text(
-                              'Deseja realmente excluir o docente "${docente.nome}"?',
-                            ),
-                            actions: [
-                              TextButton(
-                                onPressed: () => Navigator.pop(context, false),
-                                child: const Text('Cancelar'),
-                              ),
-                              ElevatedButton(
-                                onPressed: () => Navigator.pop(context, true),
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: Colors.red,
-                                ),
-                                child: const Text('Excluir'),
-                              ),
-                            ],
-                          ),
-                        );
-
-                        if (confirm == true && mounted) {
-                          final success = await provider.delete(docente.id);
-                          if (!mounted) return;
-                          if (success) {
-                            messenger.showSnackBar(
-                              const SnackBar(
-                                content: Text('Docente excluído'),
-                                backgroundColor: Colors.red,
-                              ),
-                            );
-                          } else if (provider.error != null) {
-                            messenger.showSnackBar(
-                              SnackBar(
-                                content: Text(provider.error!),
-                                backgroundColor: Colors.red,
-                              ),
-                            );
-                          }
-                        }
-                      }
+                        },
+                      );
                     },
                   ),
                 ),

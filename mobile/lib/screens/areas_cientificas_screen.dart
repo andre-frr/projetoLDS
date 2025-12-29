@@ -4,7 +4,9 @@ import 'package:provider/provider.dart';
 import '../models/area_cientifica_model.dart';
 import '../models/departamento_model.dart';
 import '../providers/area_cientifica_provider.dart';
+import '../providers/auth_provider.dart';
 import '../providers/departamento_provider.dart';
+import '../utils/permission_helper.dart';
 import '../widgets/app_navigation_drawer.dart';
 
 class AreasCientificasScreen extends StatefulWidget {
@@ -183,9 +185,15 @@ class _AreasCientificasScreenState extends State<AreasCientificasScreen> {
         ],
       ),
       drawer: const AppNavigationDrawer(currentRoute: 'areas_cientificas'),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _showCreateDialog,
-        child: const Icon(Icons.add),
+      floatingActionButton: Consumer<AuthProvider>(
+        builder: (context, authProvider, child) {
+          return authProvider.canCreate(PermissionHelper.menuAreas)
+              ? FloatingActionButton(
+                  onPressed: _showCreateDialog,
+                  child: const Icon(Icons.add),
+                )
+              : const SizedBox.shrink();
+        },
       ),
       body: Consumer<AreaCientificaProvider>(
         builder: (context, provider, child) {
@@ -285,152 +293,170 @@ class _AreasCientificasScreenState extends State<AreasCientificasScreen> {
                   subtitle: Text(
                     '${area.ativo ? 'Ativo' : 'Inativo'} • Dept: ${_getDepartamentoNome(area.idDep)}',
                   ),
-                  trailing: PopupMenuButton(
-                    itemBuilder: (context) => [
-                      const PopupMenuItem(
-                        value: 'edit',
-                        child: Row(
-                          children: [
-                            Icon(Icons.edit),
-                            SizedBox(width: 8),
-                            Text('Editar'),
-                          ],
-                        ),
-                      ),
-                      if (area.ativo)
-                        const PopupMenuItem(
-                          value: 'deactivate',
-                          child: Row(
-                            children: [
-                              Icon(Icons.block),
-                              SizedBox(width: 8),
-                              Text('Inativar'),
-                            ],
-                          ),
-                        )
-                      else
-                        const PopupMenuItem(
-                          value: 'reactivate',
-                          child: Row(
-                            children: [
-                              Icon(Icons.check_circle, color: Colors.green),
-                              SizedBox(width: 8),
-                              Text(
-                                'Reativar',
-                                style: TextStyle(color: Colors.green),
+                  trailing: Consumer<AuthProvider>(
+                    builder: (context, authProvider, child) {
+                      final canEdit = authProvider.canEdit(
+                        PermissionHelper.menuAreas,
+                      );
+                      final canDelete = authProvider.canDelete(
+                        PermissionHelper.menuAreas,
+                      );
+
+                      return PopupMenuButton(
+                        itemBuilder: (context) => [
+                          if (canEdit)
+                            const PopupMenuItem(
+                              value: 'edit',
+                              child: Row(
+                                children: [
+                                  Icon(Icons.edit),
+                                  SizedBox(width: 8),
+                                  Text('Editar'),
+                                ],
                               ),
-                            ],
-                          ),
-                        ),
-                      const PopupMenuItem(
-                        value: 'delete',
-                        child: Row(
-                          children: [
-                            Icon(Icons.delete, color: Colors.red),
-                            SizedBox(width: 8),
-                            Text(
-                              'Excluir',
-                              style: TextStyle(color: Colors.red),
                             ),
-                          ],
-                        ),
-                      ),
-                    ],
-                    onSelected: (value) async {
-                      if (value == 'edit') {
-                        _showEditDialog(area);
-                      } else if (value == 'deactivate') {
-                        final provider = context.read<AreaCientificaProvider>();
-                        final messenger = ScaffoldMessenger.of(context);
-
-                        final success = await provider.deactivate(area.id);
-                        if (!mounted) return;
-                        if (success) {
-                          messenger.showSnackBar(
-                            const SnackBar(
-                              content: Text('Área científica inativada'),
-                            ),
-                          );
-                        } else if (provider.errorMessage != null) {
-                          messenger.showSnackBar(
-                            SnackBar(
-                              content: Text(provider.errorMessage!),
-                              backgroundColor: Colors.red,
-                            ),
-                          );
-                        }
-                      } else if (value == 'reactivate') {
-                        final provider = context.read<AreaCientificaProvider>();
-                        final messenger = ScaffoldMessenger.of(context);
-
-                        final updatedArea = area.copyWith(ativo: true);
-                        final success = await provider.update(
-                          area.id,
-                          updatedArea,
-                        );
-                        if (!mounted) return;
-                        if (success) {
-                          messenger.showSnackBar(
-                            const SnackBar(
-                              content: Text('Área científica reativada'),
-                              backgroundColor: Colors.green,
-                            ),
-                          );
-                        } else if (provider.errorMessage != null) {
-                          messenger.showSnackBar(
-                            SnackBar(
-                              content: Text(provider.errorMessage!),
-                              backgroundColor: Colors.red,
-                            ),
-                          );
-                        }
-                      } else if (value == 'delete') {
-                        final provider = context.read<AreaCientificaProvider>();
-                        final messenger = ScaffoldMessenger.of(context);
-
-                        final confirm = await showDialog<bool>(
-                          context: context,
-                          builder: (context) => AlertDialog(
-                            title: const Text('Confirmar exclusão'),
-                            content: Text(
-                              'Deseja realmente excluir a área científica "${area.nome}"?',
-                            ),
-                            actions: [
-                              TextButton(
-                                onPressed: () => Navigator.pop(context, false),
-                                child: const Text('Cancelar'),
+                          if (canEdit && area.ativo)
+                            const PopupMenuItem(
+                              value: 'deactivate',
+                              child: Row(
+                                children: [
+                                  Icon(Icons.block),
+                                  SizedBox(width: 8),
+                                  Text('Inativar'),
+                                ],
                               ),
-                              ElevatedButton(
-                                onPressed: () => Navigator.pop(context, true),
-                                style: ElevatedButton.styleFrom(
+                            ),
+                          if (canEdit && !area.ativo)
+                            const PopupMenuItem(
+                              value: 'reactivate',
+                              child: Row(
+                                children: [
+                                  Icon(Icons.check_circle, color: Colors.green),
+                                  SizedBox(width: 8),
+                                  Text(
+                                    'Reativar',
+                                    style: TextStyle(color: Colors.green),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          if (canDelete)
+                            const PopupMenuItem(
+                              value: 'delete',
+                              child: Row(
+                                children: [
+                                  Icon(Icons.delete, color: Colors.red),
+                                  SizedBox(width: 8),
+                                  Text(
+                                    'Excluir',
+                                    style: TextStyle(color: Colors.red),
+                                  ),
+                                ],
+                              ),
+                            ),
+                        ],
+                        onSelected: (value) async {
+                          if (value == 'edit') {
+                            _showEditDialog(area);
+                          } else if (value == 'deactivate') {
+                            final provider = context
+                                .read<AreaCientificaProvider>();
+                            final messenger = ScaffoldMessenger.of(context);
+
+                            final success = await provider.deactivate(area.id);
+                            if (!mounted) return;
+                            if (success) {
+                              messenger.showSnackBar(
+                                const SnackBar(
+                                  content: Text('Área científica inativada'),
+                                ),
+                              );
+                            } else if (provider.errorMessage != null) {
+                              messenger.showSnackBar(
+                                SnackBar(
+                                  content: Text(provider.errorMessage!),
                                   backgroundColor: Colors.red,
                                 ),
-                                child: const Text('Excluir'),
-                              ),
-                            ],
-                          ),
-                        );
+                              );
+                            }
+                          } else if (value == 'reactivate') {
+                            final provider = context
+                                .read<AreaCientificaProvider>();
+                            final messenger = ScaffoldMessenger.of(context);
 
-                        if (confirm == true && mounted) {
-                          final success = await provider.delete(area.id);
-                          if (!mounted) return;
-                          if (success) {
-                            messenger.showSnackBar(
-                              const SnackBar(
-                                content: Text('Área científica excluída'),
-                                backgroundColor: Colors.red,
+                            final updatedArea = area.copyWith(ativo: true);
+                            final success = await provider.update(
+                              area.id,
+                              updatedArea,
+                            );
+                            if (!mounted) return;
+                            if (success) {
+                              messenger.showSnackBar(
+                                const SnackBar(
+                                  content: Text('Área científica reativada'),
+                                  backgroundColor: Colors.green,
+                                ),
+                              );
+                            } else if (provider.errorMessage != null) {
+                              messenger.showSnackBar(
+                                SnackBar(
+                                  content: Text(provider.errorMessage!),
+                                  backgroundColor: Colors.red,
+                                ),
+                              );
+                            }
+                          } else if (value == 'delete') {
+                            final provider = context
+                                .read<AreaCientificaProvider>();
+                            final messenger = ScaffoldMessenger.of(context);
+
+                            final confirm = await showDialog<bool>(
+                              context: context,
+                              builder: (context) => AlertDialog(
+                                title: const Text('Confirmar exclusão'),
+                                content: Text(
+                                  'Deseja realmente excluir a área científica "${area.nome}"?',
+                                ),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () =>
+                                        Navigator.pop(context, false),
+                                    child: const Text('Cancelar'),
+                                  ),
+                                  ElevatedButton(
+                                    onPressed: () =>
+                                        Navigator.pop(context, true),
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: Colors.red,
+                                    ),
+                                    child: const Text('Excluir'),
+                                  ),
+                                ],
                               ),
                             );
-                          } else if (provider.errorMessage != null) {
-                            messenger.showSnackBar(
-                              SnackBar(
-                                content: Text(provider.errorMessage!),
-                                backgroundColor: Colors.red,
-                              ),
-                            );
+
+                            if (confirm == true && mounted) {
+                              final success = await provider.delete(area.id);
+                              if (!mounted) return;
+                              if (success) {
+                                messenger.showSnackBar(
+                                  const SnackBar(
+                                    content: Text('Área científica excluída'),
+                                    backgroundColor: Colors.red,
+                                  ),
+                                );
+                              } else if (provider.errorMessage != null) {
+                                messenger.showSnackBar(
+                                  SnackBar(
+                                    content: Text(provider.errorMessage!),
+                                    backgroundColor: Colors.red,
+                                  ),
+                                );
+                              }
+                            }
                           }
-                        }
-                      }
+                        },
+                      );
                     },
                   ),
                 ),

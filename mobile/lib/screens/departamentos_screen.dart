@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../models/departamento_model.dart';
+import '../providers/auth_provider.dart';
 import '../providers/departamento_provider.dart';
+import '../utils/permission_helper.dart';
 import '../widgets/app_navigation_drawer.dart';
 
 class DepartamentosScreen extends StatefulWidget {
@@ -153,9 +155,15 @@ class _DepartamentosScreenState extends State<DepartamentosScreen> {
         ],
       ),
       drawer: const AppNavigationDrawer(currentRoute: 'departamentos'),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _showCreateDialog,
-        child: const Icon(Icons.add),
+      floatingActionButton: Consumer<AuthProvider>(
+        builder: (context, authProvider, child) {
+          return authProvider.canCreate(PermissionHelper.menuDepartments)
+              ? FloatingActionButton(
+                  onPressed: _showCreateDialog,
+                  child: const Icon(Icons.add),
+                )
+              : const SizedBox.shrink();
+        },
       ),
       body: Consumer<DepartamentoProvider>(
         builder: (context, provider, child) {
@@ -250,236 +258,257 @@ class _DepartamentosScreenState extends State<DepartamentosScreen> {
                     ),
                   ),
                   subtitle: Text(dept.ativo ? 'Ativo' : 'Inativo'),
-                  trailing: PopupMenuButton(
-                    itemBuilder: (context) => [
-                      const PopupMenuItem(
-                        value: 'edit',
-                        child: Row(
-                          children: [
-                            Icon(Icons.edit),
-                            SizedBox(width: 8),
-                            Text('Editar'),
-                          ],
-                        ),
-                      ),
-                      if (dept.ativo)
-                        const PopupMenuItem(
-                          value: 'deactivate',
-                          child: Row(
-                            children: [
-                              Icon(Icons.block),
-                              SizedBox(width: 8),
-                              Text('Inativar'),
-                            ],
-                          ),
-                        )
-                      else
-                        const PopupMenuItem(
-                          value: 'reactivate',
-                          child: Row(
-                            children: [
-                              Icon(Icons.check_circle, color: Colors.green),
-                              SizedBox(width: 8),
-                              Text(
-                                'Reativar',
-                                style: TextStyle(color: Colors.green),
+                  trailing: Consumer<AuthProvider>(
+                    builder: (context, authProvider, child) {
+                      final canEdit = authProvider.canEdit(
+                        PermissionHelper.menuDepartments,
+                      );
+                      final canDelete = authProvider.canDelete(
+                        PermissionHelper.menuDepartments,
+                      );
+
+                      return PopupMenuButton(
+                        itemBuilder: (context) => [
+                          if (canEdit)
+                            const PopupMenuItem(
+                              value: 'edit',
+                              child: Row(
+                                children: [
+                                  Icon(Icons.edit),
+                                  SizedBox(width: 8),
+                                  Text('Editar'),
+                                ],
                               ),
-                            ],
-                          ),
-                        ),
-                      const PopupMenuItem(
-                        value: 'delete',
-                        child: Row(
-                          children: [
-                            Icon(Icons.delete, color: Colors.red),
-                            SizedBox(width: 8),
-                            Text(
-                              'Excluir',
-                              style: TextStyle(color: Colors.red),
                             ),
-                          ],
-                        ),
-                      ),
-                    ],
-                    onSelected: (value) async {
-                      if (value == 'edit') {
-                        final nomeController = TextEditingController(
-                          text: dept.nome,
-                        );
-                        final siglaController = TextEditingController(
-                          text: dept.sigla,
-                        );
-
-                        final provider = context.read<DepartamentoProvider>();
-                        final messenger = ScaffoldMessenger.of(context);
-
-                        final result = await showDialog<bool>(
-                          context: context,
-                          builder: (context) => AlertDialog(
-                            title: const Text('Editar Departamento'),
-                            content: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                TextField(
-                                  controller: nomeController,
-                                  textInputAction: TextInputAction.next,
-                                  decoration: const InputDecoration(
-                                    labelText: 'Nome',
-                                    border: OutlineInputBorder(),
-                                  ),
-                                ),
-                                const SizedBox(height: 16),
-                                TextField(
-                                  controller: siglaController,
-                                  textInputAction: TextInputAction.done,
-                                  onSubmitted: (_) =>
-                                      Navigator.pop(context, true),
-                                  decoration: const InputDecoration(
-                                    labelText: 'Sigla',
-                                    border: OutlineInputBorder(),
-                                  ),
-                                ),
-                              ],
+                          if (canEdit && dept.ativo)
+                            const PopupMenuItem(
+                              value: 'deactivate',
+                              child: Row(
+                                children: [
+                                  Icon(Icons.block),
+                                  SizedBox(width: 8),
+                                  Text('Inativar'),
+                                ],
+                              ),
                             ),
-                            actions: [
-                              TextButton(
-                                onPressed: () => Navigator.pop(context, false),
-                                child: const Text('Cancelar'),
+                          if (canEdit && !dept.ativo)
+                            const PopupMenuItem(
+                              value: 'reactivate',
+                              child: Row(
+                                children: [
+                                  Icon(Icons.check_circle, color: Colors.green),
+                                  SizedBox(width: 8),
+                                  Text(
+                                    'Reativar',
+                                    style: TextStyle(color: Colors.green),
+                                  ),
+                                ],
                               ),
-                              ElevatedButton(
-                                onPressed: () => Navigator.pop(context, true),
-                                child: const Text('Salvar'),
+                            ),
+                          if (canDelete)
+                            const PopupMenuItem(
+                              value: 'delete',
+                              child: Row(
+                                children: [
+                                  Icon(Icons.delete, color: Colors.red),
+                                  SizedBox(width: 8),
+                                  Text(
+                                    'Excluir',
+                                    style: TextStyle(color: Colors.red),
+                                  ),
+                                ],
                               ),
-                            ],
-                          ),
-                        );
+                            ),
+                        ],
+                        onSelected: (value) async {
+                          if (value == 'edit') {
+                            final nomeController = TextEditingController(
+                              text: dept.nome,
+                            );
+                            final siglaController = TextEditingController(
+                              text: dept.sigla,
+                            );
 
-                        if (result == true && mounted) {
-                          final updatedDept = DepartamentoModel(
-                            id: dept.id,
-                            nome: nomeController.text,
-                            sigla: siglaController.text,
-                            ativo: dept.ativo,
-                          );
+                            final provider = context
+                                .read<DepartamentoProvider>();
+                            final messenger = ScaffoldMessenger.of(context);
 
-                          final success = await provider.update(
-                            dept.id,
-                            updatedDept,
-                          );
-                          if (!mounted) return;
-                          if (success) {
-                            messenger.showSnackBar(
-                              const SnackBar(
-                                content: Text('Departamento atualizado'),
-                                backgroundColor: Colors.green,
+                            final result = await showDialog<bool>(
+                              context: context,
+                              builder: (context) => AlertDialog(
+                                title: const Text('Editar Departamento'),
+                                content: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    TextField(
+                                      controller: nomeController,
+                                      textInputAction: TextInputAction.next,
+                                      decoration: const InputDecoration(
+                                        labelText: 'Nome',
+                                        border: OutlineInputBorder(),
+                                      ),
+                                    ),
+                                    const SizedBox(height: 16),
+                                    TextField(
+                                      controller: siglaController,
+                                      textInputAction: TextInputAction.done,
+                                      onSubmitted: (_) =>
+                                          Navigator.pop(context, true),
+                                      decoration: const InputDecoration(
+                                        labelText: 'Sigla',
+                                        border: OutlineInputBorder(),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () =>
+                                        Navigator.pop(context, false),
+                                    child: const Text('Cancelar'),
+                                  ),
+                                  ElevatedButton(
+                                    onPressed: () =>
+                                        Navigator.pop(context, true),
+                                    child: const Text('Salvar'),
+                                  ),
+                                ],
                               ),
                             );
-                          } else if (provider.errorMessage != null) {
-                            messenger.showSnackBar(
-                              SnackBar(
-                                content: Text(provider.errorMessage!),
-                                backgroundColor: Colors.red,
-                              ),
-                            );
-                          }
-                        }
-                      } else if (value == 'deactivate') {
-                        final provider = context.read<DepartamentoProvider>();
-                        final messenger = ScaffoldMessenger.of(context);
 
-                        final success = await provider.deactivate(dept.id);
-                        if (!mounted) return;
-                        if (success) {
-                          messenger.showSnackBar(
-                            const SnackBar(
-                              content: Text('Departamento inativado'),
-                            ),
-                          );
-                        } else if (provider.errorMessage != null) {
-                          messenger.showSnackBar(
-                            SnackBar(
-                              content: Text(provider.errorMessage!),
-                              backgroundColor: Colors.red,
-                            ),
-                          );
-                        }
-                      } else if (value == 'reactivate') {
-                        final provider = context.read<DepartamentoProvider>();
-                        final messenger = ScaffoldMessenger.of(context);
+                            if (result == true && mounted) {
+                              final updatedDept = DepartamentoModel(
+                                id: dept.id,
+                                nome: nomeController.text,
+                                sigla: siglaController.text,
+                                ativo: dept.ativo,
+                              );
 
-                        final updatedDept = DepartamentoModel(
-                          id: dept.id,
-                          nome: dept.nome,
-                          sigla: dept.sigla,
-                          ativo: true,
-                        );
-                        final success = await provider.update(
-                          dept.id,
-                          updatedDept,
-                        );
-                        if (!mounted) return;
-                        if (success) {
-                          messenger.showSnackBar(
-                            const SnackBar(
-                              content: Text('Departamento reativado'),
-                              backgroundColor: Colors.green,
-                            ),
-                          );
-                        } else if (provider.errorMessage != null) {
-                          messenger.showSnackBar(
-                            SnackBar(
-                              content: Text(provider.errorMessage!),
-                              backgroundColor: Colors.red,
-                            ),
-                          );
-                        }
-                      } else if (value == 'delete') {
-                        final provider = context.read<DepartamentoProvider>();
-                        final messenger = ScaffoldMessenger.of(context);
+                              final success = await provider.update(
+                                dept.id,
+                                updatedDept,
+                              );
+                              if (!mounted) return;
+                              if (success) {
+                                messenger.showSnackBar(
+                                  const SnackBar(
+                                    content: Text('Departamento atualizado'),
+                                    backgroundColor: Colors.green,
+                                  ),
+                                );
+                              } else if (provider.errorMessage != null) {
+                                messenger.showSnackBar(
+                                  SnackBar(
+                                    content: Text(provider.errorMessage!),
+                                    backgroundColor: Colors.red,
+                                  ),
+                                );
+                              }
+                            }
+                          } else if (value == 'deactivate') {
+                            final provider = context
+                                .read<DepartamentoProvider>();
+                            final messenger = ScaffoldMessenger.of(context);
 
-                        final confirm = await showDialog<bool>(
-                          context: context,
-                          builder: (context) => AlertDialog(
-                            title: const Text('Confirmar exclusão'),
-                            content: Text(
-                              'Deseja realmente excluir o departamento "${dept.nome}"?',
-                            ),
-                            actions: [
-                              TextButton(
-                                onPressed: () => Navigator.pop(context, false),
-                                child: const Text('Cancelar'),
-                              ),
-                              ElevatedButton(
-                                onPressed: () => Navigator.pop(context, true),
-                                style: ElevatedButton.styleFrom(
+                            final success = await provider.deactivate(dept.id);
+                            if (!mounted) return;
+                            if (success) {
+                              messenger.showSnackBar(
+                                const SnackBar(
+                                  content: Text('Departamento inativado'),
+                                ),
+                              );
+                            } else if (provider.errorMessage != null) {
+                              messenger.showSnackBar(
+                                SnackBar(
+                                  content: Text(provider.errorMessage!),
                                   backgroundColor: Colors.red,
                                 ),
-                                child: const Text('Excluir'),
-                              ),
-                            ],
-                          ),
-                        );
+                              );
+                            }
+                          } else if (value == 'reactivate') {
+                            final provider = context
+                                .read<DepartamentoProvider>();
+                            final messenger = ScaffoldMessenger.of(context);
 
-                        if (confirm == true && mounted) {
-                          final success = await provider.delete(dept.id);
-                          if (!mounted) return;
-                          if (success) {
-                            messenger.showSnackBar(
-                              const SnackBar(
-                                content: Text('Departamento excluído'),
-                                backgroundColor: Colors.green,
+                            final updatedDept = DepartamentoModel(
+                              id: dept.id,
+                              nome: dept.nome,
+                              sigla: dept.sigla,
+                              ativo: true,
+                            );
+                            final success = await provider.update(
+                              dept.id,
+                              updatedDept,
+                            );
+                            if (!mounted) return;
+                            if (success) {
+                              messenger.showSnackBar(
+                                const SnackBar(
+                                  content: Text('Departamento reativado'),
+                                  backgroundColor: Colors.green,
+                                ),
+                              );
+                            } else if (provider.errorMessage != null) {
+                              messenger.showSnackBar(
+                                SnackBar(
+                                  content: Text(provider.errorMessage!),
+                                  backgroundColor: Colors.red,
+                                ),
+                              );
+                            }
+                          } else if (value == 'delete') {
+                            final provider = context
+                                .read<DepartamentoProvider>();
+                            final messenger = ScaffoldMessenger.of(context);
+
+                            final confirm = await showDialog<bool>(
+                              context: context,
+                              builder: (context) => AlertDialog(
+                                title: const Text('Confirmar exclusão'),
+                                content: Text(
+                                  'Deseja realmente excluir o departamento "${dept.nome}"?',
+                                ),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () =>
+                                        Navigator.pop(context, false),
+                                    child: const Text('Cancelar'),
+                                  ),
+                                  ElevatedButton(
+                                    onPressed: () =>
+                                        Navigator.pop(context, true),
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: Colors.red,
+                                    ),
+                                    child: const Text('Excluir'),
+                                  ),
+                                ],
                               ),
                             );
-                          } else if (provider.errorMessage != null) {
-                            messenger.showSnackBar(
-                              SnackBar(
-                                content: Text(provider.errorMessage!),
-                                backgroundColor: Colors.red,
-                              ),
-                            );
+
+                            if (confirm == true && mounted) {
+                              final success = await provider.delete(dept.id);
+                              if (!mounted) return;
+                              if (success) {
+                                messenger.showSnackBar(
+                                  const SnackBar(
+                                    content: Text('Departamento excluído'),
+                                    backgroundColor: Colors.green,
+                                  ),
+                                );
+                              } else if (provider.errorMessage != null) {
+                                messenger.showSnackBar(
+                                  SnackBar(
+                                    content: Text(provider.errorMessage!),
+                                    backgroundColor: Colors.red,
+                                  ),
+                                );
+                              }
+                            }
                           }
-                        }
-                      }
+                        },
+                      );
                     },
                   ),
                 ),

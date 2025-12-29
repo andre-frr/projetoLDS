@@ -3,6 +3,8 @@ import 'package:provider/provider.dart';
 
 import '../models/ano_letivo_model.dart';
 import '../providers/ano_letivo_provider.dart';
+import '../providers/auth_provider.dart';
+import '../utils/permission_helper.dart';
 import '../widgets/app_navigation_drawer.dart';
 
 class AnosLetivosScreen extends StatefulWidget {
@@ -372,9 +374,15 @@ class _AnosLetivosScreenState extends State<AnosLetivosScreen> {
         ],
       ),
       drawer: const AppNavigationDrawer(currentRoute: 'anos_letivos'),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => _showCreateDialog(isNewYear: false),
-        child: const Icon(Icons.add),
+      floatingActionButton: Consumer<AuthProvider>(
+        builder: (context, authProvider, child) {
+          return authProvider.canCreate(PermissionHelper.menuAcademicYears)
+              ? FloatingActionButton(
+                  onPressed: () => _showCreateDialog(isNewYear: false),
+                  child: const Icon(Icons.add),
+                )
+              : const SizedBox.shrink();
+        },
       ),
       body: Consumer<AnoLetivoProvider>(
         builder: (context, provider, child) {
@@ -552,34 +560,51 @@ class _AnosLetivosScreenState extends State<AnosLetivosScreen> {
                                 : Colors.grey,
                           ),
                         ),
-                        trailing: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            IconButton(
-                              icon: Icon(
-                                Icons.edit,
-                                color: isArchived ? Colors.grey[400] : null,
-                              ),
-                              onPressed: isArchived
-                                  ? null
-                                  : () => _showEditDialog(item),
-                              tooltip: isArchived
-                                  ? 'Anos arquivados não podem ser editados'
-                                  : 'Editar',
-                            ),
-                            IconButton(
-                              icon: Icon(
-                                Icons.delete,
-                                color: isArchived ? Colors.grey[400] : null,
-                              ),
-                              onPressed: isArchived
-                                  ? null
-                                  : () => _showDeleteDialog(item),
-                              tooltip: isArchived
-                                  ? 'Anos arquivados não podem ser eliminados'
-                                  : 'Eliminar',
-                            ),
-                          ],
+                        trailing: Consumer<AuthProvider>(
+                          builder: (context, authProvider, child) {
+                            final canEdit = authProvider.canEdit(
+                              PermissionHelper.menuAcademicYears,
+                            );
+                            final canDelete = authProvider.canDelete(
+                              PermissionHelper.menuAcademicYears,
+                            );
+
+                            return Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                if (canEdit)
+                                  IconButton(
+                                    icon: Icon(
+                                      Icons.edit,
+                                      color: isArchived
+                                          ? Colors.grey[400]
+                                          : null,
+                                    ),
+                                    onPressed: isArchived
+                                        ? null
+                                        : () => _showEditDialog(item),
+                                    tooltip: isArchived
+                                        ? 'Anos arquivados não podem ser editados'
+                                        : 'Editar',
+                                  ),
+                                if (canDelete)
+                                  IconButton(
+                                    icon: Icon(
+                                      Icons.delete,
+                                      color: isArchived
+                                          ? Colors.grey[400]
+                                          : null,
+                                    ),
+                                    onPressed: isArchived
+                                        ? null
+                                        : () => _showDeleteDialog(item),
+                                    tooltip: isArchived
+                                        ? 'Anos arquivados não podem ser eliminados'
+                                        : 'Eliminar',
+                                  ),
+                              ],
+                            );
+                          },
                         ),
                       ),
                     );

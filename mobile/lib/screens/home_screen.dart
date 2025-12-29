@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../providers/auth_provider.dart';
+import '../utils/permission_helper.dart';
 import 'anos_letivos_screen.dart';
 import 'areas_cientificas_screen.dart';
 import 'cursos_screen.dart';
@@ -81,6 +82,13 @@ class HomeScreen extends StatelessWidget {
                         fontSize: 14,
                       ),
                     ),
+                    Text(
+                      PermissionHelper.getRoleName(user.role),
+                      style: const TextStyle(
+                        color: Colors.white60,
+                        fontSize: 12,
+                      ),
+                    ),
                   ],
                 ],
               ),
@@ -92,95 +100,111 @@ class HomeScreen extends StatelessWidget {
                 Navigator.pop(context);
               },
             ),
-            ListTile(
-              leading: const Icon(Icons.business),
-              title: const Text('Departamentos'),
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const DepartamentosScreen(),
-                  ),
-                );
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.school),
-              title: const Text('Cursos'),
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const CursosScreen()),
-                );
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.person),
-              title: const Text('Docentes'),
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const DocentesScreen(),
-                  ),
-                );
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.science),
-              title: const Text('Áreas Científicas'),
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const AreasCientificasScreen(),
-                  ),
-                );
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.menu_book),
-              title: const Text('Unidades Curriculares'),
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const UCsScreen()),
-                );
-              },
-            ),
+            // Departamentos - Only for Admin and Coordenador
+            if (authProvider.canViewMenu(PermissionHelper.menuDepartments))
+              ListTile(
+                leading: const Icon(Icons.business),
+                title: const Text('Departamentos'),
+                onTap: () {
+                  Navigator.pop(context);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const DepartamentosScreen(),
+                    ),
+                  );
+                },
+              ),
+            // Cursos - All roles can view
+            if (authProvider.canViewMenu(PermissionHelper.menuCourses))
+              ListTile(
+                leading: const Icon(Icons.school),
+                title: const Text('Cursos'),
+                onTap: () {
+                  Navigator.pop(context);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const CursosScreen(),
+                    ),
+                  );
+                },
+              ),
+            // Docentes - Only for Admin and Coordenador
+            if (authProvider.canViewMenu(PermissionHelper.menuProfessors))
+              ListTile(
+                leading: const Icon(Icons.person),
+                title: const Text('Docentes'),
+                onTap: () {
+                  Navigator.pop(context);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const DocentesScreen(),
+                    ),
+                  );
+                },
+              ),
+            // Áreas Científicas - Only for Admin and Coordenador
+            if (authProvider.canViewMenu(PermissionHelper.menuAreas))
+              ListTile(
+                leading: const Icon(Icons.science),
+                title: const Text('Áreas Científicas'),
+                onTap: () {
+                  Navigator.pop(context);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const AreasCientificasScreen(),
+                    ),
+                  );
+                },
+              ),
+            // Unidades Curriculares - All roles can view
+            if (authProvider.canViewMenu(PermissionHelper.menuUCs))
+              ListTile(
+                leading: const Icon(Icons.menu_book),
+                title: const Text('Unidades Curriculares'),
+                onTap: () {
+                  Navigator.pop(context);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const UCsScreen()),
+                  );
+                },
+              ),
             const Divider(),
-            ListTile(
-              leading: const Icon(Icons.calendar_today),
-              title: const Text('Anos Letivos'),
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const AnosLetivosScreen(),
-                  ),
-                );
-              },
-            ),
+            // Anos Letivos - Only for Admin and Coordenador
+            if (authProvider.canViewMenu(PermissionHelper.menuAcademicYears))
+              ListTile(
+                leading: const Icon(Icons.calendar_today),
+                title: const Text('Anos Letivos'),
+                onTap: () {
+                  Navigator.pop(context);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const AnosLetivosScreen(),
+                    ),
+                  );
+                },
+              ),
             const Divider(),
-            ListTile(
-              leading: const Icon(Icons.settings),
-              title: const Text('Definições'),
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const SettingsScreen(),
-                  ),
-                );
-              },
-            ),
+            // Settings - All roles can access
+            if (authProvider.canViewMenu(PermissionHelper.menuSettings))
+              ListTile(
+                leading: const Icon(Icons.settings),
+                title: const Text('Definições'),
+                onTap: () {
+                  Navigator.pop(context);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const SettingsScreen(),
+                    ),
+                  );
+                },
+              ),
           ],
         ),
       ),

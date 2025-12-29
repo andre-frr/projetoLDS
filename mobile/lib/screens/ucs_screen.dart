@@ -4,8 +4,10 @@ import 'package:provider/provider.dart';
 import '../models/curso_model.dart';
 import '../models/uc_model.dart';
 import '../providers/area_cientifica_provider.dart';
+import '../providers/auth_provider.dart';
 import '../providers/curso_provider.dart';
 import '../providers/uc_provider.dart';
+import '../utils/permission_helper.dart';
 import '../utils/validators.dart';
 import '../widgets/app_navigation_drawer.dart';
 import '../widgets/uc_horas_dialog.dart';
@@ -533,9 +535,15 @@ class _UCsScreenState extends State<UCsScreen> {
         ],
       ),
       drawer: const AppNavigationDrawer(currentRoute: 'ucs'),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _showCreateDialog,
-        child: const Icon(Icons.add),
+      floatingActionButton: Consumer<AuthProvider>(
+        builder: (context, authProvider, child) {
+          return authProvider.canCreate(PermissionHelper.menuUCs)
+              ? FloatingActionButton(
+                  onPressed: _showCreateDialog,
+                  child: const Icon(Icons.add),
+                )
+              : const SizedBox.shrink();
+        },
       ),
       body: Column(
         children: [
@@ -869,168 +877,196 @@ class _UCsScreenState extends State<UCsScreen> {
                             ).textTheme.bodySmall?.color,
                           ),
                         ),
-                        trailing: PopupMenuButton(
-                          itemBuilder: (context) => [
-                            const PopupMenuItem(
-                              value: 'edit',
-                              child: Row(
-                                children: [
-                                  Icon(Icons.edit),
-                                  SizedBox(width: 8),
-                                  Text('Editar'),
-                                ],
-                              ),
-                            ),
-                            const PopupMenuItem(
-                              value: 'horas',
-                              child: Row(
-                                children: [
-                                  Icon(Icons.access_time),
-                                  SizedBox(width: 8),
-                                  Text('Gerir Horas'),
-                                ],
-                              ),
-                            ),
-                            if (uc.ativo)
-                              const PopupMenuItem(
-                                value: 'deactivate',
-                                child: Row(
-                                  children: [
-                                    Icon(Icons.block),
-                                    SizedBox(width: 8),
-                                    Text('Inativar'),
-                                  ],
-                                ),
-                              )
-                            else
-                              const PopupMenuItem(
-                                value: 'reactivate',
-                                child: Row(
-                                  children: [
-                                    Icon(
-                                      Icons.check_circle,
-                                      color: Colors.green,
-                                    ),
-                                    SizedBox(width: 8),
-                                    Text(
-                                      'Reativar',
-                                      style: TextStyle(color: Colors.green),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            const PopupMenuItem(
-                              value: 'delete',
-                              child: Row(
-                                children: [
-                                  Icon(Icons.delete, color: Colors.red),
-                                  SizedBox(width: 8),
-                                  Text(
-                                    'Excluir',
-                                    style: TextStyle(color: Colors.red),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                          onSelected: (value) async {
-                            if (value == 'edit') {
-                              _showEditDialog(uc);
-                            } else if (value == 'horas') {
-                              showDialog(
-                                context: context,
-                                builder: (context) => UCHorasDialog(uc: uc),
-                              );
-                            } else if (value == 'deactivate') {
-                              final provider = context.read<UCProvider>();
-                              final messenger = ScaffoldMessenger.of(context);
+                        trailing: Consumer<AuthProvider>(
+                          builder: (context, authProvider, child) {
+                            final canEdit = authProvider.canEdit(
+                              PermissionHelper.menuUCs,
+                            );
+                            final canDelete = authProvider.canDelete(
+                              PermissionHelper.menuUCs,
+                            );
+                            final canManageHours = authProvider
+                                .canManageHours();
 
-                              final success = await provider.deactivate(uc.id);
-                              if (!mounted) return;
-                              if (success) {
-                                messenger.showSnackBar(
-                                  const SnackBar(
-                                    content: Text('UC inativada'),
-                                    backgroundColor: Colors.orange,
-                                  ),
-                                );
-                              } else if (provider.errorMessage != null) {
-                                messenger.showSnackBar(
-                                  SnackBar(
-                                    content: Text(provider.errorMessage!),
-                                    backgroundColor: Colors.red,
-                                  ),
-                                );
-                              }
-                            } else if (value == 'reactivate') {
-                              final provider = context.read<UCProvider>();
-                              final messenger = ScaffoldMessenger.of(context);
-
-                              final success = await provider.reactivate(uc.id);
-                              if (!mounted) return;
-                              if (success) {
-                                messenger.showSnackBar(
-                                  const SnackBar(
-                                    content: Text('UC reativada'),
-                                    backgroundColor: Colors.green,
-                                  ),
-                                );
-                              } else if (provider.errorMessage != null) {
-                                messenger.showSnackBar(
-                                  SnackBar(
-                                    content: Text(provider.errorMessage!),
-                                    backgroundColor: Colors.red,
-                                  ),
-                                );
-                              }
-                            } else if (value == 'delete') {
-                              final provider = context.read<UCProvider>();
-                              final navigator = Navigator.of(context);
-                              final messenger = ScaffoldMessenger.of(context);
-
-                              final confirm = await showDialog<bool>(
-                                context: context,
-                                builder: (context) => AlertDialog(
-                                  title: const Text('Confirmar Exclusão'),
-                                  content: Text(
-                                    'Tem certeza que deseja excluir a UC "${uc.nome}"?',
-                                  ),
-                                  actions: [
-                                    TextButton(
-                                      onPressed: () => navigator.pop(false),
-                                      child: const Text('Cancelar'),
+                            return PopupMenuButton(
+                              itemBuilder: (context) => [
+                                if (canEdit)
+                                  const PopupMenuItem(
+                                    value: 'edit',
+                                    child: Row(
+                                      children: [
+                                        Icon(Icons.edit),
+                                        SizedBox(width: 8),
+                                        Text('Editar'),
+                                      ],
                                     ),
-                                    ElevatedButton(
-                                      onPressed: () => navigator.pop(true),
-                                      style: ElevatedButton.styleFrom(
+                                  ),
+                                if (canManageHours)
+                                  const PopupMenuItem(
+                                    value: 'horas',
+                                    child: Row(
+                                      children: [
+                                        Icon(Icons.access_time),
+                                        SizedBox(width: 8),
+                                        Text('Gerir Horas'),
+                                      ],
+                                    ),
+                                  ),
+                                if (canEdit && uc.ativo)
+                                  const PopupMenuItem(
+                                    value: 'deactivate',
+                                    child: Row(
+                                      children: [
+                                        Icon(Icons.block),
+                                        SizedBox(width: 8),
+                                        Text('Inativar'),
+                                      ],
+                                    ),
+                                  ),
+                                if (canEdit && !uc.ativo)
+                                  const PopupMenuItem(
+                                    value: 'reactivate',
+                                    child: Row(
+                                      children: [
+                                        Icon(
+                                          Icons.check_circle,
+                                          color: Colors.green,
+                                        ),
+                                        SizedBox(width: 8),
+                                        Text(
+                                          'Reativar',
+                                          style: TextStyle(color: Colors.green),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                if (canDelete)
+                                  const PopupMenuItem(
+                                    value: 'delete',
+                                    child: Row(
+                                      children: [
+                                        Icon(Icons.delete, color: Colors.red),
+                                        SizedBox(width: 8),
+                                        Text(
+                                          'Excluir',
+                                          style: TextStyle(color: Colors.red),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                              ],
+                              onSelected: (value) async {
+                                if (value == 'edit') {
+                                  _showEditDialog(uc);
+                                } else if (value == 'horas') {
+                                  showDialog(
+                                    context: context,
+                                    builder: (context) => UCHorasDialog(uc: uc),
+                                  );
+                                } else if (value == 'deactivate') {
+                                  final provider = context.read<UCProvider>();
+                                  final messenger = ScaffoldMessenger.of(
+                                    context,
+                                  );
+
+                                  final success = await provider.deactivate(
+                                    uc.id,
+                                  );
+                                  if (!mounted) return;
+                                  if (success) {
+                                    messenger.showSnackBar(
+                                      const SnackBar(
+                                        content: Text('UC inativada'),
+                                        backgroundColor: Colors.orange,
+                                      ),
+                                    );
+                                  } else if (provider.errorMessage != null) {
+                                    messenger.showSnackBar(
+                                      SnackBar(
+                                        content: Text(provider.errorMessage!),
                                         backgroundColor: Colors.red,
                                       ),
-                                      child: const Text('Excluir'),
-                                    ),
-                                  ],
-                                ),
-                              );
+                                    );
+                                  }
+                                } else if (value == 'reactivate') {
+                                  final provider = context.read<UCProvider>();
+                                  final messenger = ScaffoldMessenger.of(
+                                    context,
+                                  );
 
-                              if (confirm == true && mounted) {
-                                final success = await provider.delete(uc.id);
-                                if (!mounted) return;
-                                if (success) {
-                                  messenger.showSnackBar(
-                                    const SnackBar(
-                                      content: Text('UC excluída'),
-                                      backgroundColor: Colors.red,
+                                  final success = await provider.reactivate(
+                                    uc.id,
+                                  );
+                                  if (!mounted) return;
+                                  if (success) {
+                                    messenger.showSnackBar(
+                                      const SnackBar(
+                                        content: Text('UC reativada'),
+                                        backgroundColor: Colors.green,
+                                      ),
+                                    );
+                                  } else if (provider.errorMessage != null) {
+                                    messenger.showSnackBar(
+                                      SnackBar(
+                                        content: Text(provider.errorMessage!),
+                                        backgroundColor: Colors.red,
+                                      ),
+                                    );
+                                  }
+                                } else if (value == 'delete') {
+                                  final provider = context.read<UCProvider>();
+                                  final navigator = Navigator.of(context);
+                                  final messenger = ScaffoldMessenger.of(
+                                    context,
+                                  );
+
+                                  final confirm = await showDialog<bool>(
+                                    context: context,
+                                    builder: (context) => AlertDialog(
+                                      title: const Text('Confirmar Exclusão'),
+                                      content: Text(
+                                        'Tem certeza que deseja excluir a UC "${uc.nome}"?',
+                                      ),
+                                      actions: [
+                                        TextButton(
+                                          onPressed: () => navigator.pop(false),
+                                          child: const Text('Cancelar'),
+                                        ),
+                                        ElevatedButton(
+                                          onPressed: () => navigator.pop(true),
+                                          style: ElevatedButton.styleFrom(
+                                            backgroundColor: Colors.red,
+                                          ),
+                                          child: const Text('Excluir'),
+                                        ),
+                                      ],
                                     ),
                                   );
-                                } else if (provider.errorMessage != null) {
-                                  messenger.showSnackBar(
-                                    SnackBar(
-                                      content: Text(provider.errorMessage!),
-                                      backgroundColor: Colors.red,
-                                    ),
-                                  );
+
+                                  if (confirm == true && mounted) {
+                                    final success = await provider.delete(
+                                      uc.id,
+                                    );
+                                    if (!mounted) return;
+                                    if (success) {
+                                      messenger.showSnackBar(
+                                        const SnackBar(
+                                          content: Text('UC excluída'),
+                                          backgroundColor: Colors.red,
+                                        ),
+                                      );
+                                    } else if (provider.errorMessage != null) {
+                                      messenger.showSnackBar(
+                                        SnackBar(
+                                          content: Text(provider.errorMessage!),
+                                          backgroundColor: Colors.red,
+                                        ),
+                                      );
+                                    }
+                                  }
                                 }
-                              }
-                            }
+                              },
+                            );
                           },
                         ),
                       ),

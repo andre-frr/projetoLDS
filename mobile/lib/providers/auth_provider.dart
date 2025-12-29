@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../models/user_model.dart';
 import '../services/auth_service.dart';
+import '../utils/permission_helper.dart';
 
 class AuthProvider with ChangeNotifier {
   final _authService = AuthService();
@@ -17,6 +18,41 @@ class AuthProvider with ChangeNotifier {
   String? get errorMessage => _errorMessage;
 
   bool get isAuthenticated => _user != null;
+
+  String? get userRole => _user?.role;
+
+  // Permission check methods
+  bool canViewMenu(String menuItem) {
+    return PermissionHelper.canViewMenu(userRole, menuItem);
+  }
+
+  bool canCreate(String resource) {
+    return PermissionHelper.canCreate(userRole, resource);
+  }
+
+  bool canEdit(String resource) {
+    return PermissionHelper.canEdit(userRole, resource);
+  }
+
+  bool canDelete(String resource) {
+    return PermissionHelper.canDelete(userRole, resource);
+  }
+
+  bool canManageHours() {
+    return PermissionHelper.canManageHours(userRole);
+  }
+
+  bool isReadOnly(String resource) {
+    return PermissionHelper.isReadOnly(userRole, resource);
+  }
+
+  bool get isAdmin => userRole == PermissionHelper.roleAdmin;
+
+  bool get isCoordinator => userRole == PermissionHelper.roleCoordinator;
+
+  bool get isProfessor => userRole == PermissionHelper.roleProfessor;
+
+  bool get isGuest => userRole == PermissionHelper.roleGuest;
 
   // Initialize - check if user is already logged in
   Future<void> initialize() async {
