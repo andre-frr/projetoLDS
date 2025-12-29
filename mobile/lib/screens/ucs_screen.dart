@@ -602,14 +602,15 @@ class _UCsScreenState extends State<UCsScreen> {
                 SizedBox(
                   width: 90,
                   child: InputDecorator(
-                    decoration: const InputDecoration(
+                    decoration: InputDecoration(
                       labelText: 'Ano',
                       isDense: true,
-                      contentPadding: EdgeInsets.symmetric(
+                      contentPadding: const EdgeInsets.symmetric(
                         horizontal: 12,
                         vertical: 8,
                       ),
-                      border: OutlineInputBorder(),
+                      border: const OutlineInputBorder(),
+                      enabled: _filterSemestre == null,
                     ),
                     child: DropdownButtonHideUnderline(
                       child: DropdownButton<int>(
@@ -621,18 +622,24 @@ class _UCsScreenState extends State<UCsScreen> {
                             child: Text('Todos'),
                           ),
                           ...List.generate(
-                            10,
+                            3,
                             (index) => DropdownMenuItem<int>(
                               value: index + 1,
                               child: Text('${index + 1}º'),
                             ),
                           ),
                         ],
-                        onChanged: (value) {
-                          setState(() {
-                            _filterAno = value;
-                          });
-                        },
+                        onChanged: _filterSemestre == null
+                            ? (value) {
+                                setState(() {
+                                  _filterAno = value;
+                                  // Clear semester when year is selected
+                                  if (value != null) {
+                                    _filterSemestre = null;
+                                  }
+                                });
+                              }
+                            : null,
                       ),
                     ),
                   ),
@@ -642,32 +649,44 @@ class _UCsScreenState extends State<UCsScreen> {
                 SizedBox(
                   width: 100,
                   child: InputDecorator(
-                    decoration: const InputDecoration(
+                    decoration: InputDecoration(
                       labelText: 'Sem',
                       isDense: true,
-                      contentPadding: EdgeInsets.symmetric(
+                      contentPadding: const EdgeInsets.symmetric(
                         horizontal: 12,
                         vertical: 8,
                       ),
-                      border: OutlineInputBorder(),
+                      border: const OutlineInputBorder(),
+                      enabled: _filterAno == null,
                     ),
                     child: DropdownButtonHideUnderline(
                       child: DropdownButton<int>(
                         value: _filterSemestre,
                         isDense: true,
-                        items: const [
-                          DropdownMenuItem<int>(
+                        items: [
+                          const DropdownMenuItem<int>(
                             value: null,
                             child: Text('Todos'),
                           ),
-                          DropdownMenuItem<int>(value: 1, child: Text('1º')),
-                          DropdownMenuItem<int>(value: 2, child: Text('2º')),
+                          ...List.generate(
+                            6,
+                            (index) => DropdownMenuItem<int>(
+                              value: index + 1,
+                              child: Text('${index + 1}º'),
+                            ),
+                          ),
                         ],
-                        onChanged: (value) {
-                          setState(() {
-                            _filterSemestre = value;
-                          });
-                        },
+                        onChanged: _filterAno == null
+                            ? (value) {
+                                setState(() {
+                                  _filterSemestre = value;
+                                  // Clear year when semester is selected
+                                  if (value != null) {
+                                    _filterAno = null;
+                                  }
+                                });
+                              }
+                            : null,
                       ),
                     ),
                   ),
@@ -746,10 +765,22 @@ class _UCsScreenState extends State<UCsScreen> {
                       .toList();
                 }
 
-                // Semestre filter
+                // Semestre filter (cumulative: semester 1-2 = year 1, 3-4 = year 2, 5-6 = year 3)
                 if (_filterSemestre != null) {
+                  // Calculate which year and semester within year based on cumulative semester
+                  final targetYear =
+                      ((_filterSemestre! - 1) ~/ 2) +
+                      1; // 1-2 -> 1, 3-4 -> 2, 5-6 -> 3
+                  final targetSem =
+                      ((_filterSemestre! - 1) % 2) +
+                      1; // 1,3,5 -> 1; 2,4,6 -> 2
+
                   displayList = displayList
-                      .where((uc) => uc.semCurso == _filterSemestre)
+                      .where(
+                        (uc) =>
+                            uc.anoCurso == targetYear &&
+                            uc.semCurso == targetSem,
+                      )
                       .toList();
                 }
 
