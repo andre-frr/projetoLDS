@@ -7,6 +7,7 @@ import '../screens/areas_cientificas_screen.dart';
 import '../screens/cursos_screen.dart';
 import '../screens/departamentos_screen.dart';
 import '../screens/docentes_screen.dart';
+import '../screens/dsd_screen.dart';
 import '../screens/settings_screen.dart';
 import '../screens/ucs_screen.dart';
 
@@ -104,6 +105,17 @@ class AppNavigationDrawer extends StatelessWidget {
               _navigateTo(context, const UCsScreen());
             },
           ),
+          // DSD - Only for Docente role
+          if (user?.role == 'Docente')
+            _buildDrawerItem(
+              context,
+              icon: Icons.assignment_ind,
+              title: 'Meu Serviço Docente',
+              route: 'dsd',
+              onTap: () {
+                _navigateTo(context, const DsdScreen());
+              },
+            ),
           const Divider(),
           _buildDrawerItem(
             context,

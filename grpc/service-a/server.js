@@ -28,6 +28,7 @@ const primaryKeys = {
     historico_cv_docente: "id_hcd",
     uc_horas_contacto: ["id_uc", "tipo"],
     ano_letivo: "id_ano",
+    dsd: "id_dsd",
 };
 
 const allowedTables = Object.keys(primaryKeys);
@@ -585,6 +586,89 @@ function executeCustomQuery(call, callback) {
                                       WHERE id_ano = $1) as has_data
                     `;
                     queryParams = [paramObj.id_ano];
+                    break;
+
+                case "dsdWithDetails": {
+                    // Get DSD with full details (docente, UC, curso, ano letivo)
+                    query = `
+                        SELECT dsd.id_dsd,
+                               dsd.id_doc,
+                               dsd.id_ano,
+                               dsd.id_uc,
+                               dsd.tipo,
+                               dsd.horas,
+                               dsd.turma,
+                               d.nome  as docente_nome,
+                               d.email as docente_email,
+                               uc.nome as uc_nome,
+                               uc.id_curso,
+                               c.nome  as curso_nome,
+                               c.sigla as curso_sigla,
+                               al.ano_inicio,
+                               al.ano_fim,
+                               al.arquivado
+                        FROM dsd
+                                 JOIN docente d ON dsd.id_doc = d.id_doc
+                                 JOIN uc ON dsd.id_uc = uc.id_uc
+                                 JOIN curso c ON uc.id_curso = c.id_curso
+                                 JOIN ano_letivo al ON dsd.id_ano = al.id_ano
+                        WHERE 1 = 1
+                    `;
+
+                    // Build dynamic WHERE clause
+                    let paramIndex = 1;
+                    if (paramObj.id_doc) {
+                        query += ` AND dsd.id_doc = $${paramIndex++}`;
+                        queryParams.push(paramObj.id_doc);
+                    }
+                    if (paramObj.id_uc) {
+                        query += ` AND dsd.id_uc = $${paramIndex++}`;
+                        queryParams.push(paramObj.id_uc);
+                    }
+                    if (paramObj.id_ano) {
+                        query += ` AND dsd.id_ano = $${paramIndex++}`;
+                        queryParams.push(paramObj.id_ano);
+                    }
+                    if (paramObj.id_curso) {
+                        query += ` AND uc.id_curso = $${paramIndex++}`;
+                        queryParams.push(paramObj.id_curso);
+                    }
+                    if (paramObj.activeYearOnly === true || paramObj.activeYearOnly === 'true') {
+                        query += ` AND al.arquivado = FALSE`;
+                    }
+
+                    query += ' ORDER BY al.ano_inicio DESC, c.nome, uc.nome, d.nome, dsd.tipo';
+                    break;
+                }
+
+                case "dsdByUcGrouped":
+                    // Get DSD for a specific UC, grouped by turma and tipo
+                    query = `
+                        SELECT dsd.id_dsd,
+                               dsd.id_doc,
+                               dsd.tipo,
+                               dsd.horas,
+                               dsd.turma,
+                               d.nome  as docente_nome,
+                               d.email as docente_email,
+                               al.id_ano,
+                               al.ano_inicio,
+                               al.ano_fim
+                        FROM dsd
+                                 JOIN docente d ON dsd.id_doc = d.id_doc
+                                 JOIN ano_letivo al ON dsd.id_ano = al.id_ano
+                        WHERE dsd.id_uc = $1
+                    `;
+                    queryParams = [paramObj.id_uc];
+
+                    if (paramObj.id_ano) {
+                        query += ' AND dsd.id_ano = $2';
+                        queryParams.push(paramObj.id_ano);
+                    } else {
+                        query += ' AND al.arquivado = FALSE';
+                    }
+
+                    query += ' ORDER BY dsd.turma, dsd.tipo, d.nome';
                     break;
 
                 default:

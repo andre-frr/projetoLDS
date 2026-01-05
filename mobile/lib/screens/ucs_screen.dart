@@ -11,6 +11,7 @@ import '../utils/permission_helper.dart';
 import '../utils/validators.dart';
 import '../widgets/app_navigation_drawer.dart';
 import '../widgets/uc_horas_dialog.dart';
+import 'dsd_management_dialog.dart';
 
 class UCsScreen extends StatefulWidget {
   const UCsScreen({super.key});
@@ -887,6 +888,8 @@ class _UCsScreenState extends State<UCsScreen> {
                             );
                             final canManageHours = authProvider
                                 .canManageHours();
+                            final isAdmin =
+                                authProvider.user?.role == 'Administrador';
 
                             return PopupMenuButton(
                               itemBuilder: (context) => [
@@ -909,6 +912,23 @@ class _UCsScreenState extends State<UCsScreen> {
                                         Icon(Icons.access_time),
                                         SizedBox(width: 8),
                                         Text('Gerir Horas'),
+                                      ],
+                                    ),
+                                  ),
+                                if (isAdmin && uc.ativo)
+                                  const PopupMenuItem(
+                                    value: 'dsd',
+                                    child: Row(
+                                      children: [
+                                        Icon(
+                                          Icons.assignment_ind,
+                                          color: Colors.blue,
+                                        ),
+                                        SizedBox(width: 8),
+                                        Text(
+                                          'Gerir DSD',
+                                          style: TextStyle(color: Colors.blue),
+                                        ),
                                       ],
                                     ),
                                   ),
@@ -963,6 +983,16 @@ class _UCsScreenState extends State<UCsScreen> {
                                     context: context,
                                     builder: (context) => UCHorasDialog(uc: uc),
                                   );
+                                } else if (value == 'dsd') {
+                                  final result = await showDialog<bool>(
+                                    context: context,
+                                    builder: (context) =>
+                                        DsdManagementDialog(uc: uc),
+                                  );
+                                  if (result == true && mounted) {
+                                    // Reload UCs to reflect any changes
+                                    context.read<UCProvider>().loadAll();
+                                  }
                                 } else if (value == 'deactivate') {
                                   final provider = context.read<UCProvider>();
                                   final messenger = ScaffoldMessenger.of(

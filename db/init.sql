@@ -438,3 +438,49 @@ CREATE TRIGGER trg_demote_coordenador_curso
     ON coordenador_curso
     FOR EACH ROW
 EXECUTE FUNCTION demote_from_coordenador();
+
+-- ==================================
+--   Trigger para Criar UC Turmas Automaticamente
+-- ==================================
+
+-- Função para criar turmas quando uma UC é criada
+-- Cria registos de turma A e B para o ano letivo ativo (não arquivado)
+CREATE OR REPLACE FUNCTION create_uc_turmas()
+    RETURNS TRIGGER AS
+$$
+DECLARE
+    current_ano_id INTEGER;
+BEGIN
+    -- Obter o ano letivo ativo (não arquivado)
+    SELECT id_ano
+    INTO current_ano_id
+    FROM ano_letivo
+    WHERE arquivado = FALSE
+    ORDER BY ano_inicio DESC, ano_fim DESC
+    LIMIT 1;
+
+    -- Se existe um ano letivo ativo, criar turmas A e B
+    IF current_ano_id IS NOT NULL THEN
+        -- Criar turma A
+        INSERT INTO uc_turma (id_uc, turma, ano_letivo)
+        VALUES (NEW.id_uc, 'A', current_ano_id)
+        ON CONFLICT DO NOTHING;
+
+        -- Criar turma B
+        INSERT INTO uc_turma (id_uc, turma, ano_letivo)
+        VALUES (NEW.id_uc, 'B', current_ano_id)
+        ON CONFLICT DO NOTHING;
+    END IF;
+
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Trigger que executa após criar uma UC
+-- Cria automaticamente turmas A e B para o ano letivo ativo
+DROP TRIGGER IF EXISTS trg_create_uc_turmas ON uc;
+CREATE TRIGGER trg_create_uc_turmas
+    AFTER INSERT
+    ON uc
+    FOR EACH ROW
+EXECUTE FUNCTION create_uc_turmas();
