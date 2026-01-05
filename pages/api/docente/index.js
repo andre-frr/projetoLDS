@@ -51,15 +51,8 @@ async function handlePost(req, res) {
         const areaError = await validateAreaExists(id_area, res);
         if (areaError) return areaError;
 
-        const result = await GrpcClient.create("docente", {
-            nome,
-            email,
-            id_area,
-            ativo: true,
-            convidado: convidado ?? false,
-        });
-
-        // Create system user if requested
+        // Create system user first if requested
+        let systemUserId = null;
         let systemUser = null;
         if (createSystemUser) {
             const pool = (await import('@/lib/db.js')).default;
@@ -67,7 +60,7 @@ async function handlePost(req, res) {
 
             // Check if user already exists
             const existingUser = await pool.query(
-                'SELECT id FROM users WHERE email = $1',
+                'SELECT id, email, role, ativo FROM users WHERE email = $1',
                 [email]
             );
 
@@ -78,10 +71,22 @@ async function handlePost(req, res) {
                     [email, userRole, true]
                 );
                 systemUser = userResult.rows[0];
+                systemUserId = systemUser.id;
             } else {
                 systemUser = existingUser.rows[0];
+                systemUserId = systemUser.id;
             }
         }
+
+        // Create docente with id_user link
+        const result = await GrpcClient.create("docente", {
+            nome,
+            email,
+            id_area,
+            id_user: systemUserId,
+            ativo: true,
+            convidado: convidado ?? false,
+        });
 
         return res.status(201).json({
             ...result,

@@ -93,6 +93,8 @@ CREATE TABLE IF NOT EXISTS docente
     id_area    INTEGER   NOT NULL REFERENCES area_cientifica (id_area)
         ON UPDATE CASCADE ON DELETE RESTRICT,
     email      TEXT      NOT NULL,
+    id_user    INTEGER   REFERENCES users (id)
+                             ON UPDATE CASCADE ON DELETE SET NULL,
     ativo      BOOLEAN   NOT NULL DEFAULT TRUE,
     convidado  BOOLEAN   NOT NULL DEFAULT FALSE,
     dataInicio TIMESTAMP NOT NULL DEFAULT NOW(),
@@ -204,6 +206,7 @@ CREATE TABLE IF NOT EXISTS DSD
 -- =========================
 CREATE INDEX IF NOT EXISTS idx_area_dep ON area_cientifica (id_dep);
 CREATE INDEX IF NOT EXISTS idx_doc_area ON docente (id_area);
+CREATE INDEX IF NOT EXISTS idx_doc_user ON docente (id_user);
 CREATE INDEX IF NOT EXISTS idx_uc_curso ON uc (id_curso);
 CREATE INDEX IF NOT EXISTS idx_uc_area ON uc (id_area);
 CREATE INDEX IF NOT EXISTS idx_uc_horas_tipo ON uc_horas_contacto (tipo);
