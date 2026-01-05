@@ -51,6 +51,29 @@ CREATE TABLE IF NOT EXISTS grau
     nome    TEXT NOT NULL UNIQUE -- e.g., 'Licenciatura', 'Mestrado', 'Doutoramento', 'Agregação'
 );
 
+-- ==================================
+--   Autenticação (criado antes)
+-- ==================================
+
+DO
+$$
+    BEGIN
+        IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'user_role') THEN
+            CREATE TYPE user_role AS ENUM ('Administrador', 'Coordenador', 'Docente', 'Convidado');
+        END IF;
+    END
+$$;
+
+CREATE TABLE IF NOT EXISTS users
+(
+    id            SERIAL PRIMARY KEY,
+    email         TEXT      NOT NULL UNIQUE,
+    password_hash TEXT      NULL, -- NULL for users created without password (requires first-time setup)
+    role          user_role NOT NULL,
+    token_version INTEGER   NOT NULL DEFAULT 1,
+    ativo         BOOLEAN   NOT NULL DEFAULT TRUE
+);
+
 -- ===============
 --   Entidades
 -- ===============
@@ -214,27 +237,9 @@ CREATE INDEX IF NOT EXISTS idx_dg_doc ON docente_grau (id_doc);
 CREATE INDEX IF NOT EXISTS idx_hcv_doc ON historico_cv_docente (id_doc);
 
 -- ==================================
---   Autenticação e Autorização
+--   Autorização (Coordinator Assignments)
 -- ==================================
 
-DO
-$$
-    BEGIN
-        IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'user_role') THEN
-            CREATE TYPE user_role AS ENUM ('Administrador', 'Coordenador', 'Docente', 'Convidado');
-        END IF;
-    END
-$$;
-
-CREATE TABLE IF NOT EXISTS users
-(
-    id            SERIAL PRIMARY KEY,
-    email         TEXT      NOT NULL UNIQUE,
-    password_hash TEXT      NULL, -- NULL for users created without password (requires first-time setup)
-    role          user_role NOT NULL,
-    token_version INTEGER   NOT NULL DEFAULT 1,
-    ativo         BOOLEAN   NOT NULL DEFAULT TRUE
-);
 
 -- Coordinator assignments to departments
 CREATE TABLE IF NOT EXISTS coordenador_departamento
@@ -337,3 +342,99 @@ CREATE TRIGGER trg_archive_anos_letivos
     ON ano_letivo
     FOR EACH ROW
 EXECUTE FUNCTION archive_previous_anos_letivos();
+
+-- ==================================
+--   Triggers para Gestão Automática de Roles
+-- ==================================
+
+-- Função para promover utilizador a Coordenador quando atribuído
+-- Apenas promove Docentes para Coordenador (não afeta Administradores ou Convidados)
+CREATE OR REPLACE FUNCTION promote_to_coordenador()
+    RETURNS TRIGGER AS
+$$
+BEGIN
+    -- Promover apenas se o role atual for 'Docente'
+    -- Administradores e Convidados mantêm seus roles
+    UPDATE users
+    SET role = 'Coordenador'
+    WHERE id = NEW.id_user
+      AND role = 'Docente';
+
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Função para despromover Coordenador quando todas as atribuições são removidas
+-- Se o utilizador não tem mais nenhuma atribuição de coordenação,
+-- verifica se tem registo de docente e volta para role 'Docente'
+CREATE OR REPLACE FUNCTION demote_from_coordenador()
+    RETURNS TRIGGER AS
+$$
+DECLARE
+    has_assignments BOOLEAN;
+    is_docente      BOOLEAN;
+BEGIN
+    -- Verificar se o utilizador ainda tem outras atribuições de coordenação
+    SELECT EXISTS(SELECT 1
+                  FROM coordenador_departamento
+                  WHERE id_user = OLD.id_user
+                  UNION
+                  SELECT 1
+                  FROM coordenador_curso
+                  WHERE id_user = OLD.id_user)
+    INTO has_assignments;
+
+    -- Se não tem mais atribuições
+    IF NOT has_assignments THEN
+        -- Verificar se o utilizador é um docente (tem registo na tabela docente)
+        SELECT EXISTS(SELECT 1
+                      FROM docente
+                      WHERE id_user = OLD.id_user
+                        AND ativo = TRUE)
+        INTO is_docente;
+
+        -- Se for docente e role for Coordenador, despromover para Docente
+        -- Se não for docente, manter o role atual (pode ser Convidado ou outro)
+        IF is_docente THEN
+            UPDATE users
+            SET role = 'Docente'
+            WHERE id = OLD.id_user
+              AND role = 'Coordenador';
+        END IF;
+    END IF;
+
+    RETURN OLD;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Trigger para promoção ao atribuir coordenação de departamento
+DROP TRIGGER IF EXISTS trg_promote_coordenador_dep ON coordenador_departamento;
+CREATE TRIGGER trg_promote_coordenador_dep
+    AFTER INSERT
+    ON coordenador_departamento
+    FOR EACH ROW
+EXECUTE FUNCTION promote_to_coordenador();
+
+-- Trigger para promoção ao atribuir coordenação de curso
+DROP TRIGGER IF EXISTS trg_promote_coordenador_curso ON coordenador_curso;
+CREATE TRIGGER trg_promote_coordenador_curso
+    AFTER INSERT
+    ON coordenador_curso
+    FOR EACH ROW
+EXECUTE FUNCTION promote_to_coordenador();
+
+-- Trigger para despromoção ao remover coordenação de departamento
+DROP TRIGGER IF EXISTS trg_demote_coordenador_dep ON coordenador_departamento;
+CREATE TRIGGER trg_demote_coordenador_dep
+    AFTER DELETE
+    ON coordenador_departamento
+    FOR EACH ROW
+EXECUTE FUNCTION demote_from_coordenador();
+
+-- Trigger para despromoção ao remover coordenação de curso
+DROP TRIGGER IF EXISTS trg_demote_coordenador_curso ON coordenador_curso;
+CREATE TRIGGER trg_demote_coordenador_curso
+    AFTER DELETE
+    ON coordenador_curso
+    FOR EACH ROW
+EXECUTE FUNCTION demote_from_coordenador();
