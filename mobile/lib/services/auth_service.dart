@@ -37,12 +37,14 @@ class AuthService {
           data['refreshToken'],
         );
 
-        // Create user model from email (backend doesn't return user object)
+        // Parse user from response (backend now returns user object)
+        final userData = data['user'];
         final user = UserModel(
-          id: 0, // Will be set when fetching user profile
-          email: email,
-          username: email.split('@')[0], // Extract username from email
-          role: 'user', // Default role
+          id: userData['id'],
+          email: userData['email'],
+          username: userData['email'].split('@')[0],
+          // Extract username from email
+          role: userData['role'],
         );
 
         await _storage.write(
@@ -79,12 +81,14 @@ class AuthService {
           data['refreshToken'],
         );
 
-        // Create user model from email (backend doesn't return user object)
+        // Parse user from response (backend returns user object)
+        final userData = data['user'];
         final user = UserModel(
-          id: 0, // Will be set when fetching user profile
-          email: email,
-          username: email.split('@')[0], // Extract username from email
-          role: role,
+          id: userData['id'],
+          email: userData['email'],
+          username: userData['email'].split('@')[0],
+          // Extract username from email
+          role: userData['role'],
         );
 
         await _storage.write(

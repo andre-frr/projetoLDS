@@ -88,7 +88,16 @@ export default async function handler(req, res) {
             {expiresIn: '15m'}
         );
 
-        res.status(200).json({accessToken, refreshToken});
+        res.status(200).json({
+            accessToken,
+            refreshToken,
+            user: {
+                id: user.id,
+                email: user.email,
+                role: user.role,
+                ativo: user.ativo
+            }
+        });
     } catch (error) {
         console.error(error);
         await auditLog('login_error', null, {error: error.message});

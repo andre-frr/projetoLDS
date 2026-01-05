@@ -10,12 +10,15 @@ e gRPC, e inclui um sistema completo de autenticação JWT.
 - ✅ **Autenticação JWT** com refresh tokens e rotação de tokens
 - ✅ **Sistema de roles** (Administrador, Coordenador, Docente, Convidado)
 - ✅ **Gestão de sessões** com suporte para múltiplos dispositivos
+- ✅ **Sistema de permissões centralizado** com RBAC granular
+- ✅ **Gestão de coordenadores** com atribuições a departamentos e cursos
 - ✅ **Validação de dados** e tratamento de erros padronizado
 - ✅ **Detecção de duplicados** para campos únicos (nome e sigla)
 - ✅ **Auditoria de ações** para segurança e rastreabilidade
 - ✅ **CORS configurado** para aplicações Flutter Web
 - ✅ **GraphQL Gateway** para agregação de dados
 - ✅ **Comunicação gRPC** entre microserviços
+- ✅ **Suporte para passwords opcionais** com configuração no primeiro login
 
 ## 📂 Estrutura do Projeto
 
@@ -24,6 +27,7 @@ e gRPC, e inclui um sistema completo de autenticação JWT.
 - **`pages/api/`**: API REST (Next.js) - Operações CRUD simples via gRPC
 
     - `auth/`: Autenticação (login, register, logout, refresh)
+    - `coordenador-assignments/`: Gestão de atribuições de coordenadores
     - `departamento/`: Gestão de departamentos
     - `area_cientifica/`: Gestão de áreas científicas
     - `curso/`: Gestão de cursos
@@ -33,6 +37,7 @@ e gRPC, e inclui um sistema completo de autenticação JWT.
     - `docente_grau/`: Gestão de graus de docentes
     - `historico_cv_docente/`: Gestão de histórico de CVs
     - `uc_horas_contacto/`: Gestão de horas de contacto
+    - `users/`: Gestão de utilizadores
 
 - **`graphql/`**: Serviço GraphQL - Queries complexas e aninhadas
 
@@ -49,9 +54,12 @@ e gRPC, e inclui um sistema completo de autenticação JWT.
 
     - `grpc-client.js`: Cliente gRPC para Next.js
     - `auth.js`: Autenticação e verificação de tokens
+    - `permissions.js`: Sistema centralizado de permissões RBAC
+    - `authorize.js`: Middleware de autorização
     - `middleware.js`: Middleware de autenticação
     - `cors.js`: Configuração CORS
     - `audit.js`: Sistema de auditoria
+    - `db.js`: Pool de conexões PostgreSQL
 
 - **`mobile/`**: Aplicação Flutter Web (cliente)
 
@@ -311,6 +319,78 @@ Todos os endpoints seguem operações CRUD completas. **Base URL:** `https://loc
 - `PUT /historico_cv_docente/[id]` - Atualizar
 - `DELETE /historico_cv_docente/[id]` - Remover
 
+### Atribuições de Coordenadores
+
+- `GET /coordenador-assignments/[id]` - Obter atribuições de um coordenador (departamentos e cursos)
+- `POST /coordenador-assignments/[id]/department` - Atribuir coordenador a um departamento
+- `DELETE /coordenador-assignments/[id]/department/[depId]` - Remover atribuição de departamento
+- `POST /coordenador-assignments/[id]/course` - Atribuir coordenador a um curso
+- `DELETE /coordenador-assignments/[id]/course/[courseId]` - Remover atribuição de curso
+
+### Utilizadores
+
+- `GET /users` - Listar todos os utilizadores
+- `POST /users` - Criar novo utilizador
+- `GET /users/[id]` - Obter utilizador por ID
+- `PUT /users/[id]` - Atualizar utilizador
+- `DELETE /users/[id]` - Remover utilizador
+
+## Sistema de Permissões (RBAC)
+
+O sistema implementa controlo de acesso baseado em roles (RBAC) com permissões granulares:
+
+### Roles e Permissões
+
+#### **Administrador**
+
+- **Gestão global do sistema**
+- Criar, editar e eliminar: cursos, UCs, docentes, áreas científicas, departamentos e utilizadores
+- Acesso total a todas as funcionalidades
+- Gerir atribuições de coordenadores
+
+#### **Coordenador**
+
+- **Responsável por um ou mais cursos e/ou departamentos**
+- Criar e editar UCs nos cursos atribuídos
+- Atribuir docentes às UCs do seu curso
+- Gerir áreas científicas nos departamentos atribuídos
+- Validar e gerir cargas horárias das UCs
+- Consultar planos de estudo e informação académica
+- **Não pode**: gerir departamentos, utilizadores ou graus académicos
+
+#### **Docente**
+
+- **Utilizador individual com serviço atribuído**
+- Consultar o seu próprio serviço e horas
+- Atualizar os seus dados pessoais
+- Submeter e atualizar o seu CV
+- Consultar informação pública (cursos e UCs)
+- **Não pode**: modificar outros docentes ou estruturas académicas
+
+#### **Convidado**
+
+- **Utilizador externo autenticado apenas para leitura**
+- Consultar informação pública (cursos e planos de estudo)
+- **Não pode**: criar, editar ou eliminar qualquer recurso
+
+### Gestão de Coordenadores
+
+Os coordenadores podem ser atribuídos a:
+
+- **Departamentos**: Gerem áreas científicas do departamento
+- **Cursos**: Gerem UCs e atribuições de docentes do curso
+- Um coordenador pode ter múltiplas atribuições
+- Um departamento/curso pode ter múltiplos coordenadores
+
+### First-Time Password Setup
+
+O sistema suporta criação de utilizadores sem password:
+
+- Utilizadores criados sem password têm `password_hash = NULL`
+- No primeiro login, o sistema requer definição de password segura
+- Após definir a password, o utilizador pode fazer login normalmente
+- Útil para criar docentes como utilizadores ao criar departamentos/cursos
+
 ## Códigos de Erro Padronizados
 
 A API segue um padrão consistente para respostas de erro:
@@ -383,7 +463,10 @@ Todas as referências a outras entidades são validadas:
 - ✅ **CORS configurado** para requests cross-origin
 - ✅ **HTTPS** com certificados SSL locais
 - ✅ **Audit logging** para ações críticas
-- ✅ **Role-based access control** (RBAC)
+- ✅ **Role-based access control (RBAC)** centralizado e granular
+- ✅ **Permission checking** baseado em contexto (departamento, curso)
+- ✅ **Optional passwords** para utilizadores criados por administradores
+- ✅ **First-time login** com setup de password obrigatório
 
 ### Boas Práticas
 
@@ -393,6 +476,8 @@ Todas as referências a outras entidades são validadas:
 - Validação rigorosa de inputs
 - Prepared statements para prevenir SQL injection
 - CORS restrito a origens conhecidas
+- Permissões verificadas em todos os endpoints sensíveis
+- Passwords opcionais (NULL) apenas para novos utilizadores
 
 ## Detalhes dos Serviços
 
@@ -473,6 +558,20 @@ netstat -ano | findstr :50051
 # Matar processo (Windows)
 taskkill /PID <PID> /F
 ```
+
+#### 6. Erros de permissão (403 Forbidden)
+
+- Verificar role do utilizador: deve ser Administrador, Coordenador, Docente ou Convidado
+- Verificar atribuições de coordenador em `coordenador_departamento` ou `coordenador_curso`
+- Para Docentes: verificar se `context.professorId` corresponde ao seu ID
+- Consultar logs de auditoria: `SELECT * FROM audit_logs WHERE user_id = X ORDER BY created_at DESC`
+
+#### 7. Utilizador não consegue fazer login (password NULL)
+
+- Utilizador foi criado sem password
+- Deve fazer first-time setup de password
+- No frontend, redirecionar para formulário de criação de password
+- Usar endpoint dedicado para set password (se implementado)
 
 ## Tecnologias Utilizadas
 
@@ -561,18 +660,45 @@ psql -h localhost -p 5432 -U admin -d gestao_academica
 
 A base de dados inclui as seguintes tabelas principais:
 
-- **users** - Utilizadores do sistema
-- **sessions** - Sessões ativas
-- **refresh_tokens** - Tokens de refresh
+### Utilizadores e Autenticação
+
+- **users** - Utilizadores do sistema (com role e password opcional)
+- **sessions** - Sessões ativas com family tracking
+- **refresh_tokens** - Tokens de refresh com rotação
+- **coordenador_departamento** - Atribuições de coordenadores a departamentos
+- **coordenador_curso** - Atribuições de coordenadores a cursos
+
+### Estrutura Académica
+
 - **departamento** - Departamentos académicos
-- **area_cientifica** - Áreas científicas
-- **curso** - Cursos
-- **uc** - Unidades curriculares
-- **uc_horas_contacto** - Horas de contacto por UC
-- **docente** - Docentes
+- **area_cientifica** - Áreas científicas (pertencentes a departamentos)
+- **curso** - Cursos (licenciatura, mestrado, doutoramento)
+- **uc** - Unidades curriculares (com horas_por_ects configurável)
+- **uc_horas_contacto** - Horas de contacto por tipo (T, TP, PL, OT)
+- **uc_turma** - Turmas por UC e ano letivo
+
+### Docentes
+
+- **docente** - Docentes (com estado ativo/inativo)
 - **grau** - Graus académicos
-- **docente_grau** - Relação docente-grau
-- **historico_cv_docente** - Histórico de CVs de docentes
+- **docente_grau** - Relação entre docentes e graus
+- **historico_cv_docente** - Histórico de CVs
+- **historico_contrato_docente** - Histórico de contratos
+
+### Sistema
+
+- **ano_letivo** - Anos letivos (com estado arquivado)
+- **audit_logs** - Logs de auditoria de ações
+- **api_keys** - Chaves de API para integrações
+
+### Características Importantes do Schema
+
+- **Passwords NULL permitidos**: Utilizadores podem ser criados sem password (first-time setup)
+- **Archiving de anos letivos**: Anos podem ser arquivados sem serem eliminados
+- **Horas por ECTS configuráveis**: Cada UC pode ter valor personalizado (padrão: 28)
+- **Coordinator assignments**: Junction tables para atribuições de coordenadores
+- **Cascading deletes**: Configurados adequadamente para manter integridade referencial
+- **Indexes otimizados**: Para queries frequentes (sessions, coordenadores, etc.)
 
 Veja `db/init.sql` para o schema completo.
 
@@ -634,7 +760,7 @@ O script de build:
 
 ```bash
 # Certifique-se de que os certificados SSL existem em ../certs/
-python3 serve_https.py 8000
+python3 serve_https.py
 ```
 
 O servidor HTTPS Python:
@@ -664,6 +790,41 @@ Após alterar, reinicie o serviço Next.js:
 docker-compose restart nextjs
 ```
 
+### Funcionalidades da Interface Flutter
+
+A aplicação Flutter Web implementa:
+
+- ✅ **Sistema de Login** com autenticação JWT
+- ✅ **Interface responsiva** para gestão académica
+- ✅ **RBAC integrado** com controlo de acesso baseado em roles
+- ✅ **Gestão de UCs** com filtros avançados (ano, semestre, curso)
+- ✅ **Gestão de horas de contacto** com cálculo automático
+- ✅ **Gestão de anos letivos** com sistema de arquivo
+- ✅ **CRUD completo** para departamentos, cursos, áreas, docentes
+- ✅ **Interface adaptativa** mostra/esconde funcionalidades baseado em permissões
+- ✅ **Tema claro/escuro** com persistência de preferências
+
+### Filtros de UCs
+
+A interface de UCs implementa filtros inteligentes:
+
+- **Filtro por Ano**: Valores de 1 a 3 (maioria dos cursos tem 3 anos)
+- **Filtro por Semestre**: Valores de 1 a 6 (semestre cumulativo)
+    - Exemplo: 3º ano, 1º semestre = 5º semestre cumulativo
+    - Permite buscar todas as UCs de um ano específico ou de um semestre específico
+- **Filtro por Curso**: Dropdown com todos os cursos disponíveis
+- Os filtros podem ser combinados ou usados individualmente
+
+### Gestão de Horas
+
+A interface para gerir horas de contacto:
+
+- **Cálculo automático** de horas totais baseado em ECTS
+- **Horas por ECTS configuráveis** (padrão: 28)
+- **Dialog com largura fixa** para melhor UX
+- **Preservação do valor** de horas_por_ects ao editar
+- **Validação** de valores mínimos e consistência
+
 ## Sobre o Projeto
 
 Este é um **projeto académico** desenvolvido no âmbito da disciplina de Laboratório de Desenvolvimento de Software (
@@ -672,12 +833,14 @@ LDS).
 ### Objetivos do Projeto
 
 - ✅ Implementar arquitetura de microserviços com separação clara de responsabilidades
-- ✅ Desenvolver APIs REST (18 endpoints), GraphQL (8 queries) e gRPC (7 operações)
-- ✅ Implementar sistema de autenticação e autorização robusto com JWT
+- ✅ Desenvolver APIs REST (20+ endpoints), GraphQL (8 queries) e gRPC (7+ operações)
+- ✅ Implementar sistema de autenticação e autorização robusto com JWT e RBAC granular
 - ✅ Aplicar boas práticas de desenvolvimento (clean code, SOLID, DRY)
 - ✅ Utilizar containerização com Docker e orquestração com Docker Compose
 - ✅ Implementar validações completas e tratamento de erros padronizado
 - ✅ Criar fonte única de verdade para dados com gRPC microservice
+- ✅ Sistema de permissões centralizado com controlo contextual
+- ✅ Interface Flutter Web completa com RBAC integrado
 
 ### Tecnologias Exploradas
 
@@ -688,26 +851,29 @@ Este projeto serve como demonstração prática de:
 - **GraphQL** com Apollo Server para queries complexas
 - **gRPC** como camada de acesso a dados
 - **Base de dados relacional** PostgreSQL 15
-- **Segurança** com JWT, Argon2 e RBAC
+- **Segurança** com JWT, Argon2 e RBAC centralizado
+- **Controlo de Acesso** granular com permissões baseadas em contexto
 - **DevOps** com Docker, Docker Compose e multi-stage builds
 - **Protocol Buffers** para definições de tipos
+- **Frontend moderno** com Flutter Web e gestão de estado
 - **Documentação técnica** completa e estruturada
 
 ### Arquitetura Final
 
 ```
 Flutter Web ←→ Next.js Gateway ←→ gRPC Microservice ←→ PostgreSQL
-                (REST + GraphQL)
+                (REST + GraphQL)      (Permissions)
 ```
 
 - **Separação de Responsabilidades**: REST para CRUD, GraphQL para queries complexas
 - **Fonte Única de Dados**: Todas as operações de BD via gRPC
 - **Escalabilidade**: Serviços independentes que podem escalar individualmente
 - **Type Safety**: Definições proto garantem consistência entre serviços
+- **Security by Design**: Permissões verificadas em todas as camadas
 
 ---
 
 **Projeto Académico** | Laboratório de Desenvolvimento de Software  
 **Arquitetura:** Microserviços com gRPC, REST e GraphQL  
-**Frontend:** Flutter Web com HTTPS  
-**Última atualização:** 22 de Novembro de 2025
+**Frontend:** Flutter Web com HTTPS e RBAC  
+**Última atualização:** 5 de Janeiro de 2026
