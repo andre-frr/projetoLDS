@@ -89,6 +89,157 @@ async function handleGet(req, res) {
 }
 
 /**
+ * Get the active academic year
+ */
+async function getActiveAcademicYear() {
+    const anosLetivos = await GrpcClient.getAll("ano_letivo", {
+        filters: {arquivado: false}
+    });
+
+    if (anosLetivos.length === 0) {
+        return null;
+    }
+
+    const activeYears = anosLetivos.sort((a, b) => b.ano_inicio - a.ano_inicio);
+    return activeYears[0].id_ano;
+}
+
+/**
+ * Verify UC and turma exist
+ */
+async function verifyUcAndTurma(id_uc, turma, id_ano) {
+    // Verify UC exists
+    await GrpcClient.getById("uc", id_uc);
+
+    // Verify uc_turma exists
+    const turmas = await GrpcClient.getAll("uc_turma", {
+        filters: JSON.stringify({id_uc, turma, ano_letivo: id_ano})
+    });
+
+    return turmas.length > 0;
+}
+
+/**
+ * Verify all docentes in assignments
+ */
+async function verifyDocentes(assignments) {
+    for (const assignment of assignments) {
+        if (!assignment.id_doc || !assignment.horas) {
+            throw new Error("Cada atribuição deve ter id_doc e horas");
+        }
+
+        const docente = await GrpcClient.getById("docente", assignment.id_doc);
+        if (!docente.ativo) {
+            throw new Error(`Docente com id ${assignment.id_doc} está inativo`);
+        }
+    }
+}
+
+/**
+ * Check if DSD already exists
+ */
+async function checkDsdExists(id_uc, turma, tipo, id_ano) {
+    const existingDsds = await GrpcClient.getAll("dsd", {
+        filters: JSON.stringify({id_uc, turma, tipo, id_ano})
+    });
+
+    return existingDsds.length > 0;
+}
+
+/**
+ * Validate request body for DSD creation
+ */
+function validateDsdRequest(body) {
+    const {id_uc, turma, tipo, assignments} = body;
+
+    if (!id_uc || !turma || !tipo || !assignments || !Array.isArray(assignments)) {
+        return {
+            valid: false,
+            error: "Dados mal formatados. Campos obrigatórios: id_uc, turma, tipo, assignments"
+        };
+    }
+
+    if (assignments.length === 0) {
+        return {
+            valid: false,
+            error: "Pelo menos um docente deve ser atribuído"
+        };
+    }
+
+    return {valid: true};
+}
+
+/**
+ * Verify all prerequisites for DSD creation
+ */
+async function verifyDsdPrerequisites(id_uc, turma, tipo, assignments) {
+    const id_ano = await getActiveAcademicYear();
+    if (!id_ano) {
+        const error = new Error("Nenhum ano letivo ativo encontrado. Crie um ano letivo primeiro.");
+        error.status = 400;
+        throw error;
+    }
+
+    const turmaExists = await verifyUcAndTurma(id_uc, turma, id_ano);
+    if (!turmaExists) {
+        const error = new Error(`Turma ${turma} não existe para esta UC no ano letivo ativo`);
+        error.status = 400;
+        throw error;
+    }
+
+    await verifyDocentes(assignments);
+
+    const dsdExists = await checkDsdExists(id_uc, turma, tipo, id_ano);
+    if (dsdExists) {
+        const error = new Error(`DSD já existe para esta UC, turma ${turma}, tipo ${tipo} no ano letivo ativo. Use PUT para atualizar.`);
+        error.status = 409;
+        throw error;
+    }
+
+    return id_ano;
+}
+
+/**
+ * Create DSD records for all assignments
+ */
+async function createDsdRecords(id_uc, turma, tipo, assignments, id_ano) {
+    const createdDsds = [];
+
+    for (const assignment of assignments) {
+        const result = await GrpcClient.create("dsd", {
+            id_doc: assignment.id_doc,
+            id_ano: id_ano,
+            id_uc: id_uc,
+            tipo: tipo,
+            horas: assignment.horas,
+            turma: turma
+        });
+        createdDsds.push(result);
+    }
+
+    return createdDsds;
+}
+
+/**
+ * Handle errors from DSD operations
+ */
+function handleDsdError(error, res) {
+    if (error.status) {
+        return res.status(error.status).json({message: error.message});
+    }
+
+    if (error.statusCode === 404) {
+        return res.status(404).json({message: error.message || "Recurso não encontrado"});
+    }
+
+    if (error.message && !error.statusCode) {
+        return res.status(400).json({message: error.message});
+    }
+
+    return handleError(error, res);
+}
+
+/**
  * POST /api/dsd
  * Create DSD assignments
  * Body: {
@@ -101,111 +252,25 @@ async function handleGet(req, res) {
 async function handlePost(req, res) {
     const {id_uc, turma, tipo, assignments} = req.body;
 
-    if (!id_uc || !turma || !tipo || !assignments || !Array.isArray(assignments)) {
-        return res.status(400).json({
-            message: "Dados mal formatados. Campos obrigatórios: id_uc, turma, tipo, assignments"
-        });
-    }
-
-    if (assignments.length === 0) {
-        return res.status(400).json({
-            message: "Pelo menos um docente deve ser atribuído"
-        });
+    // Validate request
+    const validation = validateDsdRequest(req.body);
+    if (!validation.valid) {
+        return res.status(400).json({message: validation.error});
     }
 
     try {
-        // Get current active academic year
-        const anosLetivos = await GrpcClient.getAll("ano_letivo", {
-            filters: {arquivado: false}
-        });
-
-        if (anosLetivos.length === 0) {
-            return res.status(400).json({
-                message: "Nenhum ano letivo ativo encontrado. Crie um ano letivo primeiro."
-            });
-        }
-
-        // Get the most recent active year
-        const activeYears = anosLetivos.sort((a, b) => b.ano_inicio - a.ano_inicio);
-        const id_ano = activeYears[0].id_ano;
-
-        // Verify UC exists
-        try {
-            await GrpcClient.getById("uc", id_uc);
-        } catch (error) {
-            if (error.statusCode === 404) {
-                return res.status(404).json({message: "UC inexistente"});
-            }
-            throw error;
-        }
-
-        // Verify uc_turma exists
-        const turmas = await GrpcClient.getAll("uc_turma", {
-            filters: JSON.stringify({id_uc, turma, ano_letivo: id_ano})
-        });
-
-        if (turmas.length === 0) {
-            return res.status(400).json({
-                message: `Turma ${turma} não existe para esta UC no ano letivo ativo`
-            });
-        }
-
-        // Verify all docentes exist
-        for (const assignment of assignments) {
-            if (!assignment.id_doc || !assignment.horas) {
-                return res.status(400).json({
-                    message: "Cada atribuição deve ter id_doc e horas"
-                });
-            }
-
-            try {
-                const docente = await GrpcClient.getById("docente", assignment.id_doc);
-                if (!docente.ativo) {
-                    return res.status(404).json({
-                        message: `Docente com id ${assignment.id_doc} está inativo`
-                    });
-                }
-            } catch (error) {
-                if (error.statusCode === 404) {
-                    return res.status(404).json({
-                        message: `Docente com id ${assignment.id_doc} não encontrado`
-                    });
-                }
-                throw error;
-            }
-        }
-
-        // Check if DSD already exists for this UC, turma, tipo, and year
-        const existingDsds = await GrpcClient.getAll("dsd", {
-            filters: JSON.stringify({id_uc, turma, tipo, id_ano})
-        });
-
-        if (existingDsds.length > 0) {
-            return res.status(409).json({
-                message: `DSD já existe para esta UC, turma ${turma}, tipo ${tipo} no ano letivo ativo. Use PUT para atualizar.`
-            });
-        }
+        // Verify prerequisites and get academic year
+        const id_ano = await verifyDsdPrerequisites(id_uc, turma, tipo, assignments);
 
         // Create DSD records
-        const createdDsds = [];
-        for (const assignment of assignments) {
-            const result = await GrpcClient.create("dsd", {
-                id_doc: assignment.id_doc,
-                id_ano: id_ano,
-                id_uc: id_uc,
-                tipo: tipo,
-                horas: assignment.horas,
-                turma: turma
-            });
-            createdDsds.push(result);
-        }
+        const createdDsds = await createDsdRecords(id_uc, turma, tipo, assignments, id_ano);
 
         return res.status(201).json({
             message: `${createdDsds.length} atribuição(ões) criada(s) com sucesso`,
             dsds: createdDsds
         });
     } catch (error) {
-        return handleError(error, res);
+        return handleDsdError(error, res);
     }
 }
 

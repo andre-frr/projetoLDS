@@ -494,6 +494,175 @@ async function fetchRelation(tableName, entity, relation) {
     }
 }
 
+// Helper function to build DSD query with filters
+function buildDsdWithDetailsQuery(paramObj) {
+    let query = `
+        SELECT dsd.id_dsd,
+               dsd.id_doc,
+               dsd.id_ano,
+               dsd.id_uc,
+               dsd.tipo,
+               dsd.horas,
+               dsd.turma,
+               d.nome  as docente_nome,
+               d.email as docente_email,
+               uc.nome as uc_nome,
+               uc.id_curso,
+               c.nome  as curso_nome,
+               c.sigla as curso_sigla,
+               al.ano_inicio,
+               al.ano_fim,
+               al.arquivado
+        FROM dsd
+                 JOIN docente d ON dsd.id_doc = d.id_doc
+                 JOIN uc ON dsd.id_uc = uc.id_uc
+                 JOIN curso c ON uc.id_curso = c.id_curso
+                 JOIN ano_letivo al ON dsd.id_ano = al.id_ano
+        WHERE 1 = 1
+    `;
+
+    const queryParams = [];
+    let paramIndex = 1;
+
+    if (paramObj.id_doc) {
+        query += ` AND dsd.id_doc = $${paramIndex++}`;
+        queryParams.push(paramObj.id_doc);
+    }
+    if (paramObj.id_uc) {
+        query += ` AND dsd.id_uc = $${paramIndex++}`;
+        queryParams.push(paramObj.id_uc);
+    }
+    if (paramObj.id_ano) {
+        query += ` AND dsd.id_ano = $${paramIndex++}`;
+        queryParams.push(paramObj.id_ano);
+    }
+    if (paramObj.id_curso) {
+        query += ` AND uc.id_curso = $${paramIndex++}`;
+        queryParams.push(paramObj.id_curso);
+    }
+    if (paramObj.activeYearOnly === true || paramObj.activeYearOnly === 'true') {
+        query += ` AND al.arquivado = FALSE`;
+    }
+
+    query += ' ORDER BY al.ano_inicio DESC, c.nome, uc.nome, d.nome, dsd.tipo';
+
+    return {query, queryParams};
+}
+
+// Helper function to build DSD by UC query
+function buildDsdByUcQuery(paramObj) {
+    let query = `
+        SELECT dsd.id_dsd,
+               dsd.id_doc,
+               dsd.tipo,
+               dsd.horas,
+               dsd.turma,
+               d.nome  as docente_nome,
+               d.email as docente_email,
+               al.id_ano,
+               al.ano_inicio,
+               al.ano_fim
+        FROM dsd
+                 JOIN docente d ON dsd.id_doc = d.id_doc
+                 JOIN ano_letivo al ON dsd.id_ano = al.id_ano
+        WHERE dsd.id_uc = $1
+    `;
+    const queryParams = [paramObj.id_uc];
+
+    if (paramObj.id_ano) {
+        query += ' AND dsd.id_ano = $2';
+        queryParams.push(paramObj.id_ano);
+    } else {
+        query += ' AND al.arquivado = FALSE';
+    }
+
+    query += ' ORDER BY dsd.turma, dsd.tipo, d.nome';
+
+    return {query, queryParams};
+}
+
+// Helper function to get query configuration
+function getQueryConfig(queryName, paramObj) {
+    const queries = {
+        areasWithDepartamento: {
+            query: `
+                SELECT ac.id_area,
+                       ac.nome,
+                       ac.sigla,
+                       ac.ativo,
+                       ac.id_dep,
+                       d.nome as nome_departamento
+                FROM area_cientifica ac
+                         JOIN departamento d ON ac.id_dep = d.id_dep
+                ORDER BY ac.nome
+            `,
+            queryParams: []
+        },
+        docentesWithFullDetails: {
+            query: `
+                SELECT d.*,
+                       ac.nome   as area_nome,
+                       ac.sigla  as area_sigla,
+                       dep.nome  as departamento_nome,
+                       dep.sigla as departamento_sigla
+                FROM docente d
+                         LEFT JOIN area_cientifica ac ON d.id_area = ac.id_area
+                         LEFT JOIN departamento dep ON ac.id_dep = dep.id_dep
+                WHERE d.ativo = COALESCE($1, d.ativo)
+                ORDER BY d.nome
+            `,
+            queryParams: [paramObj.ativo === undefined ? null : paramObj.ativo]
+        },
+        cursosWithAreaAndUCs: {
+            query: `
+                SELECT c.*,
+                       ac.nome         as area_nome,
+                       COUNT(uc.id_uc) as num_ucs
+                FROM curso c
+                         LEFT JOIN area_cientifica ac ON c.id_area = ac.id_area
+                         LEFT JOIN uc ON c.id_curso = uc.id_curso
+                WHERE c.ativo = COALESCE($1, c.ativo)
+                GROUP BY c.id_curso, ac.nome
+                ORDER BY c.nome
+            `,
+            queryParams: [paramObj.ativo === undefined ? null : paramObj.ativo]
+        },
+        departamentosWithStats: {
+            query: `
+                SELECT dep.*,
+                       COUNT(DISTINCT ac.id_area) as num_areas,
+                       COUNT(DISTINCT d.id_doc)   as num_docentes,
+                       COUNT(DISTINCT c.id_curso) as num_cursos
+                FROM departamento dep
+                         LEFT JOIN area_cientifica ac ON dep.id_dep = ac.id_dep
+                         LEFT JOIN docente d ON ac.id_area = d.id_area
+                         LEFT JOIN curso c ON ac.id_area = c.id_area
+                GROUP BY dep.id_dep
+                ORDER BY dep.nome
+            `,
+            queryParams: []
+        },
+        checkAnoLetivoAssociations: {
+            query: `
+                SELECT EXISTS(SELECT 1
+                              FROM uc_turma
+                              WHERE ano_letivo = $1
+                              UNION
+                              SELECT 1
+                              FROM historico_contrato_docente
+                              WHERE id_ano = $1
+                              UNION
+                              SELECT 1
+                              FROM DSD
+                              WHERE id_ano = $1) as has_data
+            `,
+            queryParams: [paramObj.id_ano]
+        }
+    };
+
+    return queries[queryName] || null;
+}
+
 // ExecuteCustomQuery - Predefined complex queries
 function executeCustomQuery(call, callback) {
     (async () => {
@@ -506,177 +675,29 @@ function executeCustomQuery(call, callback) {
 
         try {
             const paramObj = params ? JSON.parse(params) : {};
-            let query,
-                queryParams = [];
+            let query, queryParams;
 
-            // Define custom queries
-            switch (queryName) {
-                case "areasWithDepartamento":
-                    query = `
-                        SELECT ac.id_area,
-                               ac.nome,
-                               ac.sigla,
-                               ac.ativo,
-                               ac.id_dep,
-                               d.nome as nome_departamento
-                        FROM area_cientifica ac
-                                 JOIN departamento d ON ac.id_dep = d.id_dep
-                        ORDER BY ac.nome
-                    `;
-                    break;
-
-                case "docentesWithFullDetails":
-                    query = `
-                        SELECT d.*,
-                               ac.nome   as area_nome,
-                               ac.sigla  as area_sigla,
-                               dep.nome  as departamento_nome,
-                               dep.sigla as departamento_sigla
-                        FROM docente d
-                                 LEFT JOIN area_cientifica ac ON d.id_area = ac.id_area
-                                 LEFT JOIN departamento dep ON ac.id_dep = dep.id_dep
-                        WHERE d.ativo = COALESCE($1, d.ativo)
-                        ORDER BY d.nome
-                    `;
-                    queryParams = [paramObj.ativo === undefined ? null : paramObj.ativo];
-                    break;
-
-                case "cursosWithAreaAndUCs":
-                    query = `
-                        SELECT c.*,
-                               ac.nome         as area_nome,
-                               COUNT(uc.id_uc) as num_ucs
-                        FROM curso c
-                                 LEFT JOIN area_cientifica ac ON c.id_area = ac.id_area
-                                 LEFT JOIN uc ON c.id_curso = uc.id_curso
-                        WHERE c.ativo = COALESCE($1, c.ativo)
-                        GROUP BY c.id_curso, ac.nome
-                        ORDER BY c.nome
-                    `;
-                    queryParams = [paramObj.ativo === undefined ? null : paramObj.ativo];
-                    break;
-
-                case "departamentosWithStats":
-                    query = `
-                        SELECT dep.*,
-                               COUNT(DISTINCT ac.id_area) as num_areas,
-                               COUNT(DISTINCT d.id_doc)   as num_docentes,
-                               COUNT(DISTINCT c.id_curso) as num_cursos
-                        FROM departamento dep
-                                 LEFT JOIN area_cientifica ac ON dep.id_dep = ac.id_dep
-                                 LEFT JOIN docente d ON ac.id_area = d.id_area
-                                 LEFT JOIN curso c ON ac.id_area = c.id_area
-                        GROUP BY dep.id_dep
-                        ORDER BY dep.nome
-                    `;
-                    break;
-
-                case "checkAnoLetivoAssociations":
-                    query = `
-                        SELECT EXISTS(SELECT 1
-                                      FROM uc_turma
-                                      WHERE ano_letivo = $1
-                                      UNION
-                                      SELECT 1
-                                      FROM historico_contrato_docente
-                                      WHERE id_ano = $1
-                                      UNION
-                                      SELECT 1
-                                      FROM DSD
-                                      WHERE id_ano = $1) as has_data
-                    `;
-                    queryParams = [paramObj.id_ano];
-                    break;
-
-                case "dsdWithDetails": {
-                    // Get DSD with full details (docente, UC, curso, ano letivo)
-                    query = `
-                        SELECT dsd.id_dsd,
-                               dsd.id_doc,
-                               dsd.id_ano,
-                               dsd.id_uc,
-                               dsd.tipo,
-                               dsd.horas,
-                               dsd.turma,
-                               d.nome  as docente_nome,
-                               d.email as docente_email,
-                               uc.nome as uc_nome,
-                               uc.id_curso,
-                               c.nome  as curso_nome,
-                               c.sigla as curso_sigla,
-                               al.ano_inicio,
-                               al.ano_fim,
-                               al.arquivado
-                        FROM dsd
-                                 JOIN docente d ON dsd.id_doc = d.id_doc
-                                 JOIN uc ON dsd.id_uc = uc.id_uc
-                                 JOIN curso c ON uc.id_curso = c.id_curso
-                                 JOIN ano_letivo al ON dsd.id_ano = al.id_ano
-                        WHERE 1 = 1
-                    `;
-
-                    // Build dynamic WHERE clause
-                    let paramIndex = 1;
-                    if (paramObj.id_doc) {
-                        query += ` AND dsd.id_doc = $${paramIndex++}`;
-                        queryParams.push(paramObj.id_doc);
-                    }
-                    if (paramObj.id_uc) {
-                        query += ` AND dsd.id_uc = $${paramIndex++}`;
-                        queryParams.push(paramObj.id_uc);
-                    }
-                    if (paramObj.id_ano) {
-                        query += ` AND dsd.id_ano = $${paramIndex++}`;
-                        queryParams.push(paramObj.id_ano);
-                    }
-                    if (paramObj.id_curso) {
-                        query += ` AND uc.id_curso = $${paramIndex++}`;
-                        queryParams.push(paramObj.id_curso);
-                    }
-                    if (paramObj.activeYearOnly === true || paramObj.activeYearOnly === 'true') {
-                        query += ` AND al.arquivado = FALSE`;
-                    }
-
-                    query += ' ORDER BY al.ano_inicio DESC, c.nome, uc.nome, d.nome, dsd.tipo';
-                    break;
-                }
-
-                case "dsdByUcGrouped":
-                    // Get DSD for a specific UC, grouped by turma and tipo
-                    query = `
-                        SELECT dsd.id_dsd,
-                               dsd.id_doc,
-                               dsd.tipo,
-                               dsd.horas,
-                               dsd.turma,
-                               d.nome  as docente_nome,
-                               d.email as docente_email,
-                               al.id_ano,
-                               al.ano_inicio,
-                               al.ano_fim
-                        FROM dsd
-                                 JOIN docente d ON dsd.id_doc = d.id_doc
-                                 JOIN ano_letivo al ON dsd.id_ano = al.id_ano
-                        WHERE dsd.id_uc = $1
-                    `;
-                    queryParams = [paramObj.id_uc];
-
-                    if (paramObj.id_ano) {
-                        query += ' AND dsd.id_ano = $2';
-                        queryParams.push(paramObj.id_ano);
-                    } else {
-                        query += ' AND al.arquivado = FALSE';
-                    }
-
-                    query += ' ORDER BY dsd.turma, dsd.tipo, d.nome';
-                    break;
-
-                default:
+            // Handle dynamic queries separately
+            if (queryName === "dsdWithDetails") {
+                const result = buildDsdWithDetailsQuery(paramObj);
+                query = result.query;
+                queryParams = result.queryParams;
+            } else if (queryName === "dsdByUcGrouped") {
+                const result = buildDsdByUcQuery(paramObj);
+                query = result.query;
+                queryParams = result.queryParams;
+            } else {
+                // Get static query configuration
+                const config = getQueryConfig(queryName, paramObj);
+                if (!config) {
                     return callback(null, {
                         data: null,
                         error: "Unknown query name",
                         statusCode: 400,
                     });
+                }
+                query = config.query;
+                queryParams = config.queryParams;
             }
 
             const {rows} = await pool.query(query, queryParams);

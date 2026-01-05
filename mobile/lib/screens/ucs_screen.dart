@@ -984,14 +984,18 @@ class _UCsScreenState extends State<UCsScreen> {
                                     builder: (context) => UCHorasDialog(uc: uc),
                                   );
                                 } else if (value == 'dsd') {
+                                  // Capture provider before async gap
+                                  final ucProvider = context.read<UCProvider>();
+
                                   final result = await showDialog<bool>(
                                     context: context,
                                     builder: (context) =>
                                         DsdManagementDialog(uc: uc),
                                   );
+
                                   if (result == true && mounted) {
                                     // Reload UCs to reflect any changes
-                                    context.read<UCProvider>().loadAll();
+                                    ucProvider.loadAll();
                                   }
                                 } else if (value == 'deactivate') {
                                   final provider = context.read<UCProvider>();
