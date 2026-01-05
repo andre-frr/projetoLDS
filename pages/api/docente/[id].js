@@ -9,7 +9,7 @@ function handleError(error, res, notFoundMessage = "Docente inexistente.") {
     });
 }
 
-async function handleGet(id, res) {
+async function handleGet(id, req, res) {
     try {
         const result = await GrpcClient.getById("docente", id);
         return res.status(200).json(result);
@@ -81,7 +81,7 @@ async function handlePut(id, req, res) {
     }
 }
 
-async function handleDelete(id, res) {
+async function handleDelete(id, req, res) {
     try {
         await GrpcClient.delete("docente", id);
         return res.status(204).end();

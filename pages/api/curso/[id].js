@@ -9,7 +9,7 @@ function handleError(error, res, notFoundMessage = "Curso inexistente.") {
     });
 }
 
-async function handleGet(id, res) {
+async function handleGet(id, req, res) {
     try {
         const result = await GrpcClient.getById("curso", id);
         return res.status(200).json(result);
@@ -58,7 +58,7 @@ async function handlePut(id, req, res) {
     }
 }
 
-async function handleDelete(id, res) {
+async function handleDelete(id, req, res) {
     try {
         const ucs = await GrpcClient.getAll("uc", {
             filters: {id_curso: Number.parseInt(id)},

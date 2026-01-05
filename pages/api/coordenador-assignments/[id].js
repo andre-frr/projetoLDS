@@ -1,6 +1,6 @@
 import pool from '@/lib/db.js';
 import {applyCors} from '@/lib/cors.js';
-import {requireRole} from '@/lib/middleware.js';
+import {ACTIONS, requirePermission, RESOURCES} from '@/lib/authorize.js';
 import {
     assignCoordenadorToCourse,
     assignCoordenadorToDepartment,
@@ -14,7 +14,7 @@ import {
  * GET /api/coordenador-assignments/[id]
  * Get all assignments for a coordinator
  */
-async function handleGet(id, res) {
+async function handleGet(id, req, res) {
     try {
         const user = await pool.query(
             'SELECT id, email, role FROM users WHERE id = $1',
@@ -166,11 +166,17 @@ async function handler(req, res) {
 
     switch (req.method) {
         case 'GET':
-            return handleGet(id, res);
+            return requirePermission(ACTIONS.READ, RESOURCES.USERS)(
+                handleGet.bind(null, id)
+            )(req, res);
         case 'POST':
-            return requireRole('Administrador')(handlePost.bind(null, id))(req, res);
+            return requirePermission(ACTIONS.UPDATE, RESOURCES.USERS)(
+                handlePost.bind(null, id)
+            )(req, res);
         case 'DELETE':
-            return requireRole('Administrador')(handleDelete.bind(null, id))(req, res);
+            return requirePermission(ACTIONS.UPDATE, RESOURCES.USERS)(
+                handleDelete.bind(null, id)
+            )(req, res);
         default:
             res.setHeader('Allow', ['GET', 'POST', 'DELETE']);
             return res.status(405).end(`Method ${req.method} Not Allowed`);

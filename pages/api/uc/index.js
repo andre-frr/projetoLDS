@@ -9,7 +9,7 @@ function handleError(error, res) {
         .json({message: error.message || "Internal Server Error"});
 }
 
-async function handleGet(res) {
+async function handleGet(req, res) {
     try {
         const result = await GrpcClient.getAll("uc");
         return res.status(200).json(result);

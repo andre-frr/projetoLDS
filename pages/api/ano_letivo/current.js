@@ -26,7 +26,7 @@ function findCurrentYear(years) {
     return null;
 }
 
-async function handleGet(res) {
+async function handleGet(req, res) {
     try {
         const years = await GrpcClient.getAll("ano_letivo", {
             orderBy: "ano_inicio DESC, ano_fim DESC",

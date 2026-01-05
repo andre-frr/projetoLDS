@@ -13,7 +13,7 @@ function handleError(error, res) {
     });
 }
 
-async function handleGet(id, res) {
+async function handleGet(id, req, res) {
     try {
         const result = await GrpcClient.getById("departamento", id);
         return res.status(200).json(result);
@@ -67,7 +67,7 @@ async function handlePut(id, req, res) {
     }
 }
 
-async function handleDelete(id, res) {
+async function handleDelete(id, req, res) {
     try {
         const areas = await GrpcClient.getAll("area_cientifica", {
             filters: {id_dep: Number.parseInt(id)},

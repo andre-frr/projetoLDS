@@ -58,7 +58,7 @@ const postHandler = async (req, res) => {
     }
 };
 
-async function handleGet(res) {
+async function handleGet(req, res) {
     try {
         const result = await GrpcClient.getAll("departamento");
         return res.status(200).json(result);

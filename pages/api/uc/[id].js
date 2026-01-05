@@ -9,7 +9,7 @@ function handleError(error, res, notFoundMessage = "UC inexistente.") {
     });
 }
 
-async function handleGet(id, res) {
+async function handleGet(id, req, res) {
     try {
         const uc = await GrpcClient.getById("uc", id);
         const horasContacto = await GrpcClient.getAll("uc_horas_contacto", {
@@ -87,7 +87,7 @@ async function handlePut(id, req, res) {
     }
 }
 
-async function handleDelete(id, res) {
+async function handleDelete(id, req, res) {
     try {
         await GrpcClient.delete("uc", id);
         return res.status(204).end();

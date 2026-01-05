@@ -6,7 +6,7 @@ function handleError(error, res) {
     return res.status(statusCode).json({message: error.message || 'Internal Server Error'});
 }
 
-async function handleGet(res) {
+async function handleGet(req, res) {
     try {
         const result = await GrpcClient.getAll('uc_horas_contacto');
         return res.status(200).json(result);
@@ -59,9 +59,9 @@ async function handlePost(req, res) {
 async function handler(req, res) {
     switch (req.method) {
         case 'GET':
-            return handleGet(res);
+            return requirePermission(ACTIONS.READ, RESOURCES.HOURS)(handleGet)(req, res);
         case 'POST':
-            return handlePost(req, res);
+            return requirePermission(ACTIONS.CREATE, RESOURCES.HOURS)(handlePost)(req, res);
         default:
             res.setHeader('Allow', ['GET', 'POST']);
             return res.status(405).end(`Method ${req.method} Not Allowed`);

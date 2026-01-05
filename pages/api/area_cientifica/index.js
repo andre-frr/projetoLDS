@@ -2,7 +2,7 @@ import GrpcClient from "@/lib/grpc-client.js";
 import {applyCors} from "@/lib/cors.js";
 import {ACTIONS, areaContext, requirePermission, RESOURCES} from "@/lib/authorize.js";
 
-async function handleGet(res) {
+async function handleGet(req, res) {
     try {
         const rows = await GrpcClient.executeCustomQuery("areasWithDepartamento");
         return res.status(200).json(rows);

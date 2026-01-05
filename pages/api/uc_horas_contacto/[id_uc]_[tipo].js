@@ -8,7 +8,7 @@ function handleError(error, res, notFoundMessage = 'Horas de contacto inexistent
     });
 }
 
-async function handleGet(compositeKey, res) {
+async function handleGet(compositeKey, req, res) {
     try {
         const result = await GrpcClient.getById('uc_horas_contacto', compositeKey);
         return res.status(200).json(result);
@@ -32,7 +32,7 @@ async function handlePut(compositeKey, req, res) {
     }
 }
 
-async function handleDelete(compositeKey, res) {
+async function handleDelete(compositeKey, req, res) {
     try {
         await GrpcClient.delete('uc_horas_contacto', compositeKey);
         return res.status(204).end();
@@ -45,13 +45,21 @@ async function handler(req, res) {
     const {id_uc, tipo} = req.query;
     const compositeKey = {id_uc: Number.parseInt(id_uc), tipo};
 
+    const hoursContext = () => ({ucId: id_uc});
+
     switch (req.method) {
         case 'GET':
-            return handleGet(compositeKey, res);
+            return requirePermission(ACTIONS.READ, RESOURCES.HOURS, hoursContext)(
+                handleGet.bind(null, compositeKey)
+            )(req, res);
         case 'PUT':
-            return handlePut(compositeKey, req, res);
+            return requirePermission(ACTIONS.UPDATE, RESOURCES.HOURS, hoursContext)(
+                handlePut.bind(null, compositeKey)
+            )(req, res);
         case 'DELETE':
-            return handleDelete(compositeKey, res);
+            return requirePermission(ACTIONS.DELETE, RESOURCES.HOURS, hoursContext)(
+                handleDelete.bind(null, compositeKey)
+            )(req, res);
         default:
             res.setHeader('Allow', ['GET', 'PUT', 'DELETE']);
             return res.status(405).end(`Method ${req.method} Not Allowed`);

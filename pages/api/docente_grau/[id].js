@@ -2,7 +2,7 @@ import pool from '@/lib/db.js';
 import {applyCors} from '@/lib/cors.js';
 import {ACTIONS, requirePermission, RESOURCES} from '@/lib/authorize.js';
 
-async function handleGet(id, res) {
+async function handleGet(id, req, res) {
     try {
         const result = await pool.query('SELECT * FROM docente_grau WHERE id_dg=$1;', [id]);
         if (!result.rows.length) {
@@ -61,7 +61,7 @@ async function handlePut(id, req, res) {
     }
 }
 
-async function handleDelete(id, res) {
+async function handleDelete(id, req, res) {
     try {
         const result = await pool.query('DELETE FROM docente_grau WHERE id_dg=$1 RETURNING *;', [id]);
         if (!result.rows.length) {
