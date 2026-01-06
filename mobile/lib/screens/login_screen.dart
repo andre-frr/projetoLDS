@@ -16,7 +16,6 @@ class _LoginScreenState extends State<LoginScreen> {
   final _usernameController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
-  String? _pendingPasswordSetupEmail;
 
   @override
   void dispose() {
@@ -30,9 +29,9 @@ class _LoginScreenState extends State<LoginScreen> {
     super.didChangeDependencies();
 
     // Check if we need to show password setup dialog after rebuild
-    if (_pendingPasswordSetupEmail != null) {
-      final email = _pendingPasswordSetupEmail!;
-      _pendingPasswordSetupEmail = null; // Clear flag
+    final authProvider = context.read<AuthProvider>();
+    if (authProvider.pendingPasswordSetupEmail != null) {
+      final email = authProvider.pendingPasswordSetupEmail!;
 
       print(
         'DEBUG: didChangeDependencies - showing password setup dialog for $email',
@@ -41,6 +40,7 @@ class _LoginScreenState extends State<LoginScreen> {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) {
           print('DEBUG: PostFrameCallback - showing dialog');
+          authProvider.clearPasswordSetupFlag(); // Clear before showing dialog
           _showPasswordSetupDialog(email);
         }
       });
@@ -69,32 +69,21 @@ class _LoginScreenState extends State<LoginScreen> {
       print('DEBUG: Login returned: $result');
       print('DEBUG: Current error message: "${authProvider.errorMessage}"');
 
-      // IMPORTANT: Check error and show dialog IMMEDIATELY, before any rebuilds
-      if (!result) {
+      // IMPORTANT: AuthProvider now automatically sets pendingPasswordSetupEmail flag
+      // if the error is password setup required. The dialog will show after rebuild.
+      if (!result && mounted) {
         final errorMsg = authProvider.errorMessage?.toLowerCase() ?? '';
-        print('DEBUG: Lowercase error message: "$errorMsg"');
-        print(
-          'DEBUG: Contains "password setup": ${errorMsg.contains('password setup')}',
-        );
 
-        if (errorMsg.contains('password setup') ||
-            errorMsg.contains('password not set')) {
-          print(
-            'DEBUG: Detected password setup required, setting flag for email: $email',
+        // Only show error snackbar if it's NOT a password setup requirement
+        if (!errorMsg.contains('password setup') &&
+            !errorMsg.contains('password not set')) {
+          print('DEBUG: Showing error snackbar for non-password-setup error');
+          messenger.showSnackBar(
+            SnackBar(
+              content: Text(authProvider.errorMessage ?? 'Login failed'),
+              backgroundColor: Colors.red,
+            ),
           );
-          // Set flag to show dialog after widget rebuilds
-          // Don't call setState - the AuthProvider already triggered a rebuild
-          _pendingPasswordSetupEmail = email;
-        } else {
-          print('DEBUG: Did not detect password setup, showing error snackbar');
-          if (mounted) {
-            messenger.showSnackBar(
-              SnackBar(
-                content: Text(authProvider.errorMessage ?? 'Login failed'),
-                backgroundColor: Colors.red,
-              ),
-            );
-          }
         }
       }
     }

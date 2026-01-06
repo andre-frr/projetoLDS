@@ -10,6 +10,7 @@ class AuthProvider with ChangeNotifier {
   UserModel? _user;
   bool _isLoading = false;
   String? _errorMessage;
+  String? _pendingPasswordSetupEmail; // Flag for password setup dialog
 
   UserModel? get user => _user;
 
@@ -20,6 +21,8 @@ class AuthProvider with ChangeNotifier {
   bool get isAuthenticated => _user != null;
 
   String? get userRole => _user?.role;
+
+  String? get pendingPasswordSetupEmail => _pendingPasswordSetupEmail;
 
   // Permission check methods
   bool canViewMenu(String menuItem) {
@@ -76,6 +79,7 @@ class AuthProvider with ChangeNotifier {
   Future<bool> login(String username, String password) async {
     _isLoading = true;
     _errorMessage = null;
+    _pendingPasswordSetupEmail = null; // Clear any pending password setup
     notifyListeners();
 
     try {
@@ -87,10 +91,26 @@ class AuthProvider with ChangeNotifier {
       print('DEBUG: AuthProvider caught exception: $e');
       _errorMessage = e.toString().replaceAll('Exception: ', '');
       print('DEBUG: AuthProvider set errorMessage to: "$_errorMessage"');
+
+      // Check if this is a password setup requirement
+      if (_errorMessage?.toLowerCase().contains('password setup') == true ||
+          _errorMessage?.toLowerCase().contains('password not set') == true) {
+        _pendingPasswordSetupEmail = username;
+        print(
+          'DEBUG: AuthProvider set pendingPasswordSetupEmail to: $username',
+        );
+      }
+
       _isLoading = false;
       notifyListeners();
       return false;
     }
+  }
+
+  // Clear the password setup flag
+  void clearPasswordSetupFlag() {
+    _pendingPasswordSetupEmail = null;
+    notifyListeners();
   }
 
   // Register
