@@ -26,6 +26,7 @@ certs
 *.pem
 *.log
 *.tmp
+.github
 
 # Environment Variables
 .env
@@ -39,6 +40,3 @@ certs
 .vscode/
 *.swp
 *.swo
-
-#Python's Virtual Environment
-.venv
