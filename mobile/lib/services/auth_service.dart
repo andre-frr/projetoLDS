@@ -133,6 +133,26 @@ class AuthService {
     }
   }
 
+  // Setup password for first-time login
+  Future<void> setupPassword(String email, String password) async {
+    try {
+      final response = await _dio.post(
+        ApiConstants.setupPassword,
+        data: {'email': email, 'password': password},
+      );
+
+      if (response.statusCode == 200) {
+        _logger.i('Password setup successful');
+        return;
+      } else {
+        throw Exception('Password setup failed');
+      }
+    } on DioException catch (e) {
+      _logger.e('Password setup error: ${e.response?.data ?? e.message}');
+      throw Exception(e.response?.data['message'] ?? 'Password setup failed');
+    }
+  }
+
   // Check if user is logged in
   Future<bool> isLoggedIn() async {
     final accessToken = await _storage.read(ApiConstants.accessTokenKey);

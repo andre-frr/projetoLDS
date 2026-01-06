@@ -14,6 +14,7 @@ class ApiConstants {
   static const String refresh = '/auth/refresh';
   static const String logout = '/auth/logout';
   static const String logoutAll = '/auth/logout-all';
+  static const String setupPassword = '/auth/setup-password';
 
   // Storage Keys
   static const String accessTokenKey = 'access_token';

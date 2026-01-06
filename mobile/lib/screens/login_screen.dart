@@ -35,17 +35,130 @@ class _LoginScreenState extends State<LoginScreen> {
       final authProvider = context.read<AuthProvider>();
       final messenger = ScaffoldMessenger.of(context);
 
-      final success = await authProvider.login(email, password);
+      // If password is empty, try login anyway to check if setup is required
+      final result = await authProvider.login(
+        email,
+        password.isEmpty ? 'temp' : password,
+      );
 
-      if (!success && mounted) {
-        messenger.showSnackBar(
-          SnackBar(
-            content: Text(authProvider.errorMessage ?? 'Login failed'),
-            backgroundColor: Colors.red,
-          ),
-        );
+      if (!result && mounted) {
+        // Check if password setup is required
+        if (authProvider.errorMessage?.contains('Password setup required') ==
+                true ||
+            authProvider.errorMessage?.contains('Password not set') == true) {
+          // Show password setup dialog
+          _showPasswordSetupDialog(email);
+        } else {
+          messenger.showSnackBar(
+            SnackBar(
+              content: Text(authProvider.errorMessage ?? 'Login failed'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
       }
     }
+  }
+
+  void _showPasswordSetupDialog(String email) {
+    final passwordController = TextEditingController();
+    final confirmPasswordController = TextEditingController();
+    final formKey = GlobalKey<FormState>();
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        title: const Text('Setup Your Password'),
+        content: Form(
+          key: formKey,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text(
+                'This is your first login. Please set up your password.',
+                style: TextStyle(fontSize: 14),
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: passwordController,
+                obscureText: true,
+                decoration: const InputDecoration(
+                  labelText: 'New Password',
+                  border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.lock),
+                ),
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Please enter a password';
+                  }
+                  if (value.length < 8) {
+                    return 'Password must be at least 8 characters';
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: confirmPasswordController,
+                obscureText: true,
+                decoration: const InputDecoration(
+                  labelText: 'Confirm Password',
+                  border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.lock_outline),
+                ),
+                validator: (value) {
+                  if (value != passwordController.text) {
+                    return 'Passwords do not match';
+                  }
+                  return null;
+                },
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              if (formKey.currentState!.validate()) {
+                final authProvider = context.read<AuthProvider>();
+                final messenger = ScaffoldMessenger.of(context);
+                final navigator = Navigator.of(context);
+
+                final success = await authProvider.setupPassword(
+                  email,
+                  passwordController.text,
+                );
+
+                if (success) {
+                  navigator.pop(); // Close dialog
+                  messenger.showSnackBar(
+                    const SnackBar(
+                      content: Text('Password set successfully! Please login.'),
+                      backgroundColor: Colors.green,
+                    ),
+                  );
+                } else {
+                  messenger.showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        authProvider.errorMessage ?? 'Failed to set password',
+                      ),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                }
+              }
+            },
+            child: const Text('Set Password'),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -122,6 +235,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               onFieldSubmitted: (_) => _handleLogin(),
                               decoration: InputDecoration(
                                 labelText: 'Password',
+                                hintText: 'Leave empty if first login',
                                 prefixIcon: const Icon(Icons.lock),
                                 border: const OutlineInputBorder(),
                                 suffixIcon: IconButton(
@@ -137,12 +251,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                   },
                                 ),
                               ),
-                              validator: (value) {
-                                if (value == null || value.isEmpty) {
-                                  return 'Please enter your password';
-                                }
-                                return null;
-                              },
+                              // Removed validator - allow empty password for first-time setup
                             ),
                             const SizedBox(height: 24),
 
