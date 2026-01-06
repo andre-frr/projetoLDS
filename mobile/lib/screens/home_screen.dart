@@ -8,6 +8,7 @@ import 'areas_cientificas_screen.dart';
 import 'cursos_screen.dart';
 import 'departamentos_screen.dart';
 import 'docentes_screen.dart';
+import 'dsd_screen.dart';
 import 'settings_screen.dart';
 import 'ucs_screen.dart';
 
@@ -170,6 +171,23 @@ class HomeScreen extends StatelessWidget {
                   Navigator.push(
                     context,
                     MaterialPageRoute(builder: (context) => const UCsScreen()),
+                  );
+                },
+              ),
+            // DSD - For Admin, Coordenador, and Docente
+            if (authProvider.canViewMenu(PermissionHelper.menuDSD))
+              ListTile(
+                leading: const Icon(Icons.assignment_ind),
+                title: Text(
+                  user?.role == PermissionHelper.roleProfessor
+                      ? 'Meu Serviço Docente'
+                      : 'Distribuição de Serviço Docente',
+                ),
+                onTap: () {
+                  Navigator.pop(context);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const DsdScreen()),
                   );
                 },
               ),

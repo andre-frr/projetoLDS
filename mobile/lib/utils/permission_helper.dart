@@ -14,6 +14,7 @@ class PermissionHelper {
   static const String menuAreas = 'areas';
   static const String menuUCs = 'ucs';
   static const String menuAcademicYears = 'academic_years';
+  static const String menuDSD = 'dsd';
   static const String menuSettings = 'settings';
 
   /// Check if user can view a specific menu item
@@ -29,9 +30,10 @@ class PermissionHelper {
         return true;
 
       case roleProfessor:
-        // Docentes can only see courses, UCs, and settings
+        // Docentes can see courses, UCs, DSD, and settings
         return menuItem == menuCourses ||
             menuItem == menuUCs ||
+            menuItem == menuDSD ||
             menuItem == menuSettings;
 
       case roleGuest:

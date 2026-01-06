@@ -10,6 +10,7 @@ import '../screens/docentes_screen.dart';
 import '../screens/dsd_screen.dart';
 import '../screens/settings_screen.dart';
 import '../screens/ucs_screen.dart';
+import '../utils/permission_helper.dart';
 
 class AppNavigationDrawer extends StatelessWidget {
   final String currentRoute;
@@ -60,82 +61,98 @@ class AppNavigationDrawer extends StatelessWidget {
               Navigator.of(context).popUntil((route) => route.isFirst);
             },
           ),
-          _buildDrawerItem(
-            context,
-            icon: Icons.business,
-            title: 'Departamentos',
-            route: 'departamentos',
-            onTap: () {
-              _navigateTo(context, const DepartamentosScreen());
-            },
-          ),
-          _buildDrawerItem(
-            context,
-            icon: Icons.school,
-            title: 'Cursos',
-            route: 'cursos',
-            onTap: () {
-              _navigateTo(context, const CursosScreen());
-            },
-          ),
-          _buildDrawerItem(
-            context,
-            icon: Icons.person,
-            title: 'Docentes',
-            route: 'docentes',
-            onTap: () {
-              _navigateTo(context, const DocentesScreen());
-            },
-          ),
-          _buildDrawerItem(
-            context,
-            icon: Icons.science,
-            title: 'Áreas Científicas',
-            route: 'areas_cientificas',
-            onTap: () {
-              _navigateTo(context, const AreasCientificasScreen());
-            },
-          ),
-          _buildDrawerItem(
-            context,
-            icon: Icons.menu_book,
-            title: 'Unidades Curriculares',
-            route: 'ucs',
-            onTap: () {
-              _navigateTo(context, const UCsScreen());
-            },
-          ),
-          // DSD - Only for Docente role
-          if (user?.role == 'Docente')
+          // Departamentos - Only for Admin and Coordenador
+          if (authProvider.canViewMenu(PermissionHelper.menuDepartments))
+            _buildDrawerItem(
+              context,
+              icon: Icons.business,
+              title: 'Departamentos',
+              route: 'departamentos',
+              onTap: () {
+                _navigateTo(context, const DepartamentosScreen());
+              },
+            ),
+          // Cursos - All roles can view
+          if (authProvider.canViewMenu(PermissionHelper.menuCourses))
+            _buildDrawerItem(
+              context,
+              icon: Icons.school,
+              title: 'Cursos',
+              route: 'cursos',
+              onTap: () {
+                _navigateTo(context, const CursosScreen());
+              },
+            ),
+          // Docentes - Only for Admin and Coordenador
+          if (authProvider.canViewMenu(PermissionHelper.menuProfessors))
+            _buildDrawerItem(
+              context,
+              icon: Icons.person,
+              title: 'Docentes',
+              route: 'docentes',
+              onTap: () {
+                _navigateTo(context, const DocentesScreen());
+              },
+            ),
+          // Áreas Científicas - Only for Admin and Coordenador
+          if (authProvider.canViewMenu(PermissionHelper.menuAreas))
+            _buildDrawerItem(
+              context,
+              icon: Icons.science,
+              title: 'Áreas Científicas',
+              route: 'areas_cientificas',
+              onTap: () {
+                _navigateTo(context, const AreasCientificasScreen());
+              },
+            ),
+          // Unidades Curriculares - All roles can view
+          if (authProvider.canViewMenu(PermissionHelper.menuUCs))
+            _buildDrawerItem(
+              context,
+              icon: Icons.menu_book,
+              title: 'Unidades Curriculares',
+              route: 'ucs',
+              onTap: () {
+                _navigateTo(context, const UCsScreen());
+              },
+            ),
+          // DSD - For Admin, Coordenador, and Docente
+          if (authProvider.canViewMenu(PermissionHelper.menuDSD))
             _buildDrawerItem(
               context,
               icon: Icons.assignment_ind,
-              title: 'Meu Serviço Docente',
+              title: user?.role == PermissionHelper.roleProfessor
+                  ? 'Meu Serviço Docente'
+                  : 'Distribuição de Serviço Docente',
               route: 'dsd',
               onTap: () {
                 _navigateTo(context, const DsdScreen());
               },
             ),
           const Divider(),
-          _buildDrawerItem(
-            context,
-            icon: Icons.calendar_today,
-            title: 'Anos Letivos',
-            route: 'anos_letivos',
-            onTap: () {
-              _navigateTo(context, const AnosLetivosScreen());
-            },
-          ),
+          // Anos Letivos - Only for Admin and Coordenador
+          if (authProvider.canViewMenu(PermissionHelper.menuAcademicYears))
+            _buildDrawerItem(
+              context,
+              icon: Icons.calendar_today,
+              title: 'Anos Letivos',
+              route: 'anos_letivos',
+              onTap: () {
+                _navigateTo(context, const AnosLetivosScreen());
+              },
+            ),
           const Divider(),
-          _buildDrawerItem(
-            context,
-            icon: Icons.settings,
-            title: 'Definições',
-            route: 'settings',
-            onTap: () {
-              _navigateTo(context, const SettingsScreen());
-            },
-          ),
+          // Settings - All roles can access
+          if (authProvider.canViewMenu(PermissionHelper.menuSettings))
+            _buildDrawerItem(
+              context,
+              icon: Icons.settings,
+              title: 'Definições',
+              route: 'settings',
+              onTap: () {
+                _navigateTo(context, const SettingsScreen());
+              },
+            ),
         ],
       ),
     );
