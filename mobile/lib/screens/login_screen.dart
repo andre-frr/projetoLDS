@@ -35,11 +35,13 @@ class _LoginScreenState extends State<LoginScreen> {
       final authProvider = context.read<AuthProvider>();
       final messenger = ScaffoldMessenger.of(context);
 
-      // If password is empty, try login anyway to check if setup is required
-      final result = await authProvider.login(
-        email,
-        password.isEmpty ? 'temp' : password,
-      );
+      // If password is empty, send a placeholder to trigger NULL password detection
+      // The backend will check for NULL password before validating credentials
+      final passwordToSend = password.isEmpty
+          ? '__CHECK_PASSWORD_SETUP__'
+          : password;
+
+      final result = await authProvider.login(email, passwordToSend);
 
       if (!result && mounted) {
         // Check if password setup is required

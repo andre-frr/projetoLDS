@@ -58,7 +58,22 @@ class AuthService {
         throw Exception('Login failed');
       }
     } on DioException catch (e) {
-      _logger.e('Login error: ${e.response?.data ?? e.message}');
+      _logger.e(
+        'Login error: ${e.response?.statusCode} - ${e.response?.data ?? e.message}',
+      );
+
+      // Check if password setup is required (403 with specific message)
+      if (e.response?.statusCode == 403 &&
+          e.response?.data != null &&
+          e.response?.data is Map) {
+        final data = e.response!.data as Map;
+        if (data['requiresPasswordSetup'] == true) {
+          throw Exception(
+            'Password setup required. Please set up your password before logging in.',
+          );
+        }
+      }
+
       throw Exception(e.response?.data['message'] ?? 'Login failed');
     }
   }
