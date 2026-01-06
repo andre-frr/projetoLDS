@@ -83,9 +83,8 @@ class _LoginScreenState extends State<LoginScreen> {
             'DEBUG: Detected password setup required, setting flag for email: $email',
           );
           // Set flag to show dialog after widget rebuilds
-          setState(() {
-            _pendingPasswordSetupEmail = email;
-          });
+          // Don't call setState - the AuthProvider already triggered a rebuild
+          _pendingPasswordSetupEmail = email;
         } else {
           print('DEBUG: Did not detect password setup, showing error snackbar');
           if (mounted) {
