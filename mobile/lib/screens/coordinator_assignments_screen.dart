@@ -289,8 +289,97 @@ class _CoordinatorAssignmentsScreenState
       ),
       body: coordProvider.isLoading
           ? const Center(child: CircularProgressIndicator())
+          : coordProvider.errorMessage != null
+          ? Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.error_outline, size: 64, color: Colors.red),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Erro ao carregar coordenadores',
+                    style: Theme.of(context).textTheme.titleLarge,
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    coordProvider.errorMessage!,
+                    style: const TextStyle(color: Colors.grey),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 16),
+                  ElevatedButton.icon(
+                    onPressed: _loadData,
+                    icon: const Icon(Icons.refresh),
+                    label: const Text('Tentar Novamente'),
+                  ),
+                ],
+              ),
+            )
           : coordProvider.coordinators.isEmpty
-          ? const Center(child: Text('Nenhum coordenador encontrado'))
+          ? Center(
+              child: Padding(
+                padding: const EdgeInsets.all(24.0),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(
+                      Icons.admin_panel_settings_outlined,
+                      size: 80,
+                      color: Colors.grey,
+                    ),
+                    const SizedBox(height: 24),
+                    Text(
+                      'Nenhum coordenador encontrado',
+                      style: Theme.of(context).textTheme.titleLarge,
+                    ),
+                    const SizedBox(height: 16),
+                    const Text(
+                      'Para atribuir coordenadores a departamentos e cursos, '
+                      'primeiro é necessário criar utilizadores com o papel "Coordenador".',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(color: Colors.grey, fontSize: 16),
+                    ),
+                    const SizedBox(height: 24),
+                    Card(
+                      color: Colors.blue.shade50,
+                      child: Padding(
+                        padding: const EdgeInsets.all(16.0),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Icon(
+                                  Icons.info_outline,
+                                  color: Colors.blue.shade700,
+                                ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  'Como criar um coordenador:',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.blue.shade900,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 12),
+                            const Text(
+                              '1. Vá para a lista de Docentes\n'
+                              '2. Crie um novo docente\n'
+                              '3. Marque "Criar utilizador no sistema"\n'
+                              '4. Selecione o papel "Coordenador"\n'
+                              '5. Volte aqui para fazer as atribuições',
+                              style: TextStyle(height: 1.5),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            )
           : Column(
               children: [
                 // Coordinator selector

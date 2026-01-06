@@ -12,8 +12,11 @@ class CoordinatorProvider with ChangeNotifier {
   String? _errorMessage;
 
   List<Map<String, dynamic>> get coordinators => _coordinators;
+
   CoordinatorAssignment? get selectedAssignment => _selectedAssignment;
+
   bool get isLoading => _isLoading;
+
   String? get errorMessage => _errorMessage;
 
   /// Load all coordinators

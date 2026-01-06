@@ -23,6 +23,7 @@ const primaryKeys = {
     docente: "id_doc",
     curso: "id_curso",
     uc: "id_uc",
+    uc_turma: ["id_uc", "turma", "ano_letivo"],
     grau: "id_grau",
     docente_grau: "id_dg",
     historico_cv_docente: "id_hcd",
