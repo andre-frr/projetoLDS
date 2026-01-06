@@ -16,12 +16,35 @@ class _LoginScreenState extends State<LoginScreen> {
   final _usernameController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
+  String? _pendingPasswordSetupEmail;
 
   @override
   void dispose() {
     _usernameController.dispose();
     _passwordController.dispose();
     super.dispose();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+
+    // Check if we need to show password setup dialog after rebuild
+    if (_pendingPasswordSetupEmail != null) {
+      final email = _pendingPasswordSetupEmail!;
+      _pendingPasswordSetupEmail = null; // Clear flag
+
+      print(
+        'DEBUG: didChangeDependencies - showing password setup dialog for $email',
+      );
+      // Use addPostFrameCallback to ensure dialog shows after build completes
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          print('DEBUG: PostFrameCallback - showing dialog');
+          _showPasswordSetupDialog(email);
+        }
+      });
+    }
   }
 
   void _handleLogin() async {
@@ -56,17 +79,12 @@ class _LoginScreenState extends State<LoginScreen> {
 
         if (errorMsg.contains('password setup') ||
             errorMsg.contains('password not set')) {
-          print('DEBUG: Detected password setup required, showing dialog NOW');
-          // Use Future.delayed to show dialog after current execution completes
-          // This avoids issues with rebuilds triggered by notifyListeners
-          Future.delayed(Duration.zero, () {
-            print('DEBUG: Future.delayed executing, mounted=$mounted');
-            if (mounted) {
-              print('DEBUG: Showing password setup dialog');
-              _showPasswordSetupDialog(email);
-            } else {
-              print('DEBUG: Widget not mounted, cannot show dialog');
-            }
+          print(
+            'DEBUG: Detected password setup required, setting flag for email: $email',
+          );
+          // Set flag to show dialog after widget rebuilds
+          setState(() {
+            _pendingPasswordSetupEmail = email;
           });
         } else {
           print('DEBUG: Did not detect password setup, showing error snackbar');
