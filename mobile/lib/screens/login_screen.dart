@@ -44,10 +44,14 @@ class _LoginScreenState extends State<LoginScreen> {
       final result = await authProvider.login(email, passwordToSend);
 
       if (!result && mounted) {
-        // Check if password setup is required
-        if (authProvider.errorMessage?.contains('Password setup required') ==
-                true ||
-            authProvider.errorMessage?.contains('Password not set') == true) {
+        // Debug: print the actual error message
+        print('DEBUG: Login failed with error: "${authProvider.errorMessage}"');
+
+        // Check if password setup is required - be more flexible with the check
+        final errorMsg = authProvider.errorMessage?.toLowerCase() ?? '';
+        if (errorMsg.contains('password setup') ||
+            errorMsg.contains('password not set')) {
+          print('DEBUG: Detected password setup required, showing dialog');
           // Show password setup dialog
           _showPasswordSetupDialog(email);
         } else {

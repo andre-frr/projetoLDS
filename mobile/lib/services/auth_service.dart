@@ -63,18 +63,39 @@ class AuthService {
       );
 
       // Check if password setup is required (403 with specific message)
-      if (e.response?.statusCode == 403 &&
-          e.response?.data != null &&
-          e.response?.data is Map) {
-        final data = e.response!.data as Map;
-        if (data['requiresPasswordSetup'] == true) {
-          throw Exception(
-            'Password setup required. Please set up your password before logging in.',
-          );
+      if (e.response?.statusCode == 403) {
+        final data = e.response?.data;
+
+        // Debug: print the actual response
+        print('DEBUG: 403 Response data type: ${data.runtimeType}');
+        print('DEBUG: 403 Response data: $data');
+
+        // Check if it's a Map and has the flag
+        if (data is Map) {
+          if (data['requiresPasswordSetup'] == true) {
+            throw Exception('Password setup required');
+          }
+          // Also check the message text
+          final message = data['message']?.toString() ?? '';
+          if (message.contains('Password setup required') ||
+              message.contains('Password not set')) {
+            throw Exception('Password setup required');
+          }
+        }
+
+        // If it's a string, check the content
+        if (data is String &&
+            (data.contains('Password setup required') ||
+                data.contains('Password not set'))) {
+          throw Exception('Password setup required');
         }
       }
 
-      throw Exception(e.response?.data['message'] ?? 'Login failed');
+      // Handle other errors - safely extract message
+      final errorMessage = e.response?.data is Map
+          ? e.response?.data['message'] ?? 'Login failed'
+          : (e.response?.data?.toString() ?? 'Login failed');
+      throw Exception(errorMessage);
     }
   }
 
