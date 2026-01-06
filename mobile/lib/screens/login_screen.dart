@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/scheduler.dart';
 import 'package:provider/provider.dart';
 
 import '../providers/auth_provider.dart';
@@ -58,12 +57,15 @@ class _LoginScreenState extends State<LoginScreen> {
         if (errorMsg.contains('password setup') ||
             errorMsg.contains('password not set')) {
           print('DEBUG: Detected password setup required, showing dialog NOW');
-          // Use SchedulerBinding to show dialog after current frame completes
+          // Use Future.delayed to show dialog after current execution completes
           // This avoids issues with rebuilds triggered by notifyListeners
-          SchedulerBinding.instance.addPostFrameCallback((_) {
+          Future.delayed(Duration.zero, () {
+            print('DEBUG: Future.delayed executing, mounted=$mounted');
             if (mounted) {
-              print('DEBUG: Post-frame callback executing, showing dialog');
+              print('DEBUG: Showing password setup dialog');
               _showPasswordSetupDialog(email);
+            } else {
+              print('DEBUG: Widget not mounted, cannot show dialog');
             }
           });
         } else {
