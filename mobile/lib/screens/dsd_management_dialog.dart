@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../models/dsd_model.dart';
+import '../models/uc_horas_model.dart';
 import '../models/uc_model.dart';
 import '../providers/docente_provider.dart';
 import '../providers/dsd_provider.dart';
+import '../services/uc_service.dart';
 
 class DsdManagementDialog extends StatefulWidget {
   final UCModel uc;
@@ -21,12 +23,14 @@ class _DsdManagementDialogState extends State<DsdManagementDialog> {
   String _selectedTipo = 'PL';
   final List<_TeacherAssignment> _assignments = [];
   bool _isLoading = false;
+  List<UCHorasModel> _ucHoras = [];
+  bool _loadingHoras = true;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _loadDocentes();
+      _loadData();
     });
 
     if (widget.existingGroup != null) {
@@ -44,10 +48,39 @@ class _DsdManagementDialogState extends State<DsdManagementDialog> {
     }
   }
 
+  Future<void> _loadData() async {
+    await Future.wait([_loadDocentes(), _loadUCHoras()]);
+  }
+
   Future<void> _loadDocentes() async {
     final docenteProvider = context.read<DocenteProvider>();
     if (docenteProvider.docentes.isEmpty) {
       await docenteProvider.loadAll();
+    }
+  }
+
+  Future<void> _loadUCHoras() async {
+    setState(() => _loadingHoras = true);
+
+    try {
+      final horas = await UCService().getHoras(widget.uc.id);
+
+      // Filter out types with 0 hours
+      final filteredHoras = horas.where((h) => h.horas > 0).toList();
+
+      setState(() {
+        _ucHoras = filteredHoras;
+        _loadingHoras = false;
+
+        // If current selected tipo is not available, select the first available one
+        if (filteredHoras.isNotEmpty &&
+            !filteredHoras.any((h) => h.tipo == _selectedTipo)) {
+          _selectedTipo = filteredHoras.first.tipo;
+        }
+      });
+    } catch (e) {
+      setState(() => _loadingHoras = false);
+      // If error loading hours, show all types as fallback
     }
   }
 
@@ -158,33 +191,41 @@ class _DsdManagementDialogState extends State<DsdManagementDialog> {
               ),
               const SizedBox(height: 16),
 
-              // Tipo selection
-              DropdownButtonFormField<String>(
-                decoration: const InputDecoration(
-                  labelText: 'Tipo de Horas',
-                  border: OutlineInputBorder(),
-                ),
-                initialValue: _selectedTipo,
-                items:
-                    [
-                      {'value': 'PL', 'label': 'PL - Prática Laboratorial'},
-                      {'value': 'T', 'label': 'T - Teórica'},
-                      {'value': 'TP', 'label': 'TP - Teórico-Prática'},
-                      {'value': 'OT', 'label': 'OT - Outra'},
-                    ].map((tipo) {
-                      return DropdownMenuItem(
-                        value: tipo['value'],
-                        child: Text(tipo['label']!),
-                      );
-                    }).toList(),
-                onChanged: widget.existingGroup == null
-                    ? (value) {
-                        setState(() {
-                          _selectedTipo = value!;
-                        });
-                      }
-                    : null,
-              ),
+              // Tipo selection - only show types with hours > 0
+              _loadingHoras
+                  ? const Center(child: CircularProgressIndicator())
+                  : _ucHoras.isEmpty
+                  ? const Card(
+                      child: Padding(
+                        padding: EdgeInsets.all(16.0),
+                        child: Text(
+                          'Nenhum tipo de horas configurado para esta UC',
+                          style: TextStyle(color: Colors.orange),
+                        ),
+                      ),
+                    )
+                  : DropdownButtonFormField<String>(
+                      decoration: const InputDecoration(
+                        labelText: 'Tipo de Horas',
+                        border: OutlineInputBorder(),
+                      ),
+                      value: _ucHoras.any((h) => h.tipo == _selectedTipo)
+                          ? _selectedTipo
+                          : (_ucHoras.isNotEmpty ? _ucHoras.first.tipo : null),
+                      items: _ucHoras.map((ucHora) {
+                        return DropdownMenuItem(
+                          value: ucHora.tipo,
+                          child: Text(_getTipoLabel(ucHora)),
+                        );
+                      }).toList(),
+                      onChanged: widget.existingGroup == null
+                          ? (value) {
+                              setState(() {
+                                _selectedTipo = value!;
+                              });
+                            }
+                          : null,
+                    ),
               const SizedBox(height: 24),
 
               // Assignments
@@ -294,6 +335,18 @@ class _DsdManagementDialogState extends State<DsdManagementDialog> {
         ),
       ],
     );
+  }
+
+  String _getTipoLabel(UCHorasModel ucHora) {
+    final tipoDescriptions = {
+      'PL': 'PL - Prática Laboratorial',
+      'T': 'T - Teórica',
+      'TP': 'TP - Teórico-Prática',
+      'OT': 'OT - Outra',
+    };
+
+    final description = tipoDescriptions[ucHora.tipo] ?? ucHora.tipo;
+    return '$description (${ucHora.horas}h disponíveis)';
   }
 }
 

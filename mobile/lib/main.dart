@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'providers/ano_letivo_provider.dart';
 import 'providers/area_cientifica_provider.dart';
 import 'providers/auth_provider.dart';
+import 'providers/coordinator_provider.dart';
 import 'providers/curso_provider.dart';
 import 'providers/departamento_provider.dart';
 import 'providers/docente_provider.dart';
@@ -57,6 +58,7 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => UCProvider()),
         ChangeNotifierProvider(create: (_) => AnoLetivoProvider()),
         ChangeNotifierProvider(create: (_) => DsdProvider()),
+        ChangeNotifierProvider(create: (_) => CoordinatorProvider()),
       ],
       child: Consumer<ThemeProvider>(
         builder: (context, themeProvider, child) {

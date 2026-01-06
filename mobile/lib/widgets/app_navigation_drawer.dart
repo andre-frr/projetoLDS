@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
 import '../screens/anos_letivos_screen.dart';
 import '../screens/areas_cientificas_screen.dart';
+import '../screens/coordinator_assignments_screen.dart';
 import '../screens/cursos_screen.dart';
 import '../screens/departamentos_screen.dart';
 import '../screens/docentes_screen.dart';
@@ -92,6 +93,17 @@ class AppNavigationDrawer extends StatelessWidget {
               route: 'docentes',
               onTap: () {
                 _navigateTo(context, const DocentesScreen());
+              },
+            ),
+          // Coordinator Assignments - Only for Admin
+          if (authProvider.isAdmin)
+            _buildDrawerItem(
+              context,
+              icon: Icons.admin_panel_settings,
+              title: 'Atribuições de Coordenadores',
+              route: 'coordinator_assignments',
+              onTap: () {
+                _navigateTo(context, const CoordinatorAssignmentsScreen());
               },
             ),
           // Áreas Científicas - Only for Admin and Coordenador

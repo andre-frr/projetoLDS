@@ -5,6 +5,7 @@ import '../providers/auth_provider.dart';
 import '../utils/permission_helper.dart';
 import 'anos_letivos_screen.dart';
 import 'areas_cientificas_screen.dart';
+import 'coordinator_assignments_screen.dart';
 import 'cursos_screen.dart';
 import 'departamentos_screen.dart';
 import 'docentes_screen.dart';
@@ -142,6 +143,22 @@ class HomeScreen extends StatelessWidget {
                     context,
                     MaterialPageRoute(
                       builder: (context) => const DocentesScreen(),
+                    ),
+                  );
+                },
+              ),
+            // Coordinator Assignments - Only for Admin
+            if (authProvider.isAdmin)
+              ListTile(
+                leading: const Icon(Icons.admin_panel_settings),
+                title: const Text('Atribuições de Coordenadores'),
+                onTap: () {
+                  Navigator.pop(context);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) =>
+                          const CoordinatorAssignmentsScreen(),
                     ),
                   );
                 },
