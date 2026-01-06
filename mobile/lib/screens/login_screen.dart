@@ -46,15 +46,30 @@ class _LoginScreenState extends State<LoginScreen> {
       if (!result && mounted) {
         // Debug: print the actual error message
         print('DEBUG: Login failed with error: "${authProvider.errorMessage}"');
+        print(
+          'DEBUG: Error message type: ${authProvider.errorMessage.runtimeType}',
+        );
+        print(
+          'DEBUG: Error message length: ${authProvider.errorMessage?.length}',
+        );
 
         // Check if password setup is required - be more flexible with the check
         final errorMsg = authProvider.errorMessage?.toLowerCase() ?? '';
+        print('DEBUG: Lowercase error message: "$errorMsg"');
+        print(
+          'DEBUG: Contains "password setup": ${errorMsg.contains('password setup')}',
+        );
+        print(
+          'DEBUG: Contains "password not set": ${errorMsg.contains('password not set')}',
+        );
+
         if (errorMsg.contains('password setup') ||
             errorMsg.contains('password not set')) {
           print('DEBUG: Detected password setup required, showing dialog');
           // Show password setup dialog
           _showPasswordSetupDialog(email);
         } else {
+          print('DEBUG: Did not detect password setup, showing error snackbar');
           messenger.showSnackBar(
             SnackBar(
               content: Text(authProvider.errorMessage ?? 'Login failed'),

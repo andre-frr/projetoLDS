@@ -84,7 +84,9 @@ class AuthProvider with ChangeNotifier {
       notifyListeners();
       return true;
     } catch (e) {
+      print('DEBUG: AuthProvider caught exception: $e');
       _errorMessage = e.toString().replaceAll('Exception: ', '');
+      print('DEBUG: AuthProvider set errorMessage to: "$_errorMessage"');
       _isLoading = false;
       notifyListeners();
       return false;

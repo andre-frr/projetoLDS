@@ -72,13 +72,21 @@ class AuthService {
 
         // Check if it's a Map and has the flag
         if (data is Map) {
+          print('DEBUG: Data is Map, checking requiresPasswordSetup flag...');
           if (data['requiresPasswordSetup'] == true) {
+            print(
+              'DEBUG: Found requiresPasswordSetup flag, throwing exception',
+            );
             throw Exception('Password setup required');
           }
           // Also check the message text
           final message = data['message']?.toString() ?? '';
+          print('DEBUG: Checking message text: "$message"');
           if (message.contains('Password setup required') ||
               message.contains('Password not set')) {
+            print(
+              'DEBUG: Message contains password setup text, throwing exception',
+            );
             throw Exception('Password setup required');
           }
         }
