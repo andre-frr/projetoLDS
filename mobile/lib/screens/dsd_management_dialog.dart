@@ -209,7 +209,7 @@ class _DsdManagementDialogState extends State<DsdManagementDialog> {
                         labelText: 'Tipo de Horas',
                         border: OutlineInputBorder(),
                       ),
-                      value: _ucHoras.any((h) => h.tipo == _selectedTipo)
+                      initialValue: _ucHoras.any((h) => h.tipo == _selectedTipo)
                           ? _selectedTipo
                           : (_ucHoras.isNotEmpty ? _ucHoras.first.tipo : null),
                       items: _ucHoras.map((ucHora) {
