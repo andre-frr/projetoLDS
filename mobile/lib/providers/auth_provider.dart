@@ -79,7 +79,7 @@ class AuthProvider with ChangeNotifier {
   Future<bool> login(String username, String password) async {
     _isLoading = true;
     _errorMessage = null;
-    _pendingPasswordSetupEmail = null; // Clear any pending password setup
+    _pendingPasswordSetupEmail = null;
     notifyListeners();
 
     try {
@@ -88,17 +88,12 @@ class AuthProvider with ChangeNotifier {
       notifyListeners();
       return true;
     } catch (e) {
-      print('DEBUG: AuthProvider caught exception: $e');
       _errorMessage = e.toString().replaceAll('Exception: ', '');
-      print('DEBUG: AuthProvider set errorMessage to: "$_errorMessage"');
 
       // Check if this is a password setup requirement
       if (_errorMessage?.toLowerCase().contains('password setup') == true ||
           _errorMessage?.toLowerCase().contains('password not set') == true) {
         _pendingPasswordSetupEmail = username;
-        print(
-          'DEBUG: AuthProvider set pendingPasswordSetupEmail to: $username',
-        );
       }
 
       _isLoading = false;
@@ -110,7 +105,6 @@ class AuthProvider with ChangeNotifier {
   // Clear the password setup flag
   void clearPasswordSetupFlag() {
     _pendingPasswordSetupEmail = null;
-    notifyListeners();
   }
 
   // Register

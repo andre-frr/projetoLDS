@@ -62,44 +62,20 @@ class AuthService {
         'Login error: ${e.response?.statusCode} - ${e.response?.data ?? e.message}',
       );
 
-      // Check if password setup is required (403 with specific message)
-      if (e.response?.statusCode == 403) {
-        final data = e.response?.data;
+      // Check if password setup is required (403 response)
+      if (e.response?.statusCode == 403 && e.response?.data is Map) {
+        final data = e.response!.data as Map;
 
-        // Debug: print the actual response
-        print('DEBUG: 403 Response data type: ${data.runtimeType}');
-        print('DEBUG: 403 Response data: $data');
-
-        // Check if it's a Map and has the flag
-        if (data is Map) {
-          print('DEBUG: Data is Map, checking requiresPasswordSetup flag...');
-          if (data['requiresPasswordSetup'] == true) {
-            print(
-              'DEBUG: Found requiresPasswordSetup flag, throwing exception',
-            );
-            throw Exception('Password setup required');
-          }
-          // Also check the message text
-          final message = data['message']?.toString() ?? '';
-          print('DEBUG: Checking message text: "$message"');
-          if (message.contains('Password setup required') ||
-              message.contains('Password not set')) {
-            print(
-              'DEBUG: Message contains password setup text, throwing exception',
-            );
-            throw Exception('Password setup required');
-          }
-        }
-
-        // If it's a string, check the content
-        if (data is String &&
-            (data.contains('Password setup required') ||
-                data.contains('Password not set'))) {
+        // Check for password setup flag or message
+        if (data['requiresPasswordSetup'] == true ||
+            data['message']?.toString().contains('Password setup required') ==
+                true ||
+            data['message']?.toString().contains('Password not set') == true) {
           throw Exception('Password setup required');
         }
       }
 
-      // Handle other errors - safely extract message
+      // Handle other errors
       final errorMessage = e.response?.data is Map
           ? e.response?.data['message'] ?? 'Login failed'
           : (e.response?.data?.toString() ?? 'Login failed');

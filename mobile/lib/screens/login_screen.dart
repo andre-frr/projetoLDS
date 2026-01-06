@@ -33,14 +33,10 @@ class _LoginScreenState extends State<LoginScreen> {
     if (authProvider.pendingPasswordSetupEmail != null) {
       final email = authProvider.pendingPasswordSetupEmail!;
 
-      print(
-        'DEBUG: didChangeDependencies - showing password setup dialog for $email',
-      );
       // Use addPostFrameCallback to ensure dialog shows after build completes
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) {
-          print('DEBUG: PostFrameCallback - showing dialog');
-          authProvider.clearPasswordSetupFlag(); // Clear before showing dialog
+          authProvider.clearPasswordSetupFlag();
           _showPasswordSetupDialog(email);
         }
       });
@@ -59,25 +55,20 @@ class _LoginScreenState extends State<LoginScreen> {
       final messenger = ScaffoldMessenger.of(context);
 
       // If password is empty, send a placeholder to trigger NULL password detection
-      // The backend will check for NULL password before validating credentials
       final passwordToSend = password.isEmpty
           ? '__CHECK_PASSWORD_SETUP__'
           : password;
 
-      print('DEBUG: About to call login...');
       final result = await authProvider.login(email, passwordToSend);
-      print('DEBUG: Login returned: $result');
-      print('DEBUG: Current error message: "${authProvider.errorMessage}"');
 
-      // IMPORTANT: AuthProvider now automatically sets pendingPasswordSetupEmail flag
-      // if the error is password setup required. The dialog will show after rebuild.
+      // AuthProvider automatically sets pendingPasswordSetupEmail flag
+      // if password setup is required. The dialog will show after rebuild.
       if (!result && mounted) {
         final errorMsg = authProvider.errorMessage?.toLowerCase() ?? '';
 
         // Only show error snackbar if it's NOT a password setup requirement
         if (!errorMsg.contains('password setup') &&
             !errorMsg.contains('password not set')) {
-          print('DEBUG: Showing error snackbar for non-password-setup error');
           messenger.showSnackBar(
             SnackBar(
               content: Text(authProvider.errorMessage ?? 'Login failed'),

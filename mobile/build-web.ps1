@@ -2,7 +2,7 @@
 # Usage: .\build-web.ps1 -ServerIp "192.168.1.100"
 
 param(
-    [Parameter(Mandatory=$true)]
+    [Parameter(Mandatory = $true)]
     [string]$ServerIp,
 
     [int]$ApiPort = 3000,
@@ -21,10 +21,13 @@ flutter build web `
     --dart-define=API_BASE_URL=$ApiBaseUrl `
     --dart-define=GRAPHQL_URL=$GraphQLUrl
 
-if ($LASTEXITCODE -eq 0) {
+if ($LASTEXITCODE -eq 0)
+{
     Write-Host "`nBuild completed successfully!" -ForegroundColor Green
     Write-Host "Output directory: build/web" -ForegroundColor Yellow
-} else {
+}
+else
+{
     Write-Host "`nBuild failed!" -ForegroundColor Red
     exit 1
 }
