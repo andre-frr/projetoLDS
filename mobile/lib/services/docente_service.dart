@@ -57,6 +57,8 @@ class DocenteService {
           'email': docente.email,
           'id_area': docente.idArea,
           'convidado': docente.convidado,
+          'createSystemUser': true, // Automatically create user account
+          'role': 'Docente', // Set role as Docente
         },
       );
 

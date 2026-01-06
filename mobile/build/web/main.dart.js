@@ -94861,7 +94861,7 @@ an1(a,b){var s=0,r=A.w(t.bb),q,p=2,o=[],n=this,m,l,k,j,i
 var $async$ba=A.x(function(c,d){if(c===1){o.push(d)
 s=p}for(;;)switch(s){case 0:p=4
 s=7
-return A.o(n.a.mh("https://192.168.246.55:3000/api/docente",A.ai(["nome",b.b,"email",b.d,"id_area",b.c,"convidado",b.f],t.N,t.K),t.z),$async$ba)
+return A.o(n.a.mh("https://192.168.246.55:3000/api/docente",A.ai(["nome",b.b,"email",b.d,"id_area",b.c,"convidado",b.f,"createSystemUser",!0,"role","Docente"],t.N,t.K),t.z),$async$ba)
 case 7:m=d
 if(m.c===201){k=A.aEn(m.a)
 q=k

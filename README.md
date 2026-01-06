@@ -19,6 +19,7 @@ e gRPC, e inclui um sistema completo de autenticação JWT.
 - ✅ **GraphQL Gateway** para agregação de dados
 - ✅ **Comunicação gRPC** entre microserviços
 - ✅ **Suporte para passwords opcionais** com configuração no primeiro login
+- ✅ **Criação automática de utilizadores** ao criar docentes no sistema
 
 ## 📂 Estrutura do Projeto
 
