@@ -2,7 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../models/dsd_model.dart';
+import '../providers/auth_provider.dart';
 import '../providers/dsd_provider.dart';
+import '../providers/uc_provider.dart';
+import '../utils/permission_helper.dart';
+import 'dsd_management_dialog.dart';
 
 class DsdScreen extends StatefulWidget {
   const DsdScreen({super.key});
@@ -29,9 +33,124 @@ class _DsdScreenState extends State<DsdScreen> {
     await dsdProvider.loadAll();
   }
 
+  Future<void> _showCreateDialog() async {
+    final ucProvider = context.read<UCProvider>();
+
+    // Load UCs if not already loaded
+    if (ucProvider.ucs.isEmpty) {
+      await ucProvider.loadAll();
+    }
+
+    if (!mounted) return;
+
+    // Show UC selector dialog
+    final selectedUc = await showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Selecionar Unidade Curricular'),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: Consumer<UCProvider>(
+            builder: (context, provider, child) {
+              if (provider.isLoading) {
+                return const Center(child: CircularProgressIndicator());
+              }
+
+              final activeUcs = provider.ucs.where((uc) => uc.ativo).toList();
+
+              return ListView.builder(
+                shrinkWrap: true,
+                itemCount: activeUcs.length,
+                itemBuilder: (context, index) {
+                  final uc = activeUcs[index];
+                  return ListTile(
+                    title: Text(uc.nome),
+                    subtitle: Text(
+                      'Ano ${uc.anoCurso} - Semestre ${uc.semCurso}',
+                    ),
+                    onTap: () => Navigator.of(context).pop(uc),
+                  );
+                },
+              );
+            },
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cancelar'),
+          ),
+        ],
+      ),
+    );
+
+    if (selectedUc != null && mounted) {
+      // Show DSD management dialog
+      final result = await showDialog(
+        context: context,
+        builder: (context) => DsdManagementDialog(uc: selectedUc),
+      );
+
+      if (result == true) {
+        _loadDsds();
+      }
+    }
+  }
+
+  Future<void> _confirmDelete(DsdModel dsd) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Confirmar Eliminação'),
+        content: Text(
+          'Tem a certeza que deseja eliminar a DSD de ${dsd.ucNome} - ${dsd.turma} (${dsd.tipo})?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancelar'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            child: const Text('Eliminar'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true && mounted) {
+      final dsdProvider = context.read<DsdProvider>();
+      final success = await dsdProvider.delete(dsd.idDsd);
+
+      if (mounted) {
+        if (success) {
+          setState(() {
+            _selectedDsd = null;
+          });
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('DSD eliminado com sucesso'),
+              backgroundColor: Colors.green,
+            ),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(dsdProvider.errorMessage ?? 'Erro ao eliminar DSD'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final dsdProvider = context.watch<DsdProvider>();
+    final authProvider = context.watch<AuthProvider>();
+    final canCreate = authProvider.canCreate(PermissionHelper.menuDSD);
 
     return Scaffold(
       appBar: AppBar(
@@ -40,6 +159,12 @@ class _DsdScreenState extends State<DsdScreen> {
           IconButton(icon: const Icon(Icons.refresh), onPressed: _loadDsds),
         ],
       ),
+      floatingActionButton: canCreate
+          ? FloatingActionButton(
+              onPressed: _showCreateDialog,
+              child: const Icon(Icons.add),
+            )
+          : null,
       body: dsdProvider.isLoading
           ? const Center(child: CircularProgressIndicator())
           : dsdProvider.errorMessage != null
@@ -99,11 +224,47 @@ class _DsdScreenState extends State<DsdScreen> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(
-                                _selectedDsd!.ucNome ?? 'UC',
-                                style: Theme.of(
-                                  context,
-                                ).textTheme.headlineSmall,
+                              Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Expanded(
+                                    child: Text(
+                                      _selectedDsd!.ucNome ?? 'UC',
+                                      style: Theme.of(
+                                        context,
+                                      ).textTheme.headlineSmall,
+                                    ),
+                                  ),
+                                  if (canCreate)
+                                    PopupMenuButton(
+                                      itemBuilder: (context) => [
+                                        const PopupMenuItem(
+                                          value: 'delete',
+                                          child: Row(
+                                            children: [
+                                              Icon(
+                                                Icons.delete,
+                                                color: Colors.red,
+                                              ),
+                                              SizedBox(width: 8),
+                                              Text(
+                                                'Eliminar',
+                                                style: TextStyle(
+                                                  color: Colors.red,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ],
+                                      onSelected: (value) {
+                                        if (value == 'delete') {
+                                          _confirmDelete(_selectedDsd!);
+                                        }
+                                      },
+                                    ),
+                                ],
                               ),
                               const SizedBox(height: 8),
                               Text(
