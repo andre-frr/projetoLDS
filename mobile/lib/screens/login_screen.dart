@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:provider/provider.dart';
 
 import '../providers/auth_provider.dart';
@@ -41,41 +42,40 @@ class _LoginScreenState extends State<LoginScreen> {
           ? '__CHECK_PASSWORD_SETUP__'
           : password;
 
+      print('DEBUG: About to call login...');
       final result = await authProvider.login(email, passwordToSend);
+      print('DEBUG: Login returned: $result');
+      print('DEBUG: Current error message: "${authProvider.errorMessage}"');
 
-      if (!result && mounted) {
-        // Debug: print the actual error message
-        print('DEBUG: Login failed with error: "${authProvider.errorMessage}"');
-        print(
-          'DEBUG: Error message type: ${authProvider.errorMessage.runtimeType}',
-        );
-        print(
-          'DEBUG: Error message length: ${authProvider.errorMessage?.length}',
-        );
-
-        // Check if password setup is required - be more flexible with the check
+      // IMPORTANT: Check error and show dialog IMMEDIATELY, before any rebuilds
+      if (!result) {
         final errorMsg = authProvider.errorMessage?.toLowerCase() ?? '';
         print('DEBUG: Lowercase error message: "$errorMsg"');
         print(
           'DEBUG: Contains "password setup": ${errorMsg.contains('password setup')}',
         );
-        print(
-          'DEBUG: Contains "password not set": ${errorMsg.contains('password not set')}',
-        );
 
         if (errorMsg.contains('password setup') ||
             errorMsg.contains('password not set')) {
-          print('DEBUG: Detected password setup required, showing dialog');
-          // Show password setup dialog
-          _showPasswordSetupDialog(email);
+          print('DEBUG: Detected password setup required, showing dialog NOW');
+          // Use SchedulerBinding to show dialog after current frame completes
+          // This avoids issues with rebuilds triggered by notifyListeners
+          SchedulerBinding.instance.addPostFrameCallback((_) {
+            if (mounted) {
+              print('DEBUG: Post-frame callback executing, showing dialog');
+              _showPasswordSetupDialog(email);
+            }
+          });
         } else {
           print('DEBUG: Did not detect password setup, showing error snackbar');
-          messenger.showSnackBar(
-            SnackBar(
-              content: Text(authProvider.errorMessage ?? 'Login failed'),
-              backgroundColor: Colors.red,
-            ),
-          );
+          if (mounted) {
+            messenger.showSnackBar(
+              SnackBar(
+                content: Text(authProvider.errorMessage ?? 'Login failed'),
+                backgroundColor: Colors.red,
+              ),
+            );
+          }
         }
       }
     }
