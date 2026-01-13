@@ -113,7 +113,7 @@ async function verifyUcAndTurma(id_uc, turma, id_ano) {
 
     // Verify uc_turma exists
     const turmas = await GrpcClient.getAll("uc_turma", {
-        filters: JSON.stringify({id_uc, turma, ano_letivo: id_ano})
+        filters: {id_uc, turma, ano_letivo: id_ano}
     });
 
     return turmas.length > 0;
@@ -128,6 +128,14 @@ async function verifyDocentes(assignments) {
             throw new Error("Cada atribuição deve ter id_doc e horas");
         }
 
+        // Ensure id_doc and horas are numbers
+        assignment.id_doc = Number(assignment.id_doc);
+        assignment.horas = Number(assignment.horas);
+
+        if (Number.isNaN(assignment.id_doc) || Number.isNaN(assignment.horas)) {
+            throw new TypeError("id_doc e horas devem ser números válidos");
+        }
+
         const docente = await GrpcClient.getById("docente", assignment.id_doc);
         if (!docente.ativo) {
             throw new Error(`Docente com id ${assignment.id_doc} está inativo`);
@@ -140,7 +148,7 @@ async function verifyDocentes(assignments) {
  */
 async function checkDsdExists(id_uc, turma, tipo, id_ano) {
     const existingDsds = await GrpcClient.getAll("dsd", {
-        filters: JSON.stringify({id_uc, turma, tipo, id_ano})
+        filters: {id_uc, turma, tipo, id_ano}
     });
 
     return existingDsds.length > 0;
@@ -205,15 +213,31 @@ async function verifyDsdPrerequisites(id_uc, turma, tipo, assignments) {
 async function createDsdRecords(id_uc, turma, tipo, assignments, id_ano) {
     const createdDsds = [];
 
+    // Ensure all values are the correct types
+    const ucId = Number(id_uc);
+    const anoId = Number(id_ano);
+
+    console.log('[DSD Create] Creating records with:', {
+        id_uc: ucId,
+        id_ano: anoId,
+        turma,
+        tipo,
+        assignmentsCount: assignments.length
+    });
+
     for (const assignment of assignments) {
-        const result = await GrpcClient.create("dsd", {
-            id_doc: assignment.id_doc,
-            id_ano: id_ano,
-            id_uc: id_uc,
+        const dsdData = {
+            id_doc: Number(assignment.id_doc),
+            id_ano: anoId,
+            id_uc: ucId,
             tipo: tipo,
-            horas: assignment.horas,
+            horas: Number(assignment.horas),
             turma: turma
-        });
+        };
+
+        console.log('[DSD Create] Creating DSD with data:', dsdData);
+
+        const result = await GrpcClient.create("dsd", dsdData);
         createdDsds.push(result);
     }
 
@@ -252,6 +276,13 @@ function handleDsdError(error, res) {
 async function handlePost(req, res) {
     const {id_uc, turma, tipo, assignments} = req.body;
 
+    console.log('[DSD POST] Received request:', {
+        id_uc,
+        turma,
+        tipo,
+        assignments
+    });
+
     // Validate request
     const validation = validateDsdRequest(req.body);
     if (!validation.valid) {
@@ -262,6 +293,8 @@ async function handlePost(req, res) {
         // Verify prerequisites and get academic year
         const id_ano = await verifyDsdPrerequisites(id_uc, turma, tipo, assignments);
 
+        console.log('[DSD POST] Active academic year:', id_ano);
+
         // Create DSD records
         const createdDsds = await createDsdRecords(id_uc, turma, tipo, assignments, id_ano);
 
@@ -270,6 +303,7 @@ async function handlePost(req, res) {
             dsds: createdDsds
         });
     } catch (error) {
+        console.error('[DSD POST] Error:', error);
         return handleDsdError(error, res);
     }
 }

@@ -210,12 +210,21 @@ function create(call, callback) {
 
         try {
             const dataObj = JSON.parse(data);
+            console.log('[gRPC] create - Parsed data object:', dataObj);
+
             const keys = Object.keys(dataObj);
             const values = Object.values(dataObj);
+
+            console.log('[gRPC] create - Keys:', keys);
+            console.log('[gRPC] create - Values:', values);
+            console.log('[gRPC] create - Value types:', values.map(v => typeof v));
 
             const placeholders = keys.map((_, i) => `$${i + 1}`).join(", ");
             const query = `INSERT INTO ${tableName} (${keys.join(", ")})
                            VALUES (${placeholders}) RETURNING *`;
+
+            console.log('[gRPC] create - Query:', query);
+            console.log('[gRPC] create - Params:', values);
 
             const {rows} = await pool.query(query, values);
             console.log(`[gRPC] create - Success: Created record in ${tableName}`);
@@ -225,6 +234,7 @@ function create(call, callback) {
             });
         } catch (e) {
             console.error("Create error:", e);
+            console.error("Create error stack:", e.stack);
             callback(null, {
                 data: null,
                 error: e.message,
