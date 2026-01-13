@@ -47,6 +47,15 @@ class _DsdManagementDialogState extends State<DsdManagementDialog> {
     }
   }
 
+  @override
+  void dispose() {
+    // Dispose all assignment controllers
+    for (final assignment in _assignments) {
+      assignment.dispose();
+    }
+    super.dispose();
+  }
+
   Future<void> _loadData() async {
     await _loadDocentes();
     await _loadHoursAllocation();
@@ -116,6 +125,7 @@ class _DsdManagementDialogState extends State<DsdManagementDialog> {
 
   void _removeAssignment(int index) {
     setState(() {
+      _assignments[index].dispose();
       _assignments.removeAt(index);
     });
   }
@@ -257,12 +267,20 @@ class _DsdManagementDialogState extends State<DsdManagementDialog> {
               _loadingHoras
                   ? const Center(child: CircularProgressIndicator())
                   : _hoursAllocation.isEmpty
-                  ? const Card(
+                  ? Card(
+                      color: Theme.of(context).brightness == Brightness.dark
+                          ? Colors.orange.shade900
+                          : Colors.orange.shade50,
                       child: Padding(
-                        padding: EdgeInsets.all(16.0),
+                        padding: const EdgeInsets.all(16.0),
                         child: Text(
                           'Todas as horas já foram alocadas ou nenhum tipo de horas configurado',
-                          style: TextStyle(color: Colors.orange),
+                          style: TextStyle(
+                            color:
+                                Theme.of(context).brightness == Brightness.dark
+                                ? Colors.orange.shade300
+                                : Colors.orange.shade900,
+                          ),
                         ),
                       ),
                     )
@@ -326,30 +344,116 @@ class _DsdManagementDialogState extends State<DsdManagementDialog> {
                     padding: const EdgeInsets.all(8.0),
                     child: Row(
                       children: [
-                        // Docente selector
+                        // Docente autocomplete selector
                         Expanded(
                           flex: 2,
-                          child: DropdownButtonFormField<int>(
-                            decoration: const InputDecoration(
-                              labelText: 'Docente',
-                              border: OutlineInputBorder(),
-                              isDense: true,
+                          child: Autocomplete<int>(
+                            initialValue: TextEditingValue(
+                              text: assignment.docenteNome ?? '',
                             ),
-                            initialValue: assignment.docenteId,
-                            items: docenteProvider.docentes.map((docente) {
-                              return DropdownMenuItem(
-                                value: docente.id,
-                                child: Text(docente.nome),
-                              );
-                            }).toList(),
-                            onChanged: (value) {
+                            optionsBuilder:
+                                (TextEditingValue textEditingValue) {
+                                  // Only show options if 3+ characters typed
+                                  if (textEditingValue.text.length < 3) {
+                                    return const Iterable<int>.empty();
+                                  }
+
+                                  final searchText = textEditingValue.text
+                                      .toLowerCase();
+                                  return docenteProvider.docentes
+                                      .where(
+                                        (docente) => docente.nome
+                                            .toLowerCase()
+                                            .contains(searchText),
+                                      )
+                                      .map((d) => d.id);
+                                },
+                            displayStringForOption: (int docenteId) {
+                              final docente = docenteProvider.docentes
+                                  .firstWhere((d) => d.id == docenteId);
+                              return docente.nome;
+                            },
+                            onSelected: (int docenteId) {
+                              final docente = docenteProvider.docentes
+                                  .firstWhere((d) => d.id == docenteId);
                               setState(() {
-                                assignment.docenteId = value;
-                                assignment.docenteNome = docenteProvider
-                                    .docentes
-                                    .firstWhere((d) => d.id == value)
-                                    .nome;
+                                assignment.docenteId = docenteId;
+                                assignment.docenteNome = docente.nome;
                               });
+                            },
+                            fieldViewBuilder:
+                                (
+                                  context,
+                                  textEditingController,
+                                  focusNode,
+                                  onFieldSubmitted,
+                                ) {
+                                  // Sync with assignment controller
+                                  if (assignment
+                                          .docenteController
+                                          .text
+                                          .isEmpty &&
+                                      assignment.docenteNome != null) {
+                                    textEditingController.text =
+                                        assignment.docenteNome!;
+                                  }
+
+                                  return TextField(
+                                    controller: textEditingController,
+                                    focusNode: focusNode,
+                                    decoration: const InputDecoration(
+                                      labelText: 'Docente',
+                                      hintText:
+                                          'Digite 3+ letras para pesquisar',
+                                      border: OutlineInputBorder(),
+                                      isDense: true,
+                                      prefixIcon: Icon(Icons.search, size: 20),
+                                    ),
+                                    onChanged: (value) {
+                                      // Clear selection if text is manually changed
+                                      if (value != assignment.docenteNome) {
+                                        setState(() {
+                                          assignment.docenteId = null;
+                                          assignment.docenteNome = null;
+                                        });
+                                      }
+                                    },
+                                  );
+                                },
+                            optionsViewBuilder: (context, onSelected, options) {
+                              return Align(
+                                alignment: Alignment.topLeft,
+                                child: Material(
+                                  elevation: 4.0,
+                                  child: ConstrainedBox(
+                                    constraints: const BoxConstraints(
+                                      maxHeight: 200,
+                                      maxWidth: 300,
+                                    ),
+                                    child: ListView.builder(
+                                      padding: EdgeInsets.zero,
+                                      shrinkWrap: true,
+                                      itemCount: options.length,
+                                      itemBuilder: (context, index) {
+                                        final docenteId = options.elementAt(
+                                          index,
+                                        );
+                                        final docente = docenteProvider.docentes
+                                            .firstWhere(
+                                              (d) => d.id == docenteId,
+                                            );
+                                        return ListTile(
+                                          dense: true,
+                                          title: Text(docente.nome),
+                                          onTap: () {
+                                            onSelected(docenteId);
+                                          },
+                                        );
+                                      },
+                                    ),
+                                  ),
+                                ),
+                              );
                             },
                           ),
                         ),
@@ -369,11 +473,7 @@ class _DsdManagementDialogState extends State<DsdManagementDialog> {
                                   : null,
                             ),
                             keyboardType: TextInputType.number,
-                            controller: TextEditingController(
-                              text: assignment.horas > 0
-                                  ? assignment.horas.toString()
-                                  : '',
-                            ),
+                            controller: assignment.horasController,
                             onChanged: (value) {
                               setState(() {
                                 assignment.horas = int.tryParse(value) ?? 0;
@@ -433,8 +533,23 @@ class _DsdManagementDialogState extends State<DsdManagementDialog> {
         allocation.availableHoras - _totalAssignedHours;
     final isOverAllocated = remainingAfterAssignment < 0;
 
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    // Theme-aware colors
+    final cardColor = isOverAllocated
+        ? (isDark ? Colors.red.shade900 : Colors.red.shade50)
+        : (isDark ? Colors.blue.shade900 : Colors.blue.shade50);
+
+    final errorColor = isDark ? Colors.red.shade300 : Colors.red.shade700;
+    final warningColor = isDark
+        ? Colors.orange.shade300
+        : Colors.orange.shade700;
+    final successColor = isDark ? Colors.green.shade300 : Colors.green.shade700;
+    final infoColor = isDark ? Colors.blue.shade300 : Colors.blue.shade700;
+
     return Card(
-      color: isOverAllocated ? Colors.red.shade50 : Colors.blue.shade50,
+      color: cardColor,
       child: Padding(
         padding: const EdgeInsets.all(12.0),
         child: Column(
@@ -442,7 +557,10 @@ class _DsdManagementDialogState extends State<DsdManagementDialog> {
           children: [
             Text(
               'Resumo de Horas - ${allocation.displayName}',
-              style: const TextStyle(fontWeight: FontWeight.bold),
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                color: theme.textTheme.bodyLarge?.color,
+              ),
             ),
             const SizedBox(height: 8),
             _buildHoursRow('Total:', '${allocation.totalHoras}h'),
@@ -452,28 +570,28 @@ class _DsdManagementDialogState extends State<DsdManagementDialog> {
             _buildHoursRow(
               'A atribuir agora:',
               '${_totalAssignedHours}h',
-              color: isOverAllocated ? Colors.red : Colors.blue,
+              color: isOverAllocated ? errorColor : infoColor,
             ),
             _buildHoursRow(
               'Restantes após atribuição:',
               '${remainingAfterAssignment}h',
               color: isOverAllocated
-                  ? Colors.red
+                  ? errorColor
                   : remainingAfterAssignment == 0
-                  ? Colors.green
-                  : Colors.orange,
+                  ? successColor
+                  : warningColor,
             ),
             if (isOverAllocated)
-              const Padding(
-                padding: EdgeInsets.only(top: 8.0),
+              Padding(
+                padding: const EdgeInsets.only(top: 8.0),
                 child: Row(
                   children: [
-                    Icon(Icons.error, color: Colors.red, size: 16),
-                    SizedBox(width: 4),
+                    Icon(Icons.error, color: errorColor, size: 16),
+                    const SizedBox(width: 4),
                     Expanded(
                       child: Text(
                         'Horas excedidas! Reduza a atribuição.',
-                        style: TextStyle(color: Colors.red, fontSize: 12),
+                        style: TextStyle(color: errorColor, fontSize: 12),
                       ),
                     ),
                   ],
@@ -484,15 +602,12 @@ class _DsdManagementDialogState extends State<DsdManagementDialog> {
                 padding: const EdgeInsets.only(top: 8.0),
                 child: Row(
                   children: [
-                    const Icon(Icons.warning, color: Colors.orange, size: 16),
+                    Icon(Icons.warning, color: warningColor, size: 16),
                     const SizedBox(width: 4),
                     Expanded(
                       child: Text(
                         'Atenção: ${remainingAfterAssignment}h ainda não alocadas',
-                        style: const TextStyle(
-                          color: Colors.orange,
-                          fontSize: 12,
-                        ),
+                        style: TextStyle(color: warningColor, fontSize: 12),
                       ),
                     ),
                   ],
@@ -533,6 +648,18 @@ class _TeacherAssignment {
   int? docenteId;
   String? docenteNome;
   int horas;
+  late final TextEditingController horasController;
+  late final TextEditingController docenteController;
 
-  _TeacherAssignment({this.docenteId, this.docenteNome, this.horas = 0});
+  _TeacherAssignment({this.docenteId, this.docenteNome, this.horas = 0}) {
+    horasController = TextEditingController(
+      text: horas > 0 ? horas.toString() : '',
+    );
+    docenteController = TextEditingController(text: docenteNome ?? '');
+  }
+
+  void dispose() {
+    horasController.dispose();
+    docenteController.dispose();
+  }
 }

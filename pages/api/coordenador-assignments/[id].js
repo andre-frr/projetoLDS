@@ -119,7 +119,14 @@ async function handlePost(id, req, res) {
         });
     } catch (error) {
         if (error.statusCode === 404) {
-            const resourceType = type === 'department' ? 'Department' : type === 'course' ? 'Course' : 'User';
+            let resourceType;
+            if (type === 'department') {
+                resourceType = 'Department';
+            } else if (type === 'course') {
+                resourceType = 'Course';
+            } else {
+                resourceType = 'User';
+            }
             return res.status(404).json({message: `${resourceType} not found`});
         }
         console.error(error);

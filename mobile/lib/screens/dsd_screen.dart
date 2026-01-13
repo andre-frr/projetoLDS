@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../models/dsd_model.dart';
 import '../providers/auth_provider.dart';
+import '../providers/curso_provider.dart';
 import '../providers/dsd_provider.dart';
 import '../providers/uc_provider.dart';
 import '../utils/permission_helper.dart';
@@ -16,7 +17,7 @@ class DsdScreen extends StatefulWidget {
 }
 
 class _DsdScreenState extends State<DsdScreen> {
-  DsdModel? _selectedDsd;
+  int? _expandedDsdId;
 
   @override
   void initState() {
@@ -34,41 +35,69 @@ class _DsdScreenState extends State<DsdScreen> {
   }
 
   Future<void> _showCreateDialog() async {
-    final ucProvider = context.read<UCProvider>();
+    // Step 1: Select course first
+    final selectedCourse = await _showCourseSelector();
 
-    // Load UCs if not already loaded
-    if (ucProvider.ucs.isEmpty) {
-      await ucProvider.loadAll();
+    if (selectedCourse == null || !mounted) return;
+
+    // Step 2: Select UC from the chosen course
+    final selectedUc = await _showUcSelector(selectedCourse);
+
+    if (selectedUc != null && mounted) {
+      // Step 3: Show DSD management dialog
+      final result = await showDialog(
+        context: context,
+        builder: (context) => DsdManagementDialog(uc: selectedUc),
+      );
+
+      if (result == true) {
+        _loadDsds();
+      }
+    }
+  }
+
+  Future<dynamic> _showCourseSelector() async {
+    final cursoProvider = context.read<CursoProvider>();
+
+    // Load courses if not already loaded
+    if (cursoProvider.cursos.isEmpty) {
+      await cursoProvider.loadAll();
     }
 
-    if (!mounted) return;
+    if (!mounted) return null;
 
-    // Show UC selector dialog
-    final selectedUc = await showDialog(
+    return showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Selecionar Unidade Curricular'),
+        title: const Text('Selecionar Curso'),
         content: SizedBox(
           width: double.maxFinite,
-          child: Consumer<UCProvider>(
+          child: Consumer<CursoProvider>(
             builder: (context, provider, child) {
               if (provider.isLoading) {
                 return const Center(child: CircularProgressIndicator());
               }
 
-              final activeUcs = provider.ucs.where((uc) => uc.ativo).toList();
+              final activeCursos = provider.cursos
+                  .where((curso) => curso.ativo)
+                  .toList();
+
+              if (activeCursos.isEmpty) {
+                return const Center(
+                  child: Text('Nenhum curso ativo encontrado'),
+                );
+              }
 
               return ListView.builder(
                 shrinkWrap: true,
-                itemCount: activeUcs.length,
+                itemCount: activeCursos.length,
                 itemBuilder: (context, index) {
-                  final uc = activeUcs[index];
+                  final curso = activeCursos[index];
                   return ListTile(
-                    title: Text(uc.nome),
-                    subtitle: Text(
-                      'Ano ${uc.anoCurso} - Semestre ${uc.semCurso}',
-                    ),
-                    onTap: () => Navigator.of(context).pop(uc),
+                    leading: const Icon(Icons.school),
+                    title: Text(curso.nome),
+                    subtitle: Text('${curso.sigla} • ${curso.tipoNome}'),
+                    onTap: () => Navigator.of(context).pop(curso),
                   );
                 },
               );
@@ -83,18 +112,95 @@ class _DsdScreenState extends State<DsdScreen> {
         ],
       ),
     );
+  }
 
-    if (selectedUc != null && mounted) {
-      // Show DSD management dialog
-      final result = await showDialog(
-        context: context,
-        builder: (context) => DsdManagementDialog(uc: selectedUc),
-      );
+  Future<dynamic> _showUcSelector(dynamic selectedCourse) async {
+    final ucProvider = context.read<UCProvider>();
 
-      if (result == true) {
-        _loadDsds();
-      }
+    // Load UCs if not already loaded
+    if (ucProvider.ucs.isEmpty) {
+      await ucProvider.loadAll();
     }
+
+    if (!mounted) return null;
+
+    return showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text('Selecionar Unidade Curricular'),
+            const SizedBox(height: 4),
+            Text(
+              selectedCourse.nome,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: Theme.of(context).brightness == Brightness.dark
+                    ? Colors.grey.shade400
+                    : Colors.grey.shade600,
+              ),
+            ),
+          ],
+        ),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: Consumer<UCProvider>(
+            builder: (context, provider, child) {
+              if (provider.isLoading) {
+                return const Center(child: CircularProgressIndicator());
+              }
+
+              // Filter UCs by selected course
+              final courseUcs = provider.ucs
+                  .where((uc) => uc.ativo && uc.idCurso == selectedCourse.id)
+                  .toList();
+
+              // Sort by year and semester
+              courseUcs.sort((a, b) {
+                final yearCompare = a.anoCurso.compareTo(b.anoCurso);
+                if (yearCompare != 0) return yearCompare;
+                return a.semCurso.compareTo(b.semCurso);
+              });
+
+              if (courseUcs.isEmpty) {
+                return const Center(
+                  child: Text('Nenhuma UC ativa encontrada para este curso'),
+                );
+              }
+
+              return ListView.builder(
+                shrinkWrap: true,
+                itemCount: courseUcs.length,
+                itemBuilder: (context, index) {
+                  final uc = courseUcs[index];
+                  return ListTile(
+                    leading: CircleAvatar(
+                      radius: 16,
+                      child: Text(
+                        '${uc.anoCurso}',
+                        style: const TextStyle(fontSize: 12),
+                      ),
+                    ),
+                    title: Text(uc.nome),
+                    subtitle: Text(
+                      'Ano ${uc.anoCurso} - Semestre ${uc.semCurso} • ${uc.ects} ECTS',
+                    ),
+                    onTap: () => Navigator.of(context).pop(uc),
+                  );
+                },
+              );
+            },
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Voltar'),
+          ),
+        ],
+      ),
+    );
   }
 
   Future<void> _confirmDelete(DsdModel dsd) async {
@@ -126,7 +232,7 @@ class _DsdScreenState extends State<DsdScreen> {
       if (mounted) {
         if (success) {
           setState(() {
-            _selectedDsd = null;
+            _expandedDsdId = null;
           });
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
@@ -188,116 +294,140 @@ class _DsdScreenState extends State<DsdScreen> {
           ? const Center(
               child: Text('Nenhuma distribuição de serviço encontrada'),
             )
-          : Column(
-              children: [
-                // Dropdown to select DSD
-                Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: DropdownButtonFormField<DsdModel>(
-                    decoration: const InputDecoration(
-                      labelText: 'Selecionar DSD',
-                      border: OutlineInputBorder(),
-                    ),
-                    initialValue: _selectedDsd,
-                    items: dsdProvider.dsds.map((dsd) {
-                      return DropdownMenuItem<DsdModel>(
-                        value: dsd,
-                        child: Text(dsd.displayName),
-                      );
-                    }).toList(),
-                    onChanged: (value) {
-                      setState(() {
-                        _selectedDsd = value;
-                      });
-                    },
-                  ),
-                ),
+          : ListView.builder(
+              padding: const EdgeInsets.all(16.0),
+              itemCount: dsdProvider.dsds.length,
+              itemBuilder: (context, index) {
+                final dsd = dsdProvider.dsds[index];
+                final isExpanded = _expandedDsdId == dsd.idDsd;
 
-                // Display selected DSD details
-                if (_selectedDsd != null)
+                return _buildDsdCard(dsd, isExpanded, canCreate);
+              },
+            ),
+    );
+  }
+
+  Widget _buildDsdCard(DsdModel dsd, bool isExpanded, bool canManage) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    return Card(
+      margin: const EdgeInsets.only(bottom: 12.0),
+      elevation: isExpanded ? 4 : 1,
+      child: InkWell(
+        onTap: () {
+          setState(() {
+            _expandedDsdId = isExpanded ? null : dsd.idDsd;
+          });
+        },
+        borderRadius: BorderRadius.circular(4),
+        child: Column(
+          children: [
+            // Header - always visible
+            Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Row(
+                children: [
+                  // Expand/collapse icon
+                  Icon(
+                    isExpanded ? Icons.expand_less : Icons.expand_more,
+                    color: theme.primaryColor,
+                  ),
+                  const SizedBox(width: 12),
+
+                  // DSD info
                   Expanded(
-                    child: SingleChildScrollView(
-                      padding: const EdgeInsets.all(16.0),
-                      child: Card(
-                        child: Padding(
-                          padding: const EdgeInsets.all(16.0),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Expanded(
-                                    child: Text(
-                                      _selectedDsd!.ucNome ?? 'UC',
-                                      style: Theme.of(
-                                        context,
-                                      ).textTheme.headlineSmall,
-                                    ),
-                                  ),
-                                  if (canCreate)
-                                    PopupMenuButton(
-                                      itemBuilder: (context) => [
-                                        const PopupMenuItem(
-                                          value: 'delete',
-                                          child: Row(
-                                            children: [
-                                              Icon(
-                                                Icons.delete,
-                                                color: Colors.red,
-                                              ),
-                                              SizedBox(width: 8),
-                                              Text(
-                                                'Eliminar',
-                                                style: TextStyle(
-                                                  color: Colors.red,
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                      ],
-                                      onSelected: (value) {
-                                        if (value == 'delete') {
-                                          _confirmDelete(_selectedDsd!);
-                                        }
-                                      },
-                                    ),
-                                ],
-                              ),
-                              const SizedBox(height: 8),
-                              Text(
-                                _selectedDsd!.cursoNome ?? '',
-                                style: Theme.of(context).textTheme.titleMedium,
-                              ),
-                              const Divider(height: 32),
-                              _buildDetailRow(
-                                'Ano Letivo',
-                                _selectedDsd!.yearDisplay,
-                              ),
-                              _buildDetailRow('Turma', _selectedDsd!.turma),
-                              _buildDetailRow(
-                                'Tipo de Horas',
-                                _getTipoDescription(_selectedDsd!.tipo),
-                              ),
-                              _buildDetailRow(
-                                'Horas Atribuídas',
-                                '${_selectedDsd!.horas}h',
-                              ),
-                              if (_selectedDsd!.docenteNome != null)
-                                _buildDetailRow(
-                                  'Docente',
-                                  _selectedDsd!.docenteNome!,
-                                ),
-                            ],
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          dsd.ucNome ?? 'UC',
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.bold,
                           ),
                         ),
+                        const SizedBox(height: 4),
+                        Text(
+                          '${dsd.cursoNome ?? ''} • Turma ${dsd.turma} • ${_getTipoDescription(dsd.tipo)}',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: isDark
+                                ? Colors.grey.shade400
+                                : Colors.grey.shade600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  // Total hours badge
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 6,
+                    ),
+                    decoration: BoxDecoration(
+                      color: theme.primaryColor.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      '${dsd.horas}h',
+                      style: TextStyle(
+                        color: theme.primaryColor,
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
                   ),
-              ],
+                ],
+              ),
             ),
+
+            // Expanded details
+            if (isExpanded)
+              Column(
+                children: [
+                  const Divider(height: 1),
+                  Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _buildDetailRow('Ano Letivo', dsd.yearDisplay),
+                        _buildDetailRow('Turma', dsd.turma),
+                        _buildDetailRow(
+                          'Tipo de Horas',
+                          _getTipoDescription(dsd.tipo),
+                        ),
+                        _buildDetailRow('Horas Atribuídas', '${dsd.horas}h'),
+                        if (dsd.docenteNome != null)
+                          _buildDetailRow('Docente', dsd.docenteNome!),
+
+                        // Actions
+                        if (canManage) ...[
+                          const SizedBox(height: 16),
+                          const Divider(),
+                          const SizedBox(height: 8),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.end,
+                            children: [
+                              OutlinedButton.icon(
+                                onPressed: () => _confirmDelete(dsd),
+                                icon: const Icon(Icons.delete, size: 18),
+                                label: const Text('Eliminar'),
+                                style: OutlinedButton.styleFrom(
+                                  foregroundColor: Colors.red,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+          ],
+        ),
+      ),
     );
   }
 
