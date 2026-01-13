@@ -702,12 +702,12 @@ function executeCustomQuery(call, callback) {
                 // Get UC hours allocation status (available vs allocated)
                 // Returns all hour types that have been configured with hours > 0
                 query = `
-                    SELECT uch.id_uc,
+                    SELECT uch.id_uc::int,
                            uch.tipo,
-                           uch.horas                               as total_horas,
-                           $2                                      as turma,
-                           COALESCE(SUM(dsd.horas), 0)             as allocated_horas,
-                           uch.horas - COALESCE(SUM(dsd.horas), 0) as available_horas
+                           uch.horas::int                               as total_horas,
+                           $2::text                                     as turma,
+                           COALESCE(SUM(dsd.horas), 0)::int             as allocated_horas,
+                           (uch.horas - COALESCE(SUM(dsd.horas), 0))::int as available_horas
                     FROM uc_horas_contacto uch
                              LEFT JOIN dsd ON dsd.id_uc = uch.id_uc
                         AND dsd.tipo = uch.tipo
