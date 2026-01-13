@@ -700,6 +700,7 @@ function executeCustomQuery(call, callback) {
                 queryParams = result.queryParams;
             } else if (queryName === "ucHoursAllocation") {
                 // Get UC hours allocation status (available vs allocated)
+                // Returns all hour types that have been configured with hours > 0
                 query = `
                     SELECT uch.id_uc,
                            uch.tipo,
@@ -713,8 +714,8 @@ function executeCustomQuery(call, callback) {
                         AND dsd.turma = $2
                         AND dsd.id_ano = $3
                     WHERE uch.id_uc = $1
+                      AND uch.horas > 0
                     GROUP BY uch.id_uc, uch.tipo, uch.horas
-                    HAVING uch.horas > 0
                     ORDER BY uch.tipo
                 `;
                 queryParams = [paramObj.id_uc, paramObj.turma, paramObj.id_ano];

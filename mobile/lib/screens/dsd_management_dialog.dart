@@ -68,10 +68,21 @@ class _DsdManagementDialogState extends State<DsdManagementDialog> {
         _selectedTurma,
       );
 
+      print('DSD Dialog - Hours allocation loaded: ${allocation.length} types');
+      for (final a in allocation) {
+        print(
+          'DSD Dialog - ${a.tipo}: total=${a.totalHoras}, allocated=${a.allocatedHoras}, available=${a.availableHoras}',
+        );
+      }
+
       // Filter out fully allocated types (unless editing existing)
       final availableTypes = widget.existingGroup != null
           ? allocation
           : allocation.where((a) => !a.isFullyAllocated).toList();
+
+      print(
+        'DSD Dialog - Available types after filtering: ${availableTypes.length}',
+      );
 
       setState(() {
         _hoursAllocation = availableTypes;
@@ -84,6 +95,7 @@ class _DsdManagementDialogState extends State<DsdManagementDialog> {
         }
       });
     } catch (e) {
+      print('DSD Dialog - Error loading hours allocation: $e');
       setState(() => _loadingHoras = false);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

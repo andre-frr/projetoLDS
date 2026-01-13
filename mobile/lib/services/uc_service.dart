@@ -168,21 +168,32 @@ class UCService {
         queryParams['ano_letivo'] = anoLetivo.toString();
       }
 
+      _logger.i(
+        'Fetching hours allocation for UC: $ucId, turma: $turma, anoLetivo: $anoLetivo',
+      );
+
       final response = await _dio.get(
         '/uc/$ucId/hours-allocation',
         queryParameters: queryParams,
       );
-      _logger.i('UC hours allocation fetched for UC: $ucId, turma: $turma');
+
+      _logger.i('UC hours allocation response status: ${response.statusCode}');
+      _logger.i('UC hours allocation response data: ${response.data}');
 
       final List<dynamic> data = response.data as List<dynamic>;
-      return data
+      final result = data
           .map(
             (json) =>
                 UCHorasAllocationModel.fromJson(json as Map<String, dynamic>),
           )
           .toList();
+
+      _logger.i('UC hours allocation parsed: ${result.length} types returned');
+
+      return result;
     } on DioException catch (e) {
       _logger.e('Failed to fetch UC hours allocation: ${e.message}');
+      _logger.e('Response data: ${e.response?.data}');
       throw Exception('Erro ao carregar alocação de horas da UC');
     }
   }
