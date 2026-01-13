@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../models/dsd_model.dart';
-import '../models/uc_horas_model.dart';
 import '../models/uc_model.dart';
 import '../providers/docente_provider.dart';
 import '../providers/dsd_provider.dart';
@@ -23,7 +22,7 @@ class _DsdManagementDialogState extends State<DsdManagementDialog> {
   String _selectedTipo = 'PL';
   final List<_TeacherAssignment> _assignments = [];
   bool _isLoading = false;
-  List<UCHorasModel> _ucHoras = [];
+  List<UCHorasAllocationModel> _hoursAllocation = [];
   bool _loadingHoras = true;
 
   @override
@@ -49,7 +48,8 @@ class _DsdManagementDialogState extends State<DsdManagementDialog> {
   }
 
   Future<void> _loadData() async {
-    await Future.wait([_loadDocentes(), _loadUCHoras()]);
+    await _loadDocentes();
+    await _loadHoursAllocation();
   }
 
   Future<void> _loadDocentes() async {
@@ -59,28 +59,40 @@ class _DsdManagementDialogState extends State<DsdManagementDialog> {
     }
   }
 
-  Future<void> _loadUCHoras() async {
+  Future<void> _loadHoursAllocation() async {
     setState(() => _loadingHoras = true);
 
     try {
-      final horas = await UCService().getHoras(widget.uc.id);
+      final allocation = await UCService().getHoursAllocation(
+        widget.uc.id,
+        _selectedTurma,
+      );
 
-      // Filter out types with 0 hours
-      final filteredHoras = horas.where((h) => h.horas > 0).toList();
+      // Filter out fully allocated types (unless editing existing)
+      final availableTypes = widget.existingGroup != null
+          ? allocation
+          : allocation.where((a) => !a.isFullyAllocated).toList();
 
       setState(() {
-        _ucHoras = filteredHoras;
+        _hoursAllocation = availableTypes;
         _loadingHoras = false;
 
         // If current selected tipo is not available, select the first available one
-        if (filteredHoras.isNotEmpty &&
-            !filteredHoras.any((h) => h.tipo == _selectedTipo)) {
-          _selectedTipo = filteredHoras.first.tipo;
+        if (availableTypes.isNotEmpty &&
+            !availableTypes.any((a) => a.tipo == _selectedTipo)) {
+          _selectedTipo = availableTypes.first.tipo;
         }
       });
     } catch (e) {
       setState(() => _loadingHoras = false);
-      // If error loading hours, show all types as fallback
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Erro ao carregar alocação de horas: $e'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+      }
     }
   }
 
@@ -94,6 +106,32 @@ class _DsdManagementDialogState extends State<DsdManagementDialog> {
     setState(() {
       _assignments.removeAt(index);
     });
+  }
+
+  int get _totalAssignedHours {
+    return _assignments.fold(0, (sum, a) => sum + a.horas);
+  }
+
+  int get _availableHours {
+    final allocation = _hoursAllocation.firstWhere(
+      (a) => a.tipo == _selectedTipo,
+      orElse: () => UCHorasAllocationModel(
+        idUc: widget.uc.id,
+        tipo: _selectedTipo,
+        turma: _selectedTurma,
+        totalHoras: 0,
+        allocatedHoras: 0,
+        availableHoras: 0,
+      ),
+    );
+    return allocation.availableHoras;
+  }
+
+  String? _validateHours() {
+    if (_totalAssignedHours > _availableHours) {
+      return 'Horas excedidas: ${_totalAssignedHours}h atribuídas mas apenas ${_availableHours}h disponíveis';
+    }
+    return null;
   }
 
   Future<void> _save() async {
@@ -120,6 +158,15 @@ class _DsdManagementDialogState extends State<DsdManagementDialog> {
         );
         return;
       }
+    }
+
+    // Validate hours don't exceed available
+    final hoursError = _validateHours();
+    if (hoursError != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(hoursError), backgroundColor: Colors.red),
+      );
+      return;
     }
 
     setState(() => _isLoading = true);
@@ -183,48 +230,69 @@ class _DsdManagementDialogState extends State<DsdManagementDialog> {
                 }).toList(),
                 onChanged: widget.existingGroup == null
                     ? (value) {
-                        setState(() {
-                          _selectedTurma = value!;
-                        });
+                        if (value != null) {
+                          setState(() {
+                            _selectedTurma = value;
+                          });
+                          _loadHoursAllocation(); // Reload hours for new turma
+                        }
                       }
                     : null,
               ),
               const SizedBox(height: 16),
 
-              // Tipo selection - only show types with hours > 0
+              // Tipo selection - only show types with available hours
               _loadingHoras
                   ? const Center(child: CircularProgressIndicator())
-                  : _ucHoras.isEmpty
+                  : _hoursAllocation.isEmpty
                   ? const Card(
                       child: Padding(
                         padding: EdgeInsets.all(16.0),
                         child: Text(
-                          'Nenhum tipo de horas configurado para esta UC',
+                          'Todas as horas já foram alocadas ou nenhum tipo de horas configurado',
                           style: TextStyle(color: Colors.orange),
                         ),
                       ),
                     )
-                  : DropdownButtonFormField<String>(
-                      decoration: const InputDecoration(
-                        labelText: 'Tipo de Horas',
-                        border: OutlineInputBorder(),
-                      ),
-                      initialValue: _ucHoras.any((h) => h.tipo == _selectedTipo)
-                          ? _selectedTipo
-                          : (_ucHoras.isNotEmpty ? _ucHoras.first.tipo : null),
-                      items: _ucHoras.map((ucHora) {
-                        return DropdownMenuItem(
-                          value: ucHora.tipo,
-                          child: Text(_getTipoLabel(ucHora)),
-                        );
-                      }).toList(),
-                      onChanged: widget.existingGroup == null
-                          ? (value) {
-                              setState(() {
-                                _selectedTipo = value!;
-                              });
-                            }
-                          : null,
+                  : Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        DropdownButtonFormField<String>(
+                          decoration: const InputDecoration(
+                            labelText: 'Tipo de Horas',
+                            border: OutlineInputBorder(),
+                          ),
+                          initialValue:
+                              _hoursAllocation.any(
+                                (h) => h.tipo == _selectedTipo,
+                              )
+                              ? _selectedTipo
+                              : (_hoursAllocation.isNotEmpty
+                                    ? _hoursAllocation.first.tipo
+                                    : null),
+                          items: _hoursAllocation.map((allocation) {
+                            return DropdownMenuItem(
+                              value: allocation.tipo,
+                              child: Text(_getTipoLabel(allocation)),
+                            );
+                          }).toList(),
+                          onChanged: widget.existingGroup == null
+                              ? (value) {
+                                  setState(() {
+                                    _selectedTipo = value!;
+                                  });
+                                }
+                              : null,
+                        ),
+                        // Show hours summary
+                        if (_hoursAllocation.any(
+                          (a) => a.tipo == _selectedTipo,
+                        ))
+                          Padding(
+                            padding: const EdgeInsets.only(top: 8.0),
+                            child: _buildHoursSummary(),
+                          ),
+                      ],
                     ),
               const SizedBox(height: 24),
 
@@ -278,10 +346,15 @@ class _DsdManagementDialogState extends State<DsdManagementDialog> {
                         // Hours input
                         Expanded(
                           child: TextField(
-                            decoration: const InputDecoration(
+                            decoration: InputDecoration(
                               labelText: 'Horas',
-                              border: OutlineInputBorder(),
+                              border: const OutlineInputBorder(),
                               isDense: true,
+                              errorText:
+                                  _validateHours() != null &&
+                                      assignment.horas > 0
+                                  ? 'Excedido'
+                                  : null,
                             ),
                             keyboardType: TextInputType.number,
                             controller: TextEditingController(
@@ -290,7 +363,9 @@ class _DsdManagementDialogState extends State<DsdManagementDialog> {
                                   : '',
                             ),
                             onChanged: (value) {
-                              assignment.horas = int.tryParse(value) ?? 0;
+                              setState(() {
+                                assignment.horas = int.tryParse(value) ?? 0;
+                              });
                             },
                           ),
                         ),
@@ -337,16 +412,108 @@ class _DsdManagementDialogState extends State<DsdManagementDialog> {
     );
   }
 
-  String _getTipoLabel(UCHorasModel ucHora) {
-    final tipoDescriptions = {
-      'PL': 'PL - Prática Laboratorial',
-      'T': 'T - Teórica',
-      'TP': 'TP - Teórico-Prática',
-      'OT': 'OT - Outra',
-    };
+  Widget _buildHoursSummary() {
+    final allocation = _hoursAllocation.firstWhere(
+      (a) => a.tipo == _selectedTipo,
+    );
 
-    final description = tipoDescriptions[ucHora.tipo] ?? ucHora.tipo;
-    return '$description (${ucHora.horas}h disponíveis)';
+    final remainingAfterAssignment =
+        allocation.availableHoras - _totalAssignedHours;
+    final isOverAllocated = remainingAfterAssignment < 0;
+
+    return Card(
+      color: isOverAllocated ? Colors.red.shade50 : Colors.blue.shade50,
+      child: Padding(
+        padding: const EdgeInsets.all(12.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Resumo de Horas - ${allocation.displayName}',
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
+            _buildHoursRow('Total:', '${allocation.totalHoras}h'),
+            _buildHoursRow('Já alocadas:', '${allocation.allocatedHoras}h'),
+            _buildHoursRow('Disponíveis:', '${allocation.availableHoras}h'),
+            const Divider(height: 16),
+            _buildHoursRow(
+              'A atribuir agora:',
+              '${_totalAssignedHours}h',
+              color: isOverAllocated ? Colors.red : Colors.blue,
+            ),
+            _buildHoursRow(
+              'Restantes após atribuição:',
+              '${remainingAfterAssignment}h',
+              color: isOverAllocated
+                  ? Colors.red
+                  : remainingAfterAssignment == 0
+                  ? Colors.green
+                  : Colors.orange,
+            ),
+            if (isOverAllocated)
+              const Padding(
+                padding: EdgeInsets.only(top: 8.0),
+                child: Row(
+                  children: [
+                    Icon(Icons.error, color: Colors.red, size: 16),
+                    SizedBox(width: 4),
+                    Expanded(
+                      child: Text(
+                        'Horas excedidas! Reduza a atribuição.',
+                        style: TextStyle(color: Colors.red, fontSize: 12),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            if (remainingAfterAssignment > 0)
+              Padding(
+                padding: const EdgeInsets.only(top: 8.0),
+                child: Row(
+                  children: [
+                    const Icon(Icons.warning, color: Colors.orange, size: 16),
+                    const SizedBox(width: 4),
+                    Expanded(
+                      child: Text(
+                        'Atenção: ${remainingAfterAssignment}h ainda não alocadas',
+                        style: const TextStyle(
+                          color: Colors.orange,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHoursRow(String label, String value, {Color? color}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 2.0),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label, style: TextStyle(fontSize: 13, color: color)),
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.bold,
+              color: color,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _getTipoLabel(UCHorasAllocationModel allocation) {
+    return '${allocation.displayName} (${allocation.availableHoras}h disponíveis)';
   }
 }
 

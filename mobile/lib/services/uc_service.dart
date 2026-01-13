@@ -5,6 +5,47 @@ import '../models/uc_horas_model.dart';
 import '../models/uc_model.dart';
 import 'dio_service.dart';
 
+class UCHorasAllocationModel {
+  final int idUc;
+  final String tipo;
+  final String turma;
+  final int totalHoras;
+  final int allocatedHoras;
+  final int availableHoras;
+
+  UCHorasAllocationModel({
+    required this.idUc,
+    required this.tipo,
+    required this.turma,
+    required this.totalHoras,
+    required this.allocatedHoras,
+    required this.availableHoras,
+  });
+
+  factory UCHorasAllocationModel.fromJson(Map<String, dynamic> json) {
+    return UCHorasAllocationModel(
+      idUc: json['id_uc'] as int,
+      tipo: json['tipo'] as String,
+      turma: json['turma'] as String,
+      totalHoras: json['total_horas'] as int,
+      allocatedHoras: json['allocated_horas'] as int,
+      availableHoras: json['available_horas'] as int,
+    );
+  }
+
+  bool get isFullyAllocated => availableHoras <= 0;
+
+  String get displayName {
+    final tipoDescriptions = {
+      'PL': 'PL - Prática Laboratorial',
+      'T': 'T - Teórica',
+      'TP': 'TP - Teórico-Prática',
+      'OT': 'OT - Outra',
+    };
+    return tipoDescriptions[tipo] ?? tipo;
+  }
+}
+
 class UCService {
   static final UCService _instance = UCService._internal();
 
@@ -112,6 +153,37 @@ class UCService {
       }
       _logger.e('Failed to fetch UC hours: ${e.message}');
       throw Exception('Erro ao carregar horas da UC');
+    }
+  }
+
+  // Get hours allocation status (available vs allocated)
+  Future<List<UCHorasAllocationModel>> getHoursAllocation(
+    int ucId,
+    String turma, {
+    int? anoLetivo,
+  }) async {
+    try {
+      final queryParams = {'turma': turma};
+      if (anoLetivo != null) {
+        queryParams['ano_letivo'] = anoLetivo.toString();
+      }
+
+      final response = await _dio.get(
+        '/uc/$ucId/hours-allocation',
+        queryParameters: queryParams,
+      );
+      _logger.i('UC hours allocation fetched for UC: $ucId, turma: $turma');
+
+      final List<dynamic> data = response.data as List<dynamic>;
+      return data
+          .map(
+            (json) =>
+                UCHorasAllocationModel.fromJson(json as Map<String, dynamic>),
+          )
+          .toList();
+    } on DioException catch (e) {
+      _logger.e('Failed to fetch UC hours allocation: ${e.message}');
+      throw Exception('Erro ao carregar alocação de horas da UC');
     }
   }
 

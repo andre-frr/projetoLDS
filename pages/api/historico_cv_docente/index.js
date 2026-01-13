@@ -1,4 +1,5 @@
-﻿﻿import GrpcClient from '@/lib/grpc-client.js';
+﻿﻿
+import GrpcClient from '@/lib/grpc-client.js';
 import {applyCors} from '@/lib/cors.js';
 import {ACTIONS, requirePermission, RESOURCES} from '@/lib/authorize.js';
 

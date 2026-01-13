@@ -697,6 +697,26 @@ function executeCustomQuery(call, callback) {
                 const result = buildDsdByUcQuery(paramObj);
                 query = result.query;
                 queryParams = result.queryParams;
+            } else if (queryName === "ucHoursAllocation") {
+                // Get UC hours allocation status (available vs allocated)
+                query = `
+                    SELECT uch.id_uc,
+                           uch.tipo,
+                           uch.horas                               as total_horas,
+                           $2                                      as turma,
+                           COALESCE(SUM(dsd.horas), 0)             as allocated_horas,
+                           uch.horas - COALESCE(SUM(dsd.horas), 0) as available_horas
+                    FROM uc_horas_contacto uch
+                             LEFT JOIN dsd ON dsd.id_uc = uch.id_uc
+                        AND dsd.tipo = uch.tipo
+                        AND dsd.turma = $2
+                        AND dsd.id_ano = $3
+                    WHERE uch.id_uc = $1
+                    GROUP BY uch.id_uc, uch.tipo, uch.horas
+                    HAVING uch.horas > 0
+                    ORDER BY uch.tipo
+                `;
+                queryParams = [paramObj.id_uc, paramObj.turma, paramObj.id_ano];
             } else {
                 // Get static query configuration
                 const config = getQueryConfig(queryName, paramObj);

@@ -176,6 +176,42 @@ function validateDsdRequest(body) {
 }
 
 /**
+ * Verify hours availability for DSD creation
+ */
+async function verifyHoursAvailability(id_uc, turma, tipo, assignments, id_ano) {
+    // Get hours allocation status
+    const allocation = await GrpcClient.executeCustomQuery('ucHoursAllocation', {
+        id_uc: Number(id_uc),
+        turma,
+        id_ano: Number(id_ano)
+    });
+
+    // Find the tipo we're trying to allocate
+    const tipoAllocation = allocation.find(a => a.tipo === tipo);
+
+    if (!tipoAllocation) {
+        const error = new Error(`Tipo de horas ${tipo} não configurado para esta UC`);
+        error.status = 400;
+        throw error;
+    }
+
+    // Calculate total hours being requested
+    const requestedHoras = assignments.reduce((sum, a) => sum + Number(a.horas), 0);
+
+    // Check if requested hours exceed available hours
+    if (requestedHoras > tipoAllocation.available_horas) {
+        const error = new Error(
+            `Horas excedidas: ${requestedHoras}h solicitadas mas apenas ${tipoAllocation.available_horas}h disponíveis ` +
+            `(${tipoAllocation.total_horas}h total, ${tipoAllocation.allocated_horas}h já alocadas)`
+        );
+        error.status = 400;
+        throw error;
+    }
+
+    return tipoAllocation;
+}
+
+/**
  * Verify all prerequisites for DSD creation
  */
 async function verifyDsdPrerequisites(id_uc, turma, tipo, assignments) {
@@ -201,6 +237,9 @@ async function verifyDsdPrerequisites(id_uc, turma, tipo, assignments) {
         error.status = 409;
         throw error;
     }
+
+    // Verify hours availability
+    await verifyHoursAvailability(id_uc, turma, tipo, assignments, id_ano);
 
     return id_ano;
 }
