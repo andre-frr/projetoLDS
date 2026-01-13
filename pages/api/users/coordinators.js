@@ -1,4 +1,4 @@
-import pool from '@/lib/db.js';
+import GrpcClient from '@/lib/grpc-client.js';
 import {applyCors} from '@/lib/cors.js';
 import {ACTIONS, requirePermission, RESOURCES} from '@/lib/authorize.js';
 
@@ -8,16 +8,12 @@ import {ACTIONS, requirePermission, RESOURCES} from '@/lib/authorize.js';
  */
 async function handleGet(req, res) {
     try {
-        const result = await pool.query(
-            `SELECT u.id, u.email, u.role, u.ativo
-             FROM users u
-             WHERE u.role = 'Coordenador'
-               AND u.ativo = true
-             ORDER BY u.email`,
-            []
-        );
+        const users = await GrpcClient.getAll('users', {
+            filters: {role: 'Coordenador', ativo: true},
+            orderBy: 'email'
+        });
 
-        return res.status(200).json(result.rows);
+        return res.status(200).json(users);
     } catch (error) {
         console.error(error);
         return res.status(500).json({message: 'Internal Server Error'});

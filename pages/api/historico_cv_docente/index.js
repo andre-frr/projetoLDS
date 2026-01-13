@@ -1,4 +1,4 @@
-﻿import GrpcClient from '@/lib/grpc-client.js';
+﻿﻿import GrpcClient from '@/lib/grpc-client.js';
 import {applyCors} from '@/lib/cors.js';
 import {ACTIONS, requirePermission, RESOURCES} from '@/lib/authorize.js';
 
@@ -40,13 +40,11 @@ async function handlePost(req, res) {
 
         // Validate that docentes can only create their own CV
         if (req.user.role === 'Docente') {
-            const pool = (await import('@/lib/db.js')).default;
-            const docenteResult = await pool.query(
-                'SELECT id_user FROM docente WHERE id_doc = $1',
-                [id_doc]
-            );
+            const docentes = await GrpcClient.getAll('docente', {
+                filters: {id_doc: Number(id_doc)}
+            });
 
-            if (docenteResult.rows.length === 0 || docenteResult.rows[0].id_user !== req.user.id) {
+            if (docentes.length === 0 || docentes[0].id_user !== req.user.id) {
                 return res.status(403).json({message: 'You can only create CV entries for yourself'});
             }
         }

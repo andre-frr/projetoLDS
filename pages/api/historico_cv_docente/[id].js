@@ -15,13 +15,11 @@ async function handleGet(id, req, res) {
 
         // If Docente, verify they can only access their own CV
         if (req.user.role === 'Docente') {
-            const pool = (await import('@/lib/db.js')).default;
-            const docenteResult = await pool.query(
-                'SELECT id_user FROM docente WHERE id_doc = $1',
-                [result.id_doc]
-            );
+            const docentes = await GrpcClient.getAll('docente', {
+                filters: {id_doc: result.id_doc}
+            });
 
-            if (docenteResult.rows.length === 0 || docenteResult.rows[0].id_user !== req.user.id) {
+            if (docentes.length === 0 || docentes[0].id_user !== req.user.id) {
                 return res.status(403).json({message: 'You can only access your own CV history'});
             }
         }
@@ -54,13 +52,11 @@ async function handlePut(id, req, res) {
 
         // If Docente, verify they can only update their own CV
         if (req.user.role === 'Docente') {
-            const pool = (await import('@/lib/db.js')).default;
-            const docenteResult = await pool.query(
-                'SELECT id_user FROM docente WHERE id_doc = $1',
-                [current.id_doc]
-            );
+            const docentes = await GrpcClient.getAll('docente', {
+                filters: {id_doc: current.id_doc}
+            });
 
-            if (docenteResult.rows.length === 0 || docenteResult.rows[0].id_user !== req.user.id) {
+            if (docentes.length === 0 || docentes[0].id_user !== req.user.id) {
                 return res.status(403).json({message: 'You can only update your own CV history'});
             }
         }
@@ -85,13 +81,11 @@ async function handleDelete(id, req, res) {
 
         // If Docente, verify they can only delete their own CV
         if (req.user.role === 'Docente') {
-            const pool = (await import('@/lib/db.js')).default;
-            const docenteResult = await pool.query(
-                'SELECT id_user FROM docente WHERE id_doc = $1',
-                [current.id_doc]
-            );
+            const docentes = await GrpcClient.getAll('docente', {
+                filters: {id_doc: current.id_doc}
+            });
 
-            if (docenteResult.rows.length === 0 || docenteResult.rows[0].id_user !== req.user.id) {
+            if (docentes.length === 0 || docentes[0].id_user !== req.user.id) {
                 return res.status(403).json({message: 'You can only delete your own CV history'});
             }
         }

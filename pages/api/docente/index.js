@@ -55,25 +55,24 @@ async function handlePost(req, res) {
         let systemUserId = null;
         let systemUser = null;
         if (createSystemUser) {
-            const pool = (await import('@/lib/db.js')).default;
             const userRole = role || 'Coordenador'; // Default to Coordenador
 
             // Check if user already exists
-            const existingUser = await pool.query(
-                'SELECT id, email, role, ativo FROM users WHERE email = $1',
-                [email]
-            );
+            const existingUsers = await GrpcClient.getAll('users', {
+                filters: {email}
+            });
 
-            if (existingUser.rows.length === 0) {
+            if (existingUsers.length === 0) {
                 // Create user with NULL password (requires first-time setup)
-                const userResult = await pool.query(
-                    'INSERT INTO users (email, password_hash, role, ativo) VALUES ($1, NULL, $2, $3) RETURNING id, email, role, ativo',
-                    [email, userRole, true]
-                );
-                systemUser = userResult.rows[0];
+                systemUser = await GrpcClient.create('users', {
+                    email,
+                    password_hash: null,
+                    role: userRole,
+                    ativo: true
+                });
                 systemUserId = systemUser.id;
             } else {
-                systemUser = existingUser.rows[0];
+                systemUser = existingUsers[0];
                 systemUserId = systemUser.id;
             }
         }

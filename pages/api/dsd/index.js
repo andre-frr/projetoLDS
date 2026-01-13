@@ -1,7 +1,6 @@
 import GrpcClient from "@/lib/grpc-client.js";
 import {applyCors} from "@/lib/cors.js";
 import {ACTIONS, requirePermission, RESOURCES} from "@/lib/authorize.js";
-import pool from '@/lib/db.js';
 
 function handleError(error, res) {
     console.error(error);
@@ -30,18 +29,17 @@ async function handleGet(req, res) {
         if (user.role === 'Docente') {
             // Docentes only see their own DSDs
             // Get docente.id_doc from id_user
-            const docenteResult = await pool.query(
-                'SELECT id_doc FROM docente WHERE id_user = $1',
-                [user.id]
-            );
+            const docentes = await GrpcClient.getAll('docente', {
+                filters: {id_user: user.id}
+            });
 
-            if (docenteResult.rows.length === 0) {
+            if (docentes.length === 0) {
                 return res.status(403).json({
                     message: 'No docente record found for this user'
                 });
             }
 
-            params.id_doc = docenteResult.rows[0].id_doc;
+            params.id_doc = docentes[0].id_doc;
         } else if (user.role === 'Coordenador') {
             // Coordenadores see DSDs for their assigned courses
             const {getCoordenadorCourses} = await import('@/lib/permissions.js');

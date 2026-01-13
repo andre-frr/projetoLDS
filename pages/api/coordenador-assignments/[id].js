@@ -1,4 +1,4 @@
-import pool from '@/lib/db.js';
+import GrpcClient from '@/lib/grpc-client.js';
 import {applyCors} from '@/lib/cors.js';
 import {ACTIONS, requirePermission, RESOURCES} from '@/lib/authorize.js';
 import {
@@ -16,16 +16,9 @@ import {
  */
 async function handleGet(id, req, res) {
     try {
-        const user = await pool.query(
-            'SELECT id, email, role FROM users WHERE id = $1',
-            [id]
-        );
+        const user = await GrpcClient.getById('users', id);
 
-        if (user.rows.length === 0) {
-            return res.status(404).json({message: 'User not found'});
-        }
-
-        if (user.rows[0].role !== 'Coordenador') {
+        if (user.role !== 'Coordenador') {
             return res.status(400).json({message: 'User is not a coordinator'});
         }
 
@@ -33,27 +26,48 @@ async function handleGet(id, req, res) {
         const courses = await getCoordenadorCourses(id);
 
         // Get full department details
-        const departmentDetails = departments.length > 0
-            ? await pool.query(
-                'SELECT id_dep, nome, sigla FROM departamento WHERE id_dep = ANY($1)',
-                [departments]
-            )
-            : {rows: []};
+        const departmentDetails = [];
+        for (const deptId of departments) {
+            try {
+                const dept = await GrpcClient.getById('departamento', deptId);
+                departmentDetails.push({
+                    id_dep: dept.id_dep,
+                    nome: dept.nome,
+                    sigla: dept.sigla
+                });
+            } catch (error) {
+                console.error(`Error fetching department ${deptId}:`, error);
+            }
+        }
 
         // Get full course details
-        const courseDetails = courses.length > 0
-            ? await pool.query(
-                'SELECT id_curso, nome, sigla FROM curso WHERE id_curso = ANY($1)',
-                [courses]
-            )
-            : {rows: []};
+        const courseDetails = [];
+        for (const courseId of courses) {
+            try {
+                const course = await GrpcClient.getById('curso', courseId);
+                courseDetails.push({
+                    id_curso: course.id_curso,
+                    nome: course.nome,
+                    sigla: course.sigla
+                });
+            } catch (error) {
+                console.error(`Error fetching course ${courseId}:`, error);
+            }
+        }
 
         return res.status(200).json({
-            user: user.rows[0],
-            departments: departmentDetails.rows,
-            courses: courseDetails.rows
+            user: {
+                id: user.id,
+                email: user.email,
+                role: user.role
+            },
+            departments: departmentDetails,
+            courses: courseDetails
         });
     } catch (error) {
+        if (error.statusCode === 404) {
+            return res.status(404).json({message: 'User not found'});
+        }
         console.error(error);
         return res.status(500).json({message: 'Internal server error'});
     }
@@ -74,53 +88,40 @@ async function handlePost(id, req, res) {
 
     try {
         // Verify user exists and is coordinator
-        const user = await pool.query(
-            'SELECT role FROM users WHERE id = $1',
-            [id]
-        );
+        const user = await GrpcClient.getById('users', id);
 
-        if (user.rows.length === 0) {
-            return res.status(404).json({message: 'User not found'});
-        }
-
-        if (user.rows[0].role !== 'Coordenador') {
+        if (user.role !== 'Coordenador') {
             return res.status(400).json({message: 'User is not a coordinator'});
         }
 
         if (type === 'department') {
-            // Verify department exists
-            const dept = await pool.query(
-                'SELECT 1 FROM departamento WHERE id_dep = $1',
-                [resourceId]
-            );
-            if (dept.rows.length === 0) {
-                return res.status(404).json({message: 'Department not found'});
-            }
+            // Verify department exists (will throw 404 if not found)
+            await GrpcClient.getById('departamento', resourceId);
 
             await assignCoordenadorToDepartment(id, resourceId);
             return res.status(201).json({
                 message: 'Coordinator assigned to department successfully'
             });
-        } else if (type === 'course') {
-            // Verify course exists
-            const course = await pool.query(
-                'SELECT 1 FROM curso WHERE id_curso = $1',
-                [resourceId]
-            );
-            if (course.rows.length === 0) {
-                return res.status(404).json({message: 'Course not found'});
-            }
+        }
+
+        if (type === 'course') {
+            // Verify course exists (will throw 404 if not found)
+            await GrpcClient.getById('curso', resourceId);
 
             await assignCoordenadorToCourse(id, resourceId);
             return res.status(201).json({
                 message: 'Coordinator assigned to course successfully'
             });
-        } else {
-            return res.status(400).json({
-                message: 'Invalid type. Must be "department" or "course"'
-            });
         }
+
+        return res.status(400).json({
+            message: 'Invalid type. Must be "department" or "course"'
+        });
     } catch (error) {
+        if (error.statusCode === 404) {
+            const resourceType = type === 'department' ? 'Department' : type === 'course' ? 'Course' : 'User';
+            return res.status(404).json({message: `${resourceType} not found`});
+        }
         console.error(error);
         return res.status(500).json({message: 'Internal server error'});
     }
