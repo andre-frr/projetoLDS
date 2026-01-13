@@ -18,6 +18,7 @@ const packageDefinition = protoLoader.loadSync(PROTO_PATH, {
 const data_proto = grpc.loadPackageDefinition(packageDefinition).data;
 
 const primaryKeys = {
+    users: "id",
     departamento: "id_dep",
     area_cientifica: "id_area",
     docente: "id_doc",
