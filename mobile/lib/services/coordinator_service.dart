@@ -178,14 +178,11 @@ class CoordinatorService {
   /// Get all coordinators (users with role Coordenador)
   Future<List<Map<String, dynamic>>> getAllCoordinators() async {
     try {
-      final response = await _dio.get('/users');
+      final response = await _dio.get('/users/coordinators');
 
       if (response.statusCode == 200) {
         final users = response.data as List;
-        return users
-            .where((user) => user['role'] == 'Coordenador')
-            .cast<Map<String, dynamic>>()
-            .toList();
+        return users.cast<Map<String, dynamic>>().toList();
       }
 
       throw Exception('Failed to load coordinators');

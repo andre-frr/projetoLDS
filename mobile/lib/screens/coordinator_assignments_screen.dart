@@ -329,13 +329,15 @@ class _CoordinatorAssignmentsScreenState
                     ),
                     const SizedBox(height: 24),
                     Text(
-                      'Nenhum coordenador encontrado',
+                      'Nenhum coordenador ou docente encontrado',
                       style: Theme.of(context).textTheme.titleLarge,
                     ),
                     const SizedBox(height: 16),
                     const Text(
                       'Para atribuir coordenadores a departamentos e cursos, '
-                      'primeiro é necessário criar utilizadores com o papel "Coordenador".',
+                      'primeiro é necessário criar docentes no sistema. '
+                      'Os docentes serão promovidos automaticamente a coordenadores '
+                      'quando lhes forem atribuídas responsabilidades.',
                       textAlign: TextAlign.center,
                       style: TextStyle(color: Colors.grey, fontSize: 16),
                     ),
@@ -355,7 +357,7 @@ class _CoordinatorAssignmentsScreenState
                                 ),
                                 const SizedBox(width: 8),
                                 Text(
-                                  'Como criar um coordenador:',
+                                  'Como criar um docente:',
                                   style: TextStyle(
                                     fontWeight: FontWeight.bold,
                                     color: Colors.blue.shade900,
@@ -368,8 +370,9 @@ class _CoordinatorAssignmentsScreenState
                               '1. Vá para a lista de Docentes\n'
                               '2. Crie um novo docente\n'
                               '3. Marque "Criar utilizador no sistema"\n'
-                              '4. Selecione o papel "Coordenador"\n'
-                              '5. Volte aqui para fazer as atribuições',
+                              '4. Selecione o papel "Docente"\n'
+                              '5. Volte aqui e atribua departamentos/cursos\n'
+                              '6. O sistema promoverá automaticamente para Coordenador',
                               style: TextStyle(height: 1.5),
                             ),
                           ],
@@ -387,13 +390,39 @@ class _CoordinatorAssignmentsScreenState
                   padding: const EdgeInsets.all(16.0),
                   child: DropdownButtonFormField<int>(
                     decoration: const InputDecoration(
-                      labelText: 'Selecionar Coordenador',
+                      labelText: 'Selecionar Coordenador/Docente',
                       border: OutlineInputBorder(),
+                      helperText:
+                          'Docentes serão promovidos a Coordenador automaticamente',
                     ),
                     items: coordProvider.coordinators.map((coord) {
+                      final role = coord['role'] as String;
+                      final email = coord['email'] as String;
                       return DropdownMenuItem<int>(
                         value: coord['id'],
-                        child: Text(coord['email']),
+                        child: Row(
+                          children: [
+                            Icon(
+                              role == 'Coordenador'
+                                  ? Icons.admin_panel_settings
+                                  : Icons.person,
+                              size: 20,
+                              color: role == 'Coordenador'
+                                  ? Colors.blue
+                                  : Colors.grey,
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(child: Text(email)),
+                            const SizedBox(width: 8),
+                            Text(
+                              role,
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.grey.shade600,
+                              ),
+                            ),
+                          ],
+                        ),
                       );
                     }).toList(),
                     onChanged: (value) {

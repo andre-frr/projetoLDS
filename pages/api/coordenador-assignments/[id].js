@@ -87,11 +87,12 @@ async function handlePost(id, req, res) {
     }
 
     try {
-        // Verify user exists and is coordinator
+        // Verify user exists and is a teacher or already a coordinator
         const user = await GrpcClient.getById('users', id);
 
-        if (user.role !== 'Coordenador') {
-            return res.status(400).json({message: 'User is not a coordinator'});
+        // Allow assignment for Docentes (will be promoted by DB trigger) and existing Coordenadores
+        if (user.role !== 'Coordenador' && user.role !== 'Docente') {
+            return res.status(400).json({message: 'User must be a teacher (Docente) or coordinator'});
         }
 
         if (type === 'department') {

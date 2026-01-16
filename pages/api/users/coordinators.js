@@ -4,16 +4,22 @@ import {ACTIONS, requirePermission, RESOURCES} from '@/lib/authorize.js';
 
 /**
  * GET /api/users/coordinators
- * Get all users with Coordenador role (for assignment dropdowns)
+ * Get all users who are or can become coordinators (Coordenador and Docente roles)
  */
 async function handleGet(req, res) {
     try {
+        // Fetch both Coordenadores and Docentes (teachers who can be promoted)
         const users = await GrpcClient.getAll('users', {
-            filters: {role: 'Coordenador', ativo: true},
+            filters: {ativo: true},
             orderBy: 'email'
         });
 
-        return res.status(200).json(users);
+        // Filter for Coordenador and Docente roles
+        const eligibleUsers = users.filter(
+            user => user.role === 'Coordenador' || user.role === 'Docente'
+        );
+
+        return res.status(200).json(eligibleUsers);
     } catch (error) {
         console.error(error);
         return res.status(500).json({message: 'Internal Server Error'});
