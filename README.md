@@ -12,6 +12,9 @@ e gRPC, e inclui um sistema completo de autenticação JWT.
 - ✅ **Gestão de sessões** com suporte para múltiplos dispositivos
 - ✅ **Sistema de permissões centralizado** com RBAC granular
 - ✅ **Gestão de coordenadores** com atribuições a departamentos e cursos
+- ✅ **Promoção automática de docentes** a coordenadores via triggers de base de dados
+- ✅ **Proteção de docentes convidados** - impossível promover a coordenador (5 camadas de proteção)
+- ✅ **Interface de pesquisa inteligente** com autocomplete (tipo-ahead, mínimo 3 caracteres)
 - ✅ **Validação de dados** e tratamento de erros padronizado
 - ✅ **Detecção de duplicados** para campos únicos (nome e sigla)
 - ✅ **Auditoria de ações** para segurança e rastreabilidade
@@ -323,14 +326,18 @@ Todos os endpoints seguem operações CRUD completas. **Base URL:** `https://loc
 ### Atribuições de Coordenadores
 
 - `GET /coordenador-assignments/[id]` - Obter atribuições de um coordenador (departamentos e cursos)
-- `POST /coordenador-assignments/[id]/department` - Atribuir coordenador a um departamento
-- `DELETE /coordenador-assignments/[id]/department/[depId]` - Remover atribuição de departamento
-- `POST /coordenador-assignments/[id]/course` - Atribuir coordenador a um curso
-- `DELETE /coordenador-assignments/[id]/course/[courseId]` - Remover atribuição de curso
+- `POST /coordenador-assignments/[id]` - Atribuir docente/coordenador a departamento ou curso
+    - Body: `{"type": "department|course", "resourceId": <id>}`
+    - Aceita Docentes (promovidos automaticamente) e Coordenadores existentes
+    - **Rejeita docentes convidados** (convidado = true)
+- `DELETE /coordenador-assignments/[id]` - Remover atribuição de departamento ou curso
+    - Body: `{"type": "department|course", "resourceId": <id>}`
+    - Docentes são automaticamente despromovidos quando perdem todas as atribuições
 
 ### Utilizadores
 
 - `GET /users` - Listar todos os utilizadores
+- `GET /users/coordinators` - Listar utilizadores elegíveis para coordenação (Coordenador + Docente não-convidado)
 - `POST /users` - Criar novo utilizador
 - `GET /users/[id]` - Obter utilizador por ID
 - `PUT /users/[id]` - Atualizar utilizador
@@ -383,6 +390,35 @@ Os coordenadores podem ser atribuídos a:
 - Um coordenador pode ter múltiplas atribuições
 - Um departamento/curso pode ter múltiplos coordenadores
 
+#### **Promoção e Despromoção Automática**
+
+O sistema implementa **triggers de base de dados** para gestão automática de roles:
+
+**Promoção (Docente → Coordenador)**:
+
+- Quando um **Docente** é atribuído a um departamento ou curso
+- O sistema automaticamente promove o seu role para **Coordenador**
+- **Exceção**: Docentes com `convidado = true` **NÃO** podem ser promovidos
+
+**Despromoção (Coordenador → Docente)**:
+
+- Quando um Coordenador perde **todas** as suas atribuições
+- Se tiver registo na tabela `docente`, volta para role **Docente**
+- Se não tiver registo de docente, mantém o role **Coordenador**
+
+**Proteção de Docentes Convidados**:
+
+Os docentes com flag `convidado = true` têm **5 camadas de proteção** contra promoção:
+
+1. **Frontend UI**: Não aparecem na pesquisa de coordenadores
+2. **API GET** (`/users/coordinators`): Filtrados da lista
+3. **API POST** (atribuição): Validação rejeita com erro 400
+4. **Database BEFORE INSERT**: Trigger bloqueia inserção com exceção
+5. **Database AFTER INSERT**: Trigger de promoção ignora docentes convidados
+
+Isto garante que docentes convidados **nunca** podem ser promovidos a coordenadores, independentemente da camada de
+acesso.
+
 ### First-Time Password Setup
 
 O sistema suporta criação de utilizadores sem password:
@@ -415,6 +451,11 @@ A API segue um padrão consistente para respostas de erro:
   "message": "Dados mal formatados."
 }
 
+// 400 - Guest Teacher Protection
+{
+  "message": "Guest teachers (convidado) cannot be assigned as coordinators"
+}
+
 // 404 - Not Found
 {
   "message": "Departamento inexistente."
@@ -424,6 +465,197 @@ A API segue um padrão consistente para respostas de erro:
 {
   "message": "Email duplicado."
 }
+```
+
+## Sistema de Atribuição de Coordenadores
+
+### Visão Geral
+
+O sistema de atribuição de coordenadores é uma funcionalidade completa que permite:
+
+- Atribuir **Docentes** ou **Coordenadores** a departamentos e cursos
+- **Promoção automática** de Docentes para Coordenadores ao atribuir
+- **Despromoção automática** de Coordenadores para Docentes ao remover todas as atribuições
+- **Proteção multicamada** contra promoção de docentes convidados
+
+### Arquitetura
+
+```
+Flutter UI (Autocomplete)
+    ↓
+API REST (/coordenador-assignments/[id])
+    ↓
+Backend Validation (check convidado)
+    ↓
+Database Insert/Delete
+    ↓
+Database Triggers (promote/demote/prevent)
+    ↓
+Role Update in users table
+```
+
+### Proteção de Docentes Convidados (5 Camadas)
+
+| Camada            | Localização                          | Ação            | Quando Falha             |
+|-------------------|--------------------------------------|-----------------|--------------------------|
+| **1. UI**         | Flutter Autocomplete                 | Filtragem       | Nunca mostra na lista    |
+| **2. API List**   | `GET /users/coordinators`            | Filtra resposta | Nunca retorna convidados |
+| **3. API Assign** | `POST /coordenador-assignments/[id]` | Validação       | HTTP 400 com mensagem    |
+| **4. DB Insert**  | Trigger `BEFORE INSERT`              | Exceção SQL     | Rollback da transação    |
+| **5. DB Promote** | Trigger `AFTER INSERT`               | Ignora promoção | Sem promoção de role     |
+
+### Exemplos de Utilização
+
+O sistema de atribuição de coordenadores é utilizado através da **interface Flutter Web**:
+
+#### **Atribuir Docente a Departamento** (Será promovido automaticamente)
+
+**Via Interface Flutter**:
+
+1. Abrir o ecrã "Coordenadores"
+2. Pesquisar o docente (digitar 3+ letras do email)
+3. Selecionar o docente da lista
+4. Clicar em "Adicionar Departamento"
+5. Selecionar o departamento desejado
+
+**Resultado**:
+
+- Insere registo em `coordenador_departamento`
+- Trigger `trg_promote_coordenador_dep` executa automaticamente
+- Se `users.role = 'Docente'` E `docente.convidado = false`:
+    - `users.role` atualizado para `'Coordenador'`
+- Interface atualiza mostrando o novo departamento atribuído
+
+#### **Remover Última Atribuição** (Será despromovido automaticamente)
+
+**Via Interface Flutter**:
+
+1. No ecrã "Coordenadores", com um coordenador selecionado
+2. Clicar no ícone de remover (🗑️) ao lado do departamento/curso
+3. Confirmar a remoção
+
+**Resultado**:
+
+- Remove registo de `coordenador_departamento`
+- Trigger `trg_demote_coordenador_dep` executa automaticamente
+- Se não há outras atribuições E utilizador tem registo em `docente`:
+    - `users.role` revertido para `'Docente'`
+- Interface atualiza automaticamente
+
+#### **Tentar Atribuir Docente Convidado** (Bloqueado)
+
+**Via Interface Flutter**:
+
+1. Pesquisar por docente convidado (convidado = true)
+2. O docente **NÃO aparece** nos resultados de pesquisa
+
+**Resultado**:
+
+- **Camada 1 (UI)**: Docente convidado filtrado automaticamente
+- Impossível selecionar ou atribuir
+- Nenhuma ação necessária - proteção transparente ao utilizador
+
+### Triggers da Base de Dados
+
+#### **Promoção**
+
+```sql
+-- Executado AFTER INSERT em coordenador_departamento ou coordenador_curso
+CREATE FUNCTION promote_to_coordenador() RETURNS TRIGGER AS $$
+DECLARE
+is_guest BOOLEAN;
+BEGIN
+    -- Verificar se é docente convidado
+SELECT COALESCE(convidado, FALSE)
+INTO is_guest
+FROM docente
+WHERE id_user = NEW.id_user
+  AND ativo = TRUE;
+
+-- Apenas promover se NÃO for convidado
+IF
+NOT is_guest THEN
+UPDATE users
+SET role = 'Coordenador'
+WHERE id = NEW.id_user
+  AND role = 'Docente';
+END IF;
+
+RETURN NEW;
+END;
+$$
+LANGUAGE plpgsql;
+```
+
+#### **Prevenção**
+
+```sql
+-- Executado BEFORE INSERT em coordenador_departamento ou coordenador_curso
+CREATE FUNCTION prevent_guest_coordinator_assignment() RETURNS TRIGGER AS $$
+DECLARE
+is_guest BOOLEAN;
+BEGIN
+SELECT COALESCE(convidado, FALSE)
+INTO is_guest
+FROM docente
+WHERE id_user = NEW.id_user
+  AND ativo = TRUE;
+
+IF
+is_guest THEN
+        RAISE EXCEPTION 'Guest teachers (convidado = true) cannot be assigned as coordinators';
+END IF;
+
+RETURN NEW;
+END;
+$$
+LANGUAGE plpgsql;
+```
+
+#### **Despromoção**
+
+```sql
+-- Executado AFTER DELETE em coordenador_departamento ou coordenador_curso
+CREATE FUNCTION demote_from_coordenador() RETURNS TRIGGER AS $$
+DECLARE
+has_assignments BOOLEAN;
+    is_docente
+BOOLEAN;
+BEGIN
+    -- Verificar se tem outras atribuições
+SELECT EXISTS(SELECT 1
+              FROM coordenador_departamento
+              WHERE id_user = OLD.id_user
+              UNION
+              SELECT 1
+              FROM coordenador_curso
+              WHERE id_user = OLD.id_user)
+INTO has_assignments;
+
+-- Se não tem mais atribuições
+IF
+NOT has_assignments THEN
+        -- Verificar se é docente
+SELECT EXISTS(SELECT 1
+              FROM docente
+              WHERE id_user = OLD.id_user
+                AND ativo = TRUE)
+INTO is_docente;
+
+-- Despromover para Docente se aplicável
+IF
+is_docente THEN
+UPDATE users
+SET role = 'Docente'
+WHERE id = OLD.id_user
+  AND role = 'Coordenador';
+END IF;
+END IF;
+
+RETURN OLD;
+END;
+$$
+LANGUAGE plpgsql;
 ```
 
 ## Validações Implementadas
@@ -595,55 +827,49 @@ taskkill /PID <PID> /F
 - **Docker & Docker Compose** - Containerização
 - **pg (node-postgres)** - Cliente PostgreSQL
 
-## Testes
+## Testes e Configuração Inicial
 
-### Testar Autenticação com Postman/cURL
+### Setup Inicial com Postman
 
-**Nota:** Os exemplos abaixo usam credenciais de teste. Substitua pelos seus próprios valores.
+Para começar a usar o sistema, você precisa criar o primeiro utilizador administrador:
 
-**1. Registar um novo utilizador:**
+**1. Abrir Postman**
 
-```bash
-curl -k -X POST https://localhost:3000/api/auth/register \
-  -H "Content-Type: application/json" \
-  -d '{"email":"admin@test.com","password":"Test123!","role":"Administrador"}'
+**2. Criar Administrador Inicial:**
+
+```
+POST https://localhost:3000/api/auth/register
+
+Headers:
+  Content-Type: application/json
+
+Body (JSON):
+{
+  "email": "admin@test.com",
+  "password": "Test123!",
+  "role": "Administrador"
+}
 ```
 
-**2. Fazer login:**
+**Nota:** Aceite o certificado SSL auto-assinado no Postman (configurações → SSL certificate verification → OFF) para
+desenvolvimento local.
 
-```bash
-curl -k -X POST https://localhost:3000/api/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{"email":"admin@test.com","password":"Test123!"}'
-```
+### Testes via Aplicação Flutter
 
-**3. Usar o token retornado para aceder a endpoints protegidos:**
+Após criar o administrador inicial:
 
-```bash
-curl -k -X GET https://localhost:3000/api/departamento \
-  -H "Authorization: Bearer <ACCESS_TOKEN>"
-```
+1. **Aceder à aplicação Flutter Web** em `https://localhost:8000` ou `https://<server-ip>:8000`
+2. **Fazer login** com as credenciais do administrador
+3. **Todas as funcionalidades** podem ser testadas através da interface:
+    - Gestão de departamentos e áreas científicas
+    - Gestão de cursos e UCs
+    - Gestão de docentes
+    - Atribuição de coordenadores
+    - Distribuição de serviço docente (DSD)
+    - Gestão de anos letivos
 
-**4. Renovar o token:**
-
-```bash
-curl -k -X POST https://localhost:3000/api/auth/refresh \
-  -H "Content-Type: application/json" \
-  -d '{"refreshToken":"<REFRESH_TOKEN>"}'
-```
-
-**Nota:** O flag `-k` permite conexões HTTPS sem verificar o certificado (apenas para desenvolvimento).
-
-### Testar Operações CRUD
-
-Exemplo: Criar um departamento:
-
-```bash
-curl -k -X POST https://localhost:3000/api/departamento \
-  -H "Authorization: Bearer <ACCESS_TOKEN>" \
-  -H "Content-Type: application/json" \
-  -d '{"nome":"Engenharia","sigla":"ENG","ativo":true}'
-```
+A interface Flutter Web é a forma principal de interagir com o sistema e permite testar todas as funcionalidades CRUD,
+permissões RBAC e validações.
 
 ## Acesso à Base de Dados
 
@@ -698,8 +924,37 @@ A base de dados inclui as seguintes tabelas principais:
 - **Archiving de anos letivos**: Anos podem ser arquivados sem serem eliminados
 - **Horas por ECTS configuráveis**: Cada UC pode ter valor personalizado (padrão: 28)
 - **Coordinator assignments**: Junction tables para atribuições de coordenadores
+- **Promoção automática de coordenadores**: Triggers promovem Docente → Coordenador ao atribuir
+- **Despromoção automática**: Triggers revertem Coordenador → Docente ao remover todas as atribuições
+- **Proteção de docentes convidados**: Triggers impedem promoção de `convidado = true`
 - **Cascading deletes**: Configurados adequadamente para manter integridade referencial
 - **Indexes otimizados**: Para queries frequentes (sessions, coordenadores, etc.)
+
+#### **Triggers de Base de Dados**
+
+O sistema implementa os seguintes triggers automáticos:
+
+**Gestão de Coordenadores**:
+
+- `trg_promote_coordenador_dep`: Promove Docente → Coordenador ao inserir em `coordenador_departamento`
+- `trg_promote_coordenador_curso`: Promove Docente → Coordenador ao inserir em `coordenador_curso`
+- `trg_demote_coordenador_dep`: Despromove Coordenador → Docente ao remover de `coordenador_departamento` (se sem outras
+  atribuições)
+- `trg_demote_coordenador_curso`: Despromove Coordenador → Docente ao remover de `coordenador_curso` (se sem outras
+  atribuições)
+
+**Proteção de Docentes Convidados**:
+
+- `trg_check_guest_dep`: Impede inserção de docentes convidados em `coordenador_departamento`
+- `trg_check_guest_curso`: Impede inserção de docentes convidados em `coordenador_curso`
+
+**Gestão de Anos Letivos**:
+
+- `trg_archive_anos_letivos`: Arquiva automaticamente anos letivos anteriores quando um novo é criado
+
+**Gestão de UCs**:
+
+- `trg_create_uc_turmas`: Cria automaticamente registos de turmas ao criar uma UC
 
 Veja `db/init.sql` para o schema completo.
 
@@ -798,9 +1053,16 @@ A aplicação Flutter Web implementa:
 - ✅ **Sistema de Login** com autenticação JWT
 - ✅ **Interface responsiva** para gestão académica
 - ✅ **RBAC integrado** com controlo de acesso baseado em roles
+- ✅ **Gestão de coordenadores** com pesquisa inteligente autocomplete
+    - Pesquisa tipo-ahead (mínimo 3 caracteres)
+    - Filtra por email do utilizador
+    - Mostra role e ícones distintivos (Coordenador/Docente)
+    - Promoção automática de Docente → Coordenador ao atribuir
+    - **Bloqueia docentes convidados** automaticamente
 - ✅ **Gestão de UCs** com filtros avançados (ano, semestre, curso)
 - ✅ **Gestão de horas de contacto** com cálculo automático
 - ✅ **Gestão de anos letivos** com sistema de arquivo
+- ✅ **Gestão DSD (Distribuição de Serviço Docente)** com autocomplete para docentes
 - ✅ **CRUD completo** para departamentos, cursos, áreas, docentes
 - ✅ **Interface adaptativa** mostra/esconde funcionalidades baseado em permissões
 - ✅ **Tema claro/escuro** com persistência de preferências
@@ -825,6 +1087,42 @@ A interface para gerir horas de contacto:
 - **Dialog com largura fixa** para melhor UX
 - **Preservação do valor** de horas_por_ects ao editar
 - **Validação** de valores mínimos e consistência
+
+### Interface de Atribuição de Coordenadores
+
+A interface para atribuir coordenadores implementa pesquisa inteligente:
+
+#### **Funcionalidades**:
+
+- **Autocomplete tipo-ahead**: Digite 3+ letras do email para pesquisar
+- **Filtragem em tempo real**: Mostra apenas utilizadores que correspondem à pesquisa
+- **Indicadores visuais**:
+    - 🔵 Ícone azul para Coordenadores existentes
+    - 🟢 Ícone verde para Docentes (serão promovidos)
+    - Mostra o role atual de cada utilizador
+- **Botão de limpar**: Reseta a seleção facilmente
+- **Helper text**: Informa que "Docentes serão promovidos a Coordenador automaticamente"
+
+#### **Proteção de Docentes Convidados**:
+
+Docentes com `convidado = true` são **automaticamente excluídos**:
+
+1. ❌ Não aparecem nos resultados de pesquisa
+2. ❌ Não podem ser selecionados
+3. ❌ Backend rejeita qualquer tentativa de atribuição
+4. ❌ Base de dados bloqueia com trigger BEFORE INSERT
+5. ✅ Mensagem de erro clara se tentativa de atribuição
+
+#### **Fluxo de Utilização**:
+
+1. Abrir o ecrã "Coordenadores"
+2. No campo de pesquisa, digitar pelo menos 3 letras do email
+3. Selecionar o docente/coordenador da lista
+4. Atribuir departamentos e/ou cursos
+5. Se for Docente, é **automaticamente promovido** a Coordenador
+6. Ao remover todas as atribuições, volta automaticamente a Docente
+
+Esta interface é consistente com a interface de gestão DSD, proporcionando uma experiência unificada ao utilizador.
 
 ## Sobre o Projeto
 
@@ -877,4 +1175,4 @@ Flutter Web ←→ Next.js Gateway ←→ gRPC Microservice ←→ PostgreSQL
 **Projeto Académico** | Laboratório de Desenvolvimento de Software  
 **Arquitetura:** Microserviços com gRPC, REST e GraphQL  
 **Frontend:** Flutter Web com HTTPS e RBAC  
-**Última atualização:** 5 de Janeiro de 2026
+**Última atualização:** 16 de Janeiro de 2026
