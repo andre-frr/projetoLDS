@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../providers/coordinator_provider.dart';
 import '../providers/curso_provider.dart';
 import '../providers/departamento_provider.dart';
+import '../providers/docente_provider.dart';
 import '../services/coordinator_service.dart';
 
 class CoordinatorAssignmentsScreen extends StatefulWidget {
@@ -17,6 +18,9 @@ class CoordinatorAssignmentsScreen extends StatefulWidget {
 class _CoordinatorAssignmentsScreenState
     extends State<CoordinatorAssignmentsScreen> {
   int? _selectedCoordinatorId;
+  String? _selectedCoordinatorEmail;
+  final TextEditingController _searchController = TextEditingController();
+  final FocusNode _searchFocusNode = FocusNode();
 
   @override
   void initState() {
@@ -26,15 +30,24 @@ class _CoordinatorAssignmentsScreenState
     });
   }
 
+  @override
+  void dispose() {
+    _searchController.dispose();
+    _searchFocusNode.dispose();
+    super.dispose();
+  }
+
   Future<void> _loadData() async {
     final coordProvider = context.read<CoordinatorProvider>();
     final deptProvider = context.read<DepartamentoProvider>();
     final courseProvider = context.read<CursoProvider>();
+    final docenteProvider = context.read<DocenteProvider>();
 
     await Future.wait([
       coordProvider.loadCoordinators(),
       deptProvider.loadAll(),
       courseProvider.loadAll(),
+      docenteProvider.loadAll(),
     ]);
   }
 
@@ -385,53 +398,142 @@ class _CoordinatorAssignmentsScreenState
             )
           : Column(
               children: [
-                // Coordinator selector
+                // Coordinator selector with autocomplete
                 Padding(
                   padding: const EdgeInsets.all(16.0),
-                  child: DropdownButtonFormField<int>(
-                    decoration: const InputDecoration(
-                      labelText: 'Selecionar Coordenador/Docente',
-                      border: OutlineInputBorder(),
-                      helperText:
-                          'Docentes serão promovidos a Coordenador automaticamente',
-                    ),
-                    items: coordProvider.coordinators.map((coord) {
-                      final role = coord['role'] as String;
-                      final email = coord['email'] as String;
-                      return DropdownMenuItem<int>(
-                        value: coord['id'],
-                        child: Row(
-                          children: [
-                            Icon(
-                              role == 'Coordenador'
-                                  ? Icons.admin_panel_settings
-                                  : Icons.person,
-                              size: 20,
-                              color: role == 'Coordenador'
-                                  ? Colors.blue
-                                  : Colors.grey,
+                  child: Autocomplete<int>(
+                    optionsBuilder: (TextEditingValue textEditingValue) {
+                      final query = textEditingValue.text.toLowerCase().trim();
+
+                      // Require at least 3 characters
+                      if (query.length < 3) {
+                        return const Iterable<int>.empty();
+                      }
+
+                      // Search in coordinators list (users with Docente or Coordenador role)
+                      return coordProvider.coordinators
+                          .where((coord) {
+                            final email = (coord['email'] as String)
+                                .toLowerCase();
+                            return email.contains(query);
+                          })
+                          .map((coord) => coord['id'] as int);
+                    },
+                    displayStringForOption: (int userId) {
+                      final coord = coordProvider.coordinators.firstWhere(
+                        (c) => c['id'] == userId,
+                        orElse: () => {'email': 'Unknown'},
+                      );
+                      return coord['email'] as String;
+                    },
+                    onSelected: (int userId) {
+                      setState(() {
+                        _selectedCoordinatorId = userId;
+                        final coord = coordProvider.coordinators.firstWhere(
+                          (c) => c['id'] == userId,
+                        );
+                        _selectedCoordinatorEmail = coord['email'] as String;
+                        _searchController.text = _selectedCoordinatorEmail!;
+                      });
+                      coordProvider.loadAssignments(userId);
+                    },
+                    fieldViewBuilder:
+                        (
+                          context,
+                          textEditingController,
+                          focusNode,
+                          onFieldSubmitted,
+                        ) {
+                          // Sync controllers
+                          if (_searchController.text.isEmpty &&
+                              _selectedCoordinatorEmail != null) {
+                            textEditingController.text =
+                                _selectedCoordinatorEmail!;
+                          }
+
+                          return TextField(
+                            controller: textEditingController,
+                            focusNode: focusNode,
+                            decoration: InputDecoration(
+                              labelText: 'Pesquisar Coordenador/Docente',
+                              hintText: 'Digite pelo menos 3 letras do email',
+                              border: const OutlineInputBorder(),
+                              prefixIcon: const Icon(Icons.search),
+                              suffixIcon: textEditingController.text.isNotEmpty
+                                  ? IconButton(
+                                      icon: const Icon(Icons.clear),
+                                      onPressed: () {
+                                        textEditingController.clear();
+                                        setState(() {
+                                          _selectedCoordinatorId = null;
+                                          _selectedCoordinatorEmail = null;
+                                          _searchController.clear();
+                                        });
+                                      },
+                                    )
+                                  : null,
+                              helperText:
+                                  'Docentes serão promovidos a Coordenador automaticamente',
+                              helperMaxLines: 2,
                             ),
-                            const SizedBox(width: 8),
-                            Expanded(child: Text(email)),
-                            const SizedBox(width: 8),
-                            Text(
-                              role,
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: Colors.grey.shade600,
-                              ),
+                            onChanged: (value) {
+                              // Clear selection if text is manually changed
+                              if (value != _selectedCoordinatorEmail) {
+                                setState(() {
+                                  _selectedCoordinatorId = null;
+                                  _selectedCoordinatorEmail = null;
+                                });
+                              }
+                            },
+                          );
+                        },
+                    optionsViewBuilder: (context, onSelected, options) {
+                      return Align(
+                        alignment: Alignment.topLeft,
+                        child: Material(
+                          elevation: 8.0,
+                          borderRadius: BorderRadius.circular(8),
+                          child: ConstrainedBox(
+                            constraints: const BoxConstraints(
+                              maxHeight: 300,
+                              maxWidth: 400,
                             ),
-                          ],
+                            child: ListView.builder(
+                              padding: const EdgeInsets.all(8.0),
+                              shrinkWrap: true,
+                              itemCount: options.length,
+                              itemBuilder: (context, index) {
+                                final userId = options.elementAt(index);
+                                final coord = coordProvider.coordinators
+                                    .firstWhere((c) => c['id'] == userId);
+                                final email = coord['email'] as String;
+                                final role = coord['role'] as String;
+
+                                return ListTile(
+                                  dense: true,
+                                  leading: Icon(
+                                    role == 'Coordenador'
+                                        ? Icons.admin_panel_settings
+                                        : Icons.person,
+                                    color: role == 'Coordenador'
+                                        ? Colors.blue
+                                        : Colors.green,
+                                  ),
+                                  title: Text(email),
+                                  subtitle: Text(
+                                    role,
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: Colors.grey.shade600,
+                                    ),
+                                  ),
+                                  onTap: () => onSelected(userId),
+                                );
+                              },
+                            ),
+                          ),
                         ),
                       );
-                    }).toList(),
-                    onChanged: (value) {
-                      if (value != null) {
-                        setState(() {
-                          _selectedCoordinatorId = value;
-                        });
-                        coordProvider.loadAssignments(value);
-                      }
                     },
                   ),
                 ),

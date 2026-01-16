@@ -349,16 +349,30 @@ EXECUTE FUNCTION archive_previous_anos_letivos();
 
 -- Função para promover utilizador a Coordenador quando atribuído
 -- Apenas promove Docentes para Coordenador (não afeta Administradores ou Convidados)
+-- Não promove docentes convidados (convidado = true)
 CREATE OR REPLACE FUNCTION promote_to_coordenador()
     RETURNS TRIGGER AS
 $$
+DECLARE
+    is_guest BOOLEAN;
 BEGIN
-    -- Promover apenas se o role atual for 'Docente'
+    -- Check if the user is a guest teacher (convidado = true)
+    SELECT COALESCE(convidado, FALSE)
+    INTO is_guest
+    FROM docente
+    WHERE id_user = NEW.id_user
+      AND ativo = TRUE
+    LIMIT 1;
+
+    -- Promover apenas se o role atual for 'Docente' AND NOT a guest teacher
     -- Administradores e Convidados mantêm seus roles
-    UPDATE users
-    SET role = 'Coordenador'
-    WHERE id = NEW.id_user
-      AND role = 'Docente';
+    -- Guest teachers (convidado = true) cannot be promoted
+    IF NOT is_guest THEN
+        UPDATE users
+        SET role = 'Coordenador'
+        WHERE id = NEW.id_user
+          AND role = 'Docente';
+    END IF;
 
     RETURN NEW;
 END;
@@ -438,6 +452,50 @@ CREATE TRIGGER trg_demote_coordenador_curso
     ON coordenador_curso
     FOR EACH ROW
 EXECUTE FUNCTION demote_from_coordenador();
+
+-- ==================================
+--   Prevent Guest Teachers from Coordinator Assignment
+-- ==================================
+
+-- Function to check if a user is a guest teacher
+CREATE OR REPLACE FUNCTION prevent_guest_coordinator_assignment()
+    RETURNS TRIGGER AS
+$$
+DECLARE
+    is_guest BOOLEAN;
+BEGIN
+    -- Check if the user is a guest teacher (convidado = true)
+    SELECT COALESCE(convidado, FALSE)
+    INTO is_guest
+    FROM docente
+    WHERE id_user = NEW.id_user
+      AND ativo = TRUE
+    LIMIT 1;
+
+    -- Prevent assignment if user is a guest teacher
+    IF is_guest THEN
+        RAISE EXCEPTION 'Guest teachers (convidado = true) cannot be assigned as coordinators';
+    END IF;
+
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Trigger to prevent guest teachers from being assigned to departments
+DROP TRIGGER IF EXISTS trg_check_guest_dep ON coordenador_departamento;
+CREATE TRIGGER trg_check_guest_dep
+    BEFORE INSERT
+    ON coordenador_departamento
+    FOR EACH ROW
+EXECUTE FUNCTION prevent_guest_coordinator_assignment();
+
+-- Trigger to prevent guest teachers from being assigned to courses
+DROP TRIGGER IF EXISTS trg_check_guest_curso ON coordenador_curso;
+CREATE TRIGGER trg_check_guest_curso
+    BEFORE INSERT
+    ON coordenador_curso
+    FOR EACH ROW
+EXECUTE FUNCTION prevent_guest_coordinator_assignment();
 
 -- ==================================
 --   Trigger para Criar UC Turmas Automaticamente

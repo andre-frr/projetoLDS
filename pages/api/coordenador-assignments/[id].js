@@ -18,8 +18,9 @@ async function handleGet(id, req, res) {
     try {
         const user = await GrpcClient.getById('users', id);
 
-        if (user.role !== 'Coordenador') {
-            return res.status(400).json({message: 'User is not a coordinator'});
+        // Allow viewing for Coordenador and Docente (who might have assignments or will get them)
+        if (user.role !== 'Coordenador' && user.role !== 'Docente') {
+            return res.status(400).json({message: 'User is not a coordinator or teacher'});
         }
 
         const departments = await getCoordenadorDepartments(id);
@@ -93,6 +94,24 @@ async function handlePost(id, req, res) {
         // Allow assignment for Docentes (will be promoted by DB trigger) and existing Coordenadores
         if (user.role !== 'Coordenador' && user.role !== 'Docente') {
             return res.status(400).json({message: 'User must be a teacher (Docente) or coordinator'});
+        }
+
+        // Check if user is a guest teacher (convidado = true)
+        if (user.role === 'Docente') {
+            try {
+                const docentes = await GrpcClient.getAll('docente', {
+                    filters: {id_user: id, ativo: true}
+                });
+
+                if (docentes.length > 0 && docentes[0].convidado === true) {
+                    return res.status(400).json({
+                        message: 'Guest teachers (convidado) cannot be assigned as coordinators'
+                    });
+                }
+            } catch (error) {
+                console.error('Error checking docente convidado status:', error);
+                // Continue if we can't check - better to allow than block
+            }
         }
 
         if (type === 'department') {
