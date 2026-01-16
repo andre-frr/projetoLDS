@@ -15,31 +15,43 @@ async function handleGet(req, res) {
             orderBy: 'email'
         });
 
-        // Fetch all docentes to check convidado flag
+        // Fetch all docentes to check convidado flag and get names
         const docentes = await GrpcClient.getAll('docente', {
             filters: {ativo: true}
         });
 
-        // Create a map of user_id -> convidado flag
+        // Create a map of user_id -> docente data (convidado flag + nome)
         const docenteMap = new Map();
         docentes.forEach(doc => {
             if (doc.id_user) {
-                docenteMap.set(doc.id_user, doc.convidado === true);
+                docenteMap.set(doc.id_user, {
+                    convidado: doc.convidado === true,
+                    nome: doc.nome
+                });
             }
         });
 
-        // Filter for eligible users:
+        // Filter for eligible users and enrich with docente names:
         // - Coordenador (already promoted)
         // - Docente (can be promoted) BUT NOT guest teachers (convidado = true)
-        const eligibleUsers = users.filter(user => {
-            if (user.role === 'Coordenador') return true;
-            if (user.role === 'Docente') {
-                // Exclude guest teachers
-                const isGuest = docenteMap.get(user.id);
-                return !isGuest;
-            }
-            return false;
-        });
+        const eligibleUsers = users
+            .filter(user => {
+                if (user.role === 'Coordenador') return true;
+                if (user.role === 'Docente') {
+                    // Exclude guest teachers
+                    const docenteData = docenteMap.get(user.id);
+                    return docenteData && !docenteData.convidado;
+                }
+                return false;
+            })
+            .map(user => {
+                // Add docente name if available
+                const docenteData = docenteMap.get(user.id);
+                return {
+                    ...user,
+                    nome: docenteData?.nome || user.email.split('@')[0] // fallback to email prefix
+                };
+            });
 
         return res.status(200).json(eligibleUsers);
     } catch (error) {

@@ -18,9 +18,12 @@ class CoordinatorAssignmentsScreen extends StatefulWidget {
 class _CoordinatorAssignmentsScreenState
     extends State<CoordinatorAssignmentsScreen> {
   int? _selectedCoordinatorId;
-  String? _selectedCoordinatorEmail;
+  String? _selectedCoordinatorName;
   final TextEditingController _searchController = TextEditingController();
   final FocusNode _searchFocusNode = FocusNode();
+  bool _showAllAssignments = false;
+  List<CoordinatorAssignment> _allAssignments = [];
+  bool _loadingAllAssignments = false;
 
   @override
   void initState() {
@@ -49,6 +52,44 @@ class _CoordinatorAssignmentsScreenState
       courseProvider.loadAll(),
       docenteProvider.loadAll(),
     ]);
+
+    if (_showAllAssignments) {
+      await _loadAllAssignments();
+    }
+  }
+
+  Future<void> _loadAllAssignments() async {
+    setState(() => _loadingAllAssignments = true);
+
+    final coordProvider = context.read<CoordinatorProvider>();
+
+    try {
+      final assignments = <CoordinatorAssignment>[];
+
+      // Load assignments for all coordinators
+      for (final coord in coordProvider.coordinators) {
+        if (coord['role'] == 'Coordenador') {
+          try {
+            final assignment = await coordProvider.service.getAssignments(
+              coord['id'],
+            );
+            if (assignment.departments.isNotEmpty ||
+                assignment.courses.isNotEmpty) {
+              assignments.add(assignment);
+            }
+          } catch (e) {
+            // Skip coordinators without assignments
+          }
+        }
+      }
+
+      setState(() {
+        _allAssignments = assignments;
+        _loadingAllAssignments = false;
+      });
+    } catch (e) {
+      setState(() => _loadingAllAssignments = false);
+    }
   }
 
   Future<void> _showAssignDepartmentDialog() async {
@@ -295,367 +336,520 @@ class _CoordinatorAssignmentsScreenState
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Atribuições de Coordenadores'),
+        title: Text(
+          _showAllAssignments
+              ? 'Lista de Coordenadores'
+              : 'Atribuições de Coordenadores',
+        ),
         actions: [
+          IconButton(
+            icon: Icon(_showAllAssignments ? Icons.edit : Icons.list),
+            tooltip: _showAllAssignments
+                ? 'Modo de Gestão'
+                : 'Ver Todas as Atribuições',
+            onPressed: () {
+              setState(() {
+                _showAllAssignments = !_showAllAssignments;
+                if (_showAllAssignments) {
+                  _loadAllAssignments();
+                }
+              });
+            },
+          ),
           IconButton(icon: const Icon(Icons.refresh), onPressed: _loadData),
         ],
       ),
-      body: coordProvider.isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : coordProvider.errorMessage != null
-          ? Center(
+      body: _showAllAssignments
+          ? _buildAllAssignmentsView()
+          : _buildManageView(coordProvider),
+    );
+  }
+
+  Widget _buildAllAssignmentsView() {
+    if (_loadingAllAssignments) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (_allAssignments.isEmpty) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(
+                Icons.assignment_outlined,
+                size: 80,
+                color: Colors.grey,
+              ),
+              const SizedBox(height: 24),
+              Text(
+                'Nenhuma atribuição encontrada',
+                style: Theme.of(context).textTheme.titleLarge,
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                'Não há coordenadores com departamentos ou cursos atribuídos.',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: Colors.grey, fontSize: 16),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return ListView.builder(
+      padding: const EdgeInsets.all(16.0),
+      itemCount: _allAssignments.length,
+      itemBuilder: (context, index) {
+        final assignment = _allAssignments[index];
+        return Card(
+          margin: const EdgeInsets.only(bottom: 16.0),
+          child: ExpansionTile(
+            leading: const Icon(
+              Icons.admin_panel_settings,
+              color: Colors.blue,
+              size: 32,
+            ),
+            title: Text(
+              assignment.email,
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+            ),
+            subtitle: Text(
+              '${assignment.departments.length} departamento(s), '
+              '${assignment.courses.length} curso(s)',
+              style: TextStyle(color: Colors.grey.shade600),
+            ),
+            children: [
+              if (assignment.departments.isNotEmpty) ...[
+                const Divider(),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.business,
+                        size: 20,
+                        color: Colors.blue.shade700,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Departamentos',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: Colors.blue.shade900,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                ...assignment.departments.map(
+                  (dept) => ListTile(
+                    dense: true,
+                    leading: const SizedBox(width: 20),
+                    title: Text(dept.nome),
+                    subtitle: Text(dept.sigla),
+                  ),
+                ),
+              ],
+              if (assignment.courses.isNotEmpty) ...[
+                const Divider(),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.school,
+                        size: 20,
+                        color: Colors.green.shade700,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Cursos',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: Colors.green.shade900,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                ...assignment.courses.map(
+                  (course) => ListTile(
+                    dense: true,
+                    leading: const SizedBox(width: 20),
+                    title: Text(course.nome),
+                    subtitle: Text(course.sigla),
+                  ),
+                ),
+              ],
+              const SizedBox(height: 8),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildManageView(CoordinatorProvider coordProvider) {
+    return coordProvider.isLoading
+        ? const Center(child: CircularProgressIndicator())
+        : coordProvider.errorMessage != null
+        ? Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.error_outline, size: 64, color: Colors.red),
+                const SizedBox(height: 16),
+                Text(
+                  'Erro ao carregar coordenadores',
+                  style: Theme.of(context).textTheme.titleLarge,
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  coordProvider.errorMessage!,
+                  style: const TextStyle(color: Colors.grey),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 16),
+                ElevatedButton.icon(
+                  onPressed: _loadData,
+                  icon: const Icon(Icons.refresh),
+                  label: const Text('Tentar Novamente'),
+                ),
+              ],
+            ),
+          )
+        : coordProvider.coordinators.isEmpty
+        ? Center(
+            child: Padding(
+              padding: const EdgeInsets.all(24.0),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Icon(Icons.error_outline, size: 64, color: Colors.red),
-                  const SizedBox(height: 16),
+                  const Icon(
+                    Icons.admin_panel_settings_outlined,
+                    size: 80,
+                    color: Colors.grey,
+                  ),
+                  const SizedBox(height: 24),
                   Text(
-                    'Erro ao carregar coordenadores',
+                    'Nenhum coordenador ou docente encontrado',
                     style: Theme.of(context).textTheme.titleLarge,
                   ),
-                  const SizedBox(height: 8),
-                  Text(
-                    coordProvider.errorMessage!,
-                    style: const TextStyle(color: Colors.grey),
-                    textAlign: TextAlign.center,
-                  ),
                   const SizedBox(height: 16),
-                  ElevatedButton.icon(
-                    onPressed: _loadData,
-                    icon: const Icon(Icons.refresh),
-                    label: const Text('Tentar Novamente'),
+                  const Text(
+                    'Para atribuir coordenadores a departamentos e cursos, '
+                    'primeiro é necessário criar docentes no sistema. '
+                    'Os docentes serão promovidos automaticamente a coordenadores '
+                    'quando lhes forem atribuídas responsabilidades.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: Colors.grey, fontSize: 16),
                   ),
-                ],
-              ),
-            )
-          : coordProvider.coordinators.isEmpty
-          ? Center(
-              child: Padding(
-                padding: const EdgeInsets.all(24.0),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Icon(
-                      Icons.admin_panel_settings_outlined,
-                      size: 80,
-                      color: Colors.grey,
-                    ),
-                    const SizedBox(height: 24),
-                    Text(
-                      'Nenhum coordenador ou docente encontrado',
-                      style: Theme.of(context).textTheme.titleLarge,
-                    ),
-                    const SizedBox(height: 16),
-                    const Text(
-                      'Para atribuir coordenadores a departamentos e cursos, '
-                      'primeiro é necessário criar docentes no sistema. '
-                      'Os docentes serão promovidos automaticamente a coordenadores '
-                      'quando lhes forem atribuídas responsabilidades.',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(color: Colors.grey, fontSize: 16),
-                    ),
-                    const SizedBox(height: 24),
-                    Card(
-                      color: Colors.blue.shade50,
-                      child: Padding(
-                        padding: const EdgeInsets.all(16.0),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                Icon(
-                                  Icons.info_outline,
-                                  color: Colors.blue.shade700,
-                                ),
-                                const SizedBox(width: 8),
-                                Text(
-                                  'Como criar um docente:',
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.blue.shade900,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 12),
-                            const Text(
-                              '1. Vá para a lista de Docentes\n'
-                              '2. Crie um novo docente\n'
-                              '3. Marque "Criar utilizador no sistema"\n'
-                              '4. Selecione o papel "Docente"\n'
-                              '5. Volte aqui e atribua departamentos/cursos\n'
-                              '6. O sistema promoverá automaticamente para Coordenador',
-                              style: TextStyle(height: 1.5),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            )
-          : Column(
-              children: [
-                // Coordinator selector with autocomplete
-                Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Autocomplete<int>(
-                    optionsBuilder: (TextEditingValue textEditingValue) {
-                      final query = textEditingValue.text.toLowerCase().trim();
-
-                      // Require at least 3 characters
-                      if (query.length < 3) {
-                        return const Iterable<int>.empty();
-                      }
-
-                      // Search in coordinators list (users with Docente or Coordenador role)
-                      return coordProvider.coordinators
-                          .where((coord) {
-                            final email = (coord['email'] as String)
-                                .toLowerCase();
-                            return email.contains(query);
-                          })
-                          .map((coord) => coord['id'] as int);
-                    },
-                    displayStringForOption: (int userId) {
-                      final coord = coordProvider.coordinators.firstWhere(
-                        (c) => c['id'] == userId,
-                        orElse: () => {'email': 'Unknown'},
-                      );
-                      return coord['email'] as String;
-                    },
-                    onSelected: (int userId) {
-                      setState(() {
-                        _selectedCoordinatorId = userId;
-                        final coord = coordProvider.coordinators.firstWhere(
-                          (c) => c['id'] == userId,
-                        );
-                        _selectedCoordinatorEmail = coord['email'] as String;
-                        _searchController.text = _selectedCoordinatorEmail!;
-                      });
-                      coordProvider.loadAssignments(userId);
-                    },
-                    fieldViewBuilder:
-                        (
-                          context,
-                          textEditingController,
-                          focusNode,
-                          onFieldSubmitted,
-                        ) {
-                          // Sync controllers
-                          if (_searchController.text.isEmpty &&
-                              _selectedCoordinatorEmail != null) {
-                            textEditingController.text =
-                                _selectedCoordinatorEmail!;
-                          }
-
-                          return TextField(
-                            controller: textEditingController,
-                            focusNode: focusNode,
-                            decoration: InputDecoration(
-                              labelText: 'Pesquisar Coordenador/Docente',
-                              hintText: 'Digite pelo menos 3 letras do email',
-                              border: const OutlineInputBorder(),
-                              prefixIcon: const Icon(Icons.search),
-                              suffixIcon: textEditingController.text.isNotEmpty
-                                  ? IconButton(
-                                      icon: const Icon(Icons.clear),
-                                      onPressed: () {
-                                        textEditingController.clear();
-                                        setState(() {
-                                          _selectedCoordinatorId = null;
-                                          _selectedCoordinatorEmail = null;
-                                          _searchController.clear();
-                                        });
-                                      },
-                                    )
-                                  : null,
-                              helperText:
-                                  'Docentes serão promovidos a Coordenador automaticamente',
-                              helperMaxLines: 2,
-                            ),
-                            onChanged: (value) {
-                              // Clear selection if text is manually changed
-                              if (value != _selectedCoordinatorEmail) {
-                                setState(() {
-                                  _selectedCoordinatorId = null;
-                                  _selectedCoordinatorEmail = null;
-                                });
-                              }
-                            },
-                          );
-                        },
-                    optionsViewBuilder: (context, onSelected, options) {
-                      return Align(
-                        alignment: Alignment.topLeft,
-                        child: Material(
-                          elevation: 8.0,
-                          borderRadius: BorderRadius.circular(8),
-                          child: ConstrainedBox(
-                            constraints: const BoxConstraints(
-                              maxHeight: 300,
-                              maxWidth: 400,
-                            ),
-                            child: ListView.builder(
-                              padding: const EdgeInsets.all(8.0),
-                              shrinkWrap: true,
-                              itemCount: options.length,
-                              itemBuilder: (context, index) {
-                                final userId = options.elementAt(index);
-                                final coord = coordProvider.coordinators
-                                    .firstWhere((c) => c['id'] == userId);
-                                final email = coord['email'] as String;
-                                final role = coord['role'] as String;
-
-                                return ListTile(
-                                  dense: true,
-                                  leading: Icon(
-                                    role == 'Coordenador'
-                                        ? Icons.admin_panel_settings
-                                        : Icons.person,
-                                    color: role == 'Coordenador'
-                                        ? Colors.blue
-                                        : Colors.green,
-                                  ),
-                                  title: Text(email),
-                                  subtitle: Text(
-                                    role,
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      color: Colors.grey.shade600,
-                                    ),
-                                  ),
-                                  onTap: () => onSelected(userId),
-                                );
-                              },
-                            ),
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                ),
-
-                // Assignments display
-                if (_selectedCoordinatorId != null &&
-                    coordProvider.selectedAssignment != null)
-                  Expanded(
-                    child: SingleChildScrollView(
+                  const SizedBox(height: 24),
+                  Card(
+                    color: Colors.blue.shade50,
+                    child: Padding(
                       padding: const EdgeInsets.all(16.0),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          // Departments section
                           Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              Text(
-                                'Departamentos',
-                                style: Theme.of(context).textTheme.titleLarge,
+                              Icon(
+                                Icons.info_outline,
+                                color: Colors.blue.shade700,
                               ),
-                              IconButton(
-                                icon: const Icon(Icons.add_circle),
-                                color: Colors.blue,
-                                onPressed: _showAssignDepartmentDialog,
-                                tooltip: 'Adicionar Departamento',
+                              const SizedBox(width: 8),
+                              Text(
+                                'Como criar um docente:',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.blue.shade900,
+                                ),
                               ),
                             ],
                           ),
-                          const SizedBox(height: 8),
-                          if (coordProvider
-                              .selectedAssignment!
-                              .departments
-                              .isEmpty)
-                            const Card(
-                              child: Padding(
-                                padding: EdgeInsets.all(16.0),
-                                child: Text(
-                                  'Nenhum departamento atribuído',
-                                  style: TextStyle(color: Colors.grey),
-                                ),
-                              ),
-                            )
-                          else
-                            ...coordProvider.selectedAssignment!.departments
-                                .map(
-                                  (dept) => Card(
-                                    child: ListTile(
-                                      leading: const Icon(
-                                        Icons.business,
-                                        color: Colors.blue,
-                                      ),
-                                      title: Text(dept.nome),
-                                      subtitle: Text(dept.sigla),
-                                      trailing: IconButton(
-                                        icon: const Icon(
-                                          Icons.delete,
-                                          color: Colors.red,
-                                        ),
-                                        onPressed: () =>
-                                            _confirmRemoveDepartment(dept),
-                                      ),
-                                    ),
-                                  ),
-                                ),
-
-                          const SizedBox(height: 24),
-
-                          // Courses section
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text(
-                                'Cursos',
-                                style: Theme.of(context).textTheme.titleLarge,
-                              ),
-                              IconButton(
-                                icon: const Icon(Icons.add_circle),
-                                color: Colors.blue,
-                                onPressed: _showAssignCourseDialog,
-                                tooltip: 'Adicionar Curso',
-                              ),
-                            ],
+                          const SizedBox(height: 12),
+                          const Text(
+                            '1. Vá para a lista de Docentes\n'
+                            '2. Crie um novo docente\n'
+                            '3. Marque "Criar utilizador no sistema"\n'
+                            '4. Selecione o papel "Docente"\n'
+                            '5. Volte aqui e atribua departamentos/cursos\n'
+                            '6. O sistema promoverá automaticamente para Coordenador',
+                            style: TextStyle(height: 1.5),
                           ),
-                          const SizedBox(height: 8),
-                          if (coordProvider.selectedAssignment!.courses.isEmpty)
-                            const Card(
-                              child: Padding(
-                                padding: EdgeInsets.all(16.0),
-                                child: Text(
-                                  'Nenhum curso atribuído',
-                                  style: TextStyle(color: Colors.grey),
-                                ),
-                              ),
-                            )
-                          else
-                            ...coordProvider.selectedAssignment!.courses.map(
-                              (course) => Card(
-                                child: ListTile(
-                                  leading: const Icon(
-                                    Icons.school,
-                                    color: Colors.green,
-                                  ),
-                                  title: Text(course.nome),
-                                  subtitle: Text(course.sigla),
-                                  trailing: IconButton(
-                                    icon: const Icon(
-                                      Icons.delete,
-                                      color: Colors.red,
-                                    ),
-                                    onPressed: () =>
-                                        _confirmRemoveCourse(course),
-                                  ),
-                                ),
-                              ),
-                            ),
                         ],
                       ),
                     ),
                   ),
-              ],
+                ],
+              ),
             ),
-    );
+          )
+        : Column(
+            children: [
+              // Coordinator selector with autocomplete
+              Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Autocomplete<int>(
+                  optionsBuilder: (TextEditingValue textEditingValue) {
+                    final query = textEditingValue.text.toLowerCase().trim();
+
+                    // Require at least 3 characters
+                    if (query.length < 3) {
+                      return const Iterable<int>.empty();
+                    }
+
+                    // Search in coordinators list by name
+                    return coordProvider.coordinators
+                        .where((coord) {
+                          final nome = (coord['nome'] as String? ?? '')
+                              .toLowerCase();
+                          return nome.contains(query);
+                        })
+                        .map((coord) => coord['id'] as int);
+                  },
+                  displayStringForOption: (int userId) {
+                    final coord = coordProvider.coordinators.firstWhere(
+                      (c) => c['id'] == userId,
+                      orElse: () => {'nome': 'Unknown'},
+                    );
+                    return coord['nome'] as String? ?? 'Unknown';
+                  },
+                  onSelected: (int userId) {
+                    setState(() {
+                      _selectedCoordinatorId = userId;
+                      final coord = coordProvider.coordinators.firstWhere(
+                        (c) => c['id'] == userId,
+                      );
+                      _selectedCoordinatorName =
+                          coord['nome'] as String? ?? coord['email'] as String;
+                      _searchController.text = _selectedCoordinatorName!;
+                    });
+                    coordProvider.loadAssignments(userId);
+                  },
+                  fieldViewBuilder:
+                      (
+                        context,
+                        textEditingController,
+                        focusNode,
+                        onFieldSubmitted,
+                      ) {
+                        // Sync controllers
+                        if (_searchController.text.isEmpty &&
+                            _selectedCoordinatorName != null) {
+                          textEditingController.text =
+                              _selectedCoordinatorName!;
+                        }
+
+                        return TextField(
+                          controller: textEditingController,
+                          focusNode: focusNode,
+                          decoration: InputDecoration(
+                            labelText: 'Pesquisar Coordenador/Docente',
+                            hintText: 'Digite pelo menos 3 letras do nome',
+                            border: const OutlineInputBorder(),
+                            prefixIcon: const Icon(Icons.search),
+                            suffixIcon: textEditingController.text.isNotEmpty
+                                ? IconButton(
+                                    icon: const Icon(Icons.clear),
+                                    onPressed: () {
+                                      textEditingController.clear();
+                                      setState(() {
+                                        _selectedCoordinatorId = null;
+                                        _selectedCoordinatorName = null;
+                                        _searchController.clear();
+                                      });
+                                    },
+                                  )
+                                : null,
+                            helperText:
+                                'Docentes serão promovidos a Coordenador automaticamente',
+                            helperMaxLines: 2,
+                          ),
+                          onChanged: (value) {
+                            // Clear selection if text is manually changed
+                            if (value != _selectedCoordinatorName) {
+                              setState(() {
+                                _selectedCoordinatorId = null;
+                                _selectedCoordinatorName = null;
+                              });
+                            }
+                          },
+                        );
+                      },
+                  optionsViewBuilder: (context, onSelected, options) {
+                    return Align(
+                      alignment: Alignment.topLeft,
+                      child: Material(
+                        elevation: 8.0,
+                        borderRadius: BorderRadius.circular(8),
+                        child: ConstrainedBox(
+                          constraints: const BoxConstraints(
+                            maxHeight: 300,
+                            maxWidth: 400,
+                          ),
+                          child: ListView.builder(
+                            padding: const EdgeInsets.all(8.0),
+                            shrinkWrap: true,
+                            itemCount: options.length,
+                            itemBuilder: (context, index) {
+                              final userId = options.elementAt(index);
+                              final coord = coordProvider.coordinators
+                                  .firstWhere((c) => c['id'] == userId);
+                              final nome =
+                                  coord['nome'] as String? ??
+                                  coord['email'] as String;
+                              final email = coord['email'] as String;
+                              final role = coord['role'] as String;
+
+                              return ListTile(
+                                dense: true,
+                                leading: Icon(
+                                  role == 'Coordenador'
+                                      ? Icons.admin_panel_settings
+                                      : Icons.person,
+                                  color: role == 'Coordenador'
+                                      ? Colors.blue
+                                      : Colors.green,
+                                ),
+                                title: Text(nome),
+                                subtitle: Text(
+                                  '$role • $email',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.grey.shade600,
+                                  ),
+                                ),
+                                onTap: () => onSelected(userId),
+                              );
+                            },
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+
+              // Assignments display
+              if (_selectedCoordinatorId != null &&
+                  coordProvider.selectedAssignment != null)
+                Expanded(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Departments section
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              'Departamentos',
+                              style: Theme.of(context).textTheme.titleLarge,
+                            ),
+                            IconButton(
+                              icon: const Icon(Icons.add_circle),
+                              color: Colors.blue,
+                              onPressed: _showAssignDepartmentDialog,
+                              tooltip: 'Adicionar Departamento',
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        if (coordProvider
+                            .selectedAssignment!
+                            .departments
+                            .isEmpty)
+                          const Card(
+                            child: Padding(
+                              padding: EdgeInsets.all(16.0),
+                              child: Text(
+                                'Nenhum departamento atribuído',
+                                style: TextStyle(color: Colors.grey),
+                              ),
+                            ),
+                          )
+                        else
+                          ...coordProvider.selectedAssignment!.departments.map(
+                            (dept) => Card(
+                              child: ListTile(
+                                leading: const Icon(
+                                  Icons.business,
+                                  color: Colors.blue,
+                                ),
+                                title: Text(dept.nome),
+                                subtitle: Text(dept.sigla),
+                                trailing: IconButton(
+                                  icon: const Icon(
+                                    Icons.delete,
+                                    color: Colors.red,
+                                  ),
+                                  onPressed: () =>
+                                      _confirmRemoveDepartment(dept),
+                                ),
+                              ),
+                            ),
+                          ),
+
+                        const SizedBox(height: 24),
+
+                        // Courses section
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              'Cursos',
+                              style: Theme.of(context).textTheme.titleLarge,
+                            ),
+                            IconButton(
+                              icon: const Icon(Icons.add_circle),
+                              color: Colors.blue,
+                              onPressed: _showAssignCourseDialog,
+                              tooltip: 'Adicionar Curso',
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        if (coordProvider.selectedAssignment!.courses.isEmpty)
+                          const Card(
+                            child: Padding(
+                              padding: EdgeInsets.all(16.0),
+                              child: Text(
+                                'Nenhum curso atribuído',
+                                style: TextStyle(color: Colors.grey),
+                              ),
+                            ),
+                          )
+                        else
+                          ...coordProvider.selectedAssignment!.courses.map(
+                            (course) => Card(
+                              child: ListTile(
+                                leading: const Icon(
+                                  Icons.school,
+                                  color: Colors.green,
+                                ),
+                                title: Text(course.nome),
+                                subtitle: Text(course.sigla),
+                                trailing: IconButton(
+                                  icon: const Icon(
+                                    Icons.delete,
+                                    color: Colors.red,
+                                  ),
+                                  onPressed: () => _confirmRemoveCourse(course),
+                                ),
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                ),
+            ],
+          );
   }
 }
