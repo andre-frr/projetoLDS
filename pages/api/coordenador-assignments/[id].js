@@ -75,6 +75,73 @@ async function handleGet(id, req, res) {
 }
 
 /**
+ * Validate user can be assigned as coordinator
+ * Throws with statusCode 404 and isUserError flag if user not found
+ */
+async function validateUserForAssignment(id) {
+    let user;
+    try {
+        user = await GrpcClient.getById('users', id);
+    } catch (error) {
+        if (error.statusCode === 404) {
+            const userError = new Error('User not found');
+            userError.statusCode = 404;
+            userError.isUserError = true;
+            throw userError;
+        }
+        throw error;
+    }
+
+    if (user.role !== 'Coordenador' && user.role !== 'Docente') {
+        return {valid: false, error: 'User must be a teacher (Docente) or coordinator'};
+    }
+
+    // Check if user is a guest teacher (convidado = true)
+    if (user.role === 'Docente') {
+        try {
+            const docentes = await GrpcClient.getAll('docente', {
+                filters: {id_user: id, ativo: true}
+            });
+
+            if (docentes.length > 0 && docentes[0].convidado === true) {
+                return {valid: false, error: 'Guest teachers (convidado) cannot be assigned as coordinators'};
+            }
+        } catch (error) {
+            console.error('Error checking docente convidado status:', error);
+        }
+    }
+
+    return {valid: true};
+}
+
+/**
+ * Assign coordinator to a resource
+ */
+async function assignCoordinator(id, type, resourceId) {
+    if (type === 'department') {
+        await GrpcClient.getById('departamento', resourceId);
+        await assignCoordenadorToDepartment(id, resourceId);
+        return {message: 'Coordinator assigned to department successfully'};
+    }
+
+    if (type === 'course') {
+        await GrpcClient.getById('curso', resourceId);
+        await assignCoordenadorToCourse(id, resourceId);
+        return {message: 'Coordinator assigned to course successfully'};
+    }
+
+    return null;
+}
+
+/**
+ * Get resource type name for error messages
+ */
+function getResourceTypeName(type) {
+    const resourceTypes = {department: 'Department', course: 'Course'};
+    return resourceTypes[type] || 'User';
+}
+
+/**
  * POST /api/coordenador-assignments/[id]
  * Assign coordinator to department or course
  */
@@ -88,65 +155,22 @@ async function handlePost(id, req, res) {
     }
 
     try {
-        // Verify user exists and is a teacher or already a coordinator
-        const user = await GrpcClient.getById('users', id);
-
-        // Allow assignment for Docentes (will be promoted by DB trigger) and existing Coordenadores
-        if (user.role !== 'Coordenador' && user.role !== 'Docente') {
-            return res.status(400).json({message: 'User must be a teacher (Docente) or coordinator'});
+        const validation = await validateUserForAssignment(id);
+        if (!validation.valid) {
+            return res.status(400).json({message: validation.error});
         }
 
-        // Check if user is a guest teacher (convidado = true)
-        if (user.role === 'Docente') {
-            try {
-                const docentes = await GrpcClient.getAll('docente', {
-                    filters: {id_user: id, ativo: true}
-                });
-
-                if (docentes.length > 0 && docentes[0].convidado === true) {
-                    return res.status(400).json({
-                        message: 'Guest teachers (convidado) cannot be assigned as coordinators'
-                    });
-                }
-            } catch (error) {
-                console.error('Error checking docente convidado status:', error);
-                // Continue if we can't check - better to allow than block
-            }
-        }
-
-        if (type === 'department') {
-            // Verify department exists (will throw 404 if not found)
-            await GrpcClient.getById('departamento', resourceId);
-
-            await assignCoordenadorToDepartment(id, resourceId);
-            return res.status(201).json({
-                message: 'Coordinator assigned to department successfully'
+        const result = await assignCoordinator(id, type, resourceId);
+        if (!result) {
+            return res.status(400).json({
+                message: 'Invalid type. Must be "department" or "course"'
             });
         }
 
-        if (type === 'course') {
-            // Verify course exists (will throw 404 if not found)
-            await GrpcClient.getById('curso', resourceId);
-
-            await assignCoordenadorToCourse(id, resourceId);
-            return res.status(201).json({
-                message: 'Coordinator assigned to course successfully'
-            });
-        }
-
-        return res.status(400).json({
-            message: 'Invalid type. Must be "department" or "course"'
-        });
+        return res.status(201).json(result);
     } catch (error) {
         if (error.statusCode === 404) {
-            let resourceType;
-            if (type === 'department') {
-                resourceType = 'Department';
-            } else if (type === 'course') {
-                resourceType = 'Course';
-            } else {
-                resourceType = 'User';
-            }
+            const resourceType = error.isUserError ? 'User' : getResourceTypeName(type);
             return res.status(404).json({message: `${resourceType} not found`});
         }
         console.error(error);

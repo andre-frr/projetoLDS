@@ -4,6 +4,7 @@ import 'package:jwt_decoder/jwt_decoder.dart';
 import 'package:logger/logger.dart';
 
 import '../utils/constants.dart';
+
 // Conditional import for platform-specific HTTP client configuration
 import 'http_client_stub.dart' if (dart.library.io) 'http_client_io.dart';
 import 'storage_service.dart';

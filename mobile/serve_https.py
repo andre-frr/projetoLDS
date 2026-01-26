@@ -2,6 +2,7 @@
 """
 Simple HTTPS server for serving Flutter web build
 Usage: python3 serve_https.py [port] [cert_path] [key_path]
+However, using python3 serve_https.py is the easier way since it uses defaults.
 """
 
 import http.server

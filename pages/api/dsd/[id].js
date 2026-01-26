@@ -30,45 +30,6 @@ async function handleGet(id, req, res) {
 }
 
 /**
- * PUT /api/dsd/[id]
- * Update DSD assignment
- * Body: { horas: number }
- */
-async function handlePut(id, req, res) {
-    const {horas} = req.body;
-
-    if (horas === undefined || horas === null) {
-        return res.status(400).json({
-            message: "Campo 'horas' é obrigatório"
-        });
-    }
-
-    if (horas < 0) {
-        return res.status(400).json({
-            message: "Horas não podem ser negativas"
-        });
-    }
-
-    try {
-        // Check if DSD exists
-        try {
-            await GrpcClient.getById("dsd", id);
-        } catch (error) {
-            if (error.statusCode === 404) {
-                return res.status(404).json({message: "DSD não encontrado"});
-            }
-            throw error;
-        }
-
-        // Update
-        const result = await GrpcClient.update("dsd", id, {horas});
-        return res.status(200).json(result);
-    } catch (error) {
-        return handleError(error, res);
-    }
-}
-
-/**
  * DELETE /api/dsd/[id]
  * Delete a DSD assignment
  */
@@ -110,16 +71,12 @@ async function handler(req, res) {
             return requirePermission(ACTIONS.READ, RESOURCES.DSD, dsdContext)(
                 handleGet.bind(null, id)
             )(req, res);
-        case "PUT":
-            return requirePermission(ACTIONS.UPDATE, RESOURCES.DSD, dsdContext)(
-                handlePut.bind(null, id)
-            )(req, res);
         case "DELETE":
             return requirePermission(ACTIONS.DELETE, RESOURCES.DSD, dsdContext)(
                 handleDelete.bind(null, id)
             )(req, res);
         default:
-            res.setHeader("Allow", ["GET", "PUT", "DELETE"]);
+            res.setHeader("Allow", ["GET", "DELETE"]);
             return res.status(405).end(`Method ${req.method} Not Allowed`);
     }
 }

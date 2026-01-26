@@ -74,28 +74,6 @@ class DsdProvider with ChangeNotifier {
     }
   }
 
-  // Update DSD hours (Admin only)
-  Future<bool> updateHoras(int id, int horas) async {
-    _isLoading = true;
-    _errorMessage = null;
-    notifyListeners();
-
-    try {
-      final updated = await _service.updateHoras(id, horas);
-      final index = _dsds.indexWhere((d) => d.idDsd == id);
-      if (index != -1) {
-        _dsds[index] = updated;
-      }
-      _isLoading = false;
-      notifyListeners();
-      return true;
-    } catch (e) {
-      _errorMessage = e.toString().replaceAll('Exception: ', '');
-      _isLoading = false;
-      notifyListeners();
-      return false;
-    }
-  }
 
   // Delete DSD (Admin only)
   Future<bool> delete(int id) async {

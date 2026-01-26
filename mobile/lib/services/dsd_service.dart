@@ -94,21 +94,6 @@ class DsdService {
     }
   }
 
-  // Update DSD hours (Admin only)
-  Future<DsdModel> updateHoras(int id, int horas) async {
-    try {
-      final response = await _dio.put('$_basePath/$id', data: {'horas': horas});
-
-      if (response.statusCode == 200) {
-        return DsdModel.fromJson(response.data);
-      } else {
-        throw Exception('Failed to update DSD');
-      }
-    } on DioException catch (e) {
-      _logger.e('Error updating DSD: ${e.response?.data ?? e.message}');
-      throw Exception(e.response?.data['message'] ?? 'Failed to update DSD');
-    }
-  }
 
   // Delete DSD (Admin only)
   Future<void> delete(int id) async {

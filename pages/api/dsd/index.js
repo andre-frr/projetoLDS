@@ -142,14 +142,23 @@ async function verifyDocentes(assignments) {
 }
 
 /**
- * Check if DSD already exists
+ * Check if DSD already exists for specific docents
+ * Returns an array of docent IDs that already have assignments
  */
-async function checkDsdExists(id_uc, turma, tipo, id_ano) {
+async function checkDsdExistsForDocents(id_uc, turma, tipo, id_ano, assignments) {
     const existingDsds = await GrpcClient.getAll("dsd", {
         filters: {id_uc, turma, tipo, id_ano}
     });
 
-    return existingDsds.length > 0;
+    // Get the docent IDs that already have assignments
+    const existingDocentIds = new Set(existingDsds.map(dsd => dsd.id_doc));
+
+    // Check which docents from the new assignments already exist
+    const conflictingDocents = assignments.filter(a =>
+        existingDocentIds.has(Number(a.id_doc))
+    );
+
+    return conflictingDocents;
 }
 
 /**
@@ -231,9 +240,10 @@ async function verifyDsdPrerequisites(id_uc, turma, tipo, assignments) {
 
     await verifyDocentes(assignments);
 
-    const dsdExists = await checkDsdExists(id_uc, turma, tipo, id_ano);
-    if (dsdExists) {
-        const error = new Error(`DSD já existe para esta UC, turma ${turma}, tipo ${tipo} no ano letivo ativo. Use PUT para atualizar.`);
+    const conflictingDocents = await checkDsdExistsForDocents(id_uc, turma, tipo, id_ano, assignments);
+    if (conflictingDocents.length > 0) {
+        const docentIds = conflictingDocents.map(d => d.id_doc).join(', ');
+        const error = new Error(`DSD já existe para os docentes (IDs: ${docentIds}) nesta UC, turma ${turma}, tipo ${tipo} no ano letivo ativo. Elimine a atribuição existente primeiro.`);
         error.status = 409;
         throw error;
     }

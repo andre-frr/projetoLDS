@@ -36,7 +36,9 @@ class _DocentesScreenState extends State<DocentesScreen> {
 
     // Function to generate email from name
     String generateEmailFromName(String name) {
-      if (name.trim().isEmpty) return '';
+      if (name.trim().isEmpty) {
+        return '';
+      }
 
       // Remove accents and special characters
       String normalized = name
@@ -464,7 +466,9 @@ class _DocentesScreenState extends State<DocentesScreen> {
 
                             // Function to generate email from name
                             String generateEmailFromName(String name) {
-                              if (name.trim().isEmpty) return '';
+                              if (name.trim().isEmpty) {
+                                return '';
+                              }
 
                               String normalized = name
                                   .toLowerCase()
