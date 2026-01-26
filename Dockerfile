@@ -52,9 +52,3 @@ COPY --from=builder --chown=nextjs:nodejs /app/.next ./.next
 USER nextjs
 
 EXPOSE 3000
-
-# Add health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
-  CMD node -e "require('https').get('https://localhost:3000/api/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})" || exit 1
-
-CMD ["node", "server.js"]
